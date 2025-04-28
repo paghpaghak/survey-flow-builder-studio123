@@ -220,24 +220,69 @@ app.put('/api/surveys/:id', async (req, res) => {
     await client.connect();
     const db = client.db('survey_db');
     
-    // Оптимизация: обновляем только изменившиеся поля
+    console.log('Получены данные для обновления:', JSON.stringify(req.body, null, 2));
+
+    // Создаем карту всех вопросов для быстрого доступа
+    const questionsMap = new Map();
+    if (Array.isArray(req.body.questions)) {
+      req.body.questions.forEach((q: any) => {
+        questionsMap.set(q.id, { ...q });
+      });
+    }
+
+    // Подготавливаем данные для обновления
     const updateData = {
       ...req.body,
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      versions: req.body.versions.map((version: any) => {
+        // Обрабатываем вопросы в версии
+        const versionQuestions = Array.isArray(version.questions) ? version.questions : [];
+        versionQuestions.forEach((q: any) => {
+          if (!questionsMap.has(q.id)) {
+            questionsMap.set(q.id, { ...q });
+          }
+        });
+
+        return {
+          ...version,
+          pages: version.pages.map((page: any) => {
+            // Находим вопросы, принадлежащие этой странице
+            const pageQuestions = Array.from(questionsMap.values())
+              .filter((q: any) => q.pageId === page.id)
+              .map((q: any) => ({
+                ...q,
+                pageId: page.id // Гарантируем правильный pageId
+              }));
+
+            console.log(`Страница ${page.id}: найдено ${pageQuestions.length} вопросов`);
+
+            return {
+              ...page,
+              questions: pageQuestions
+            };
+          })
+        };
+      })
     };
     
     // Удаляем _id, чтобы не было ошибки при обновлении
     delete updateData._id;
 
-    // Оптимизация: используем findOneAndUpdate для атомарного обновления
+    console.log('Подготовленные данные:', JSON.stringify(updateData, null, 2));
+
+    // Используем findOneAndUpdate для атомарного обновления
     const result = await db.collection('surveys')
       .findOneAndUpdate(
         { _id: new ObjectId(req.params.id) },
         { $set: updateData },
-        { returnDocument: 'after' }
+        { 
+          returnDocument: 'after',
+          upsert: false
+        }
       );
     
     if (!result.value) {
+      console.error('Опрос не найден:', req.params.id);
       return res.status(404).json({ error: 'Survey not found' });
     }
     
@@ -262,6 +307,7 @@ app.put('/api/surveys/:id', async (req, res) => {
     }
     
     const response = serializeDates(result.value);
+    console.log('Отправляем ответ:', JSON.stringify(response, null, 2));
     res.json(response);
   } catch (error) {
     console.error('Error updating survey:', error);

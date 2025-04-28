@@ -1,22 +1,23 @@
 export const apiUpdateSurvey = async (survey: Survey): Promise<Survey> => {
   try {
+    console.log('Отправка на сервер:', JSON.stringify(survey, null, 2));
+    
     const response = await fetch(`${API_URL}/surveys/${survey.id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        title: survey.title,
-        description: survey.description,
-        questions: survey.questions,
-      }),
+      body: JSON.stringify(survey),
     });
 
     if (!response.ok) {
       throw new Error('Ошибка при обновлении опроса');
     }
 
-    return response.json();
+    const result = await response.json();
+    console.log('Ответ сервера:', JSON.stringify(result, null, 2));
+    
+    return result;
   } catch (error) {
     console.error('Ошибка при обновлении опроса:', error);
     throw error;

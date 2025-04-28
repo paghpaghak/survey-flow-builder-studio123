@@ -82,27 +82,91 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
   
   updateSurvey: async (updatedSurvey, createNewVersion = false) => {
     try {
-      console.log('Updating survey in store:', updatedSurvey);
-      set((state) => ({
-        surveys: state.surveys.map((s) => 
-          s.id === updatedSurvey.id ? { ...s, ...updatedSurvey, updatedAt: new Date() } : s
-        ),
-      }));
+      const previousState = get().surveys.find(s => s.id === updatedSurvey.id);
+      if (!previousState) {
+        console.error('❌ Previous state not found for survey:', updatedSurvey.id);
+        throw new Error('Survey not found');
+      }
 
-      const updated = await apiUpdateSurvey(updatedSurvey);
-      console.log('Server response:', updated);
-      set((state) => ({
-        surveys: state.surveys.map((s) => 
-          s.id === updated.id ? { ...updated, updatedAt: new Date() } : s
-        ),
-      }));
+      const previousVersion = previousState.versions.find(v => v.version === previousState.currentVersion);
+      if (!previousVersion) {
+        console.error('❌ Previous version not found');
+        throw new Error('Previous version not found');
+      }
+
+      const updatedVersion = updatedSurvey.versions.find(v => v.version === updatedSurvey.currentVersion);
+      if (!updatedVersion) {
+        console.error('❌ Updated version not found');
+        throw new Error('Updated version not found');
+      }
+
+      // Create maps for quick lookups
+      const previousQuestionsMap = new Map();
+      previousVersion.pages.forEach(page => {
+        page.questions.forEach(questionId => {
+          const question = previousVersion.questions.find(q => q.id === questionId);
+          if (question) {
+            previousQuestionsMap.set(questionId, { ...question, pageId: page.id });
+          }
+        });
+      });
+
+      // Process pages and their questions
+      const processedPages = updatedVersion.pages.map(page => {
+        // Get all questions that belong to this page
+        const pageQuestions = updatedVersion.questions
+          .filter(q => q.pageId === page.id)
+          .map(q => {
+            const previousQuestion = previousQuestionsMap.get(q.id);
+            return {
+              ...q,
+              pageId: page.id,
+              position: q.position || previousQuestion?.position || 0
+            };
+          })
+          .sort((a, b) => (a.position || 0) - (b.position || 0));
+
+        return {
+          ...page,
+          questions: pageQuestions.map(q => q.id)
+        };
+      });
+
+      const newVersion = {
+        ...updatedVersion,
+        pages: processedPages,
+        questions: updatedVersion.questions,
+        updatedAt: new Date()
+      };
+
+      try {
+        await apiUpdateSurvey({
+          ...updatedSurvey,
+          versions: updatedSurvey.versions.map(v =>
+            v.version === updatedSurvey.currentVersion ? newVersion : v
+          )
+        });
+
+        set((state) => ({
+          surveys: state.surveys.map((s) =>
+            s.id === updatedSurvey.id
+              ? {
+                  ...updatedSurvey,
+                  versions: updatedSurvey.versions.map(v =>
+                    v.version === updatedSurvey.currentVersion ? newVersion : v
+                  )
+                }
+              : s
+          )
+        }));
+
+      } catch (error) {
+        console.error('❌ Failed to update survey:', error);
+        throw error;
+      }
     } catch (error) {
-      console.error('Ошибка при обновлении опроса:', error);
-      set((state) => ({
-        surveys: state.surveys.map((s) => 
-          s.id === updatedSurvey.id ? { ...s, ...updatedSurvey, updatedAt: new Date() } : s
-        ),
-      }));
+      console.error('Error updating survey:', error);
+      throw error;
     }
   },
 
