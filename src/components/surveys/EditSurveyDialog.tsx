@@ -16,25 +16,57 @@ interface EditSurveyDialogProps {
 
 export function EditSurveyDialog({ survey, open, onOpenChange }: EditSurveyDialogProps) {
   const [title, setTitle] = useState(survey.title);
+  const [lastSavedTitle, setLastSavedTitle] = useState(survey.title);
   const [description, setDescription] = useState(survey.description);
   const { updateSurvey } = useSurveyStore();
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     setTitle(survey.title);
+    setLastSavedTitle(survey.title);
     setDescription(survey.description);
-  }, [survey]);
+  }, [survey.id]);
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTitle = e.target.value;
+    setTitle(newTitle);
+  };
+
+  const handleTitleBlur = () => {
+    if (title !== lastSavedTitle) {
+      updateSurvey({
+        ...survey,
+        title,
+        description,
+      });
+      setLastSavedTitle(title);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (title !== lastSavedTitle) {
+        updateSurvey({
+          ...survey,
+          title,
+          description,
+        });
+        setLastSavedTitle(title);
+      }
+    }
+  };
 
   const handleSubmit = () => {
     if (!title.trim()) {
       return;
     }
-
     updateSurvey({
       ...survey,
       title,
       description,
     });
+    setLastSavedTitle(title);
     onOpenChange(false);
   };
 
@@ -54,7 +86,9 @@ export function EditSurveyDialog({ survey, open, onOpenChange }: EditSurveyDialo
               id="title"
               placeholder="Название опроса"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={handleTitleChange}
+              onBlur={handleTitleBlur}
+              onKeyDown={handleKeyDown}
               autoComplete="off"
               autoFocus={false}
               className={cn("select-none focus:select-text")}

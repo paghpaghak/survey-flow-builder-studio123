@@ -222,7 +222,8 @@ export function PageManager({ pages, onUpdatePages, onSelectPage, selectedPageId
           <AlertDialogHeader>
             <AlertDialogTitle>Удаление страницы</AlertDialogTitle>
             <AlertDialogDescription>
-              Вы уверены, что хотите удалить страницу "{pageToDelete?.title}"? 
+              Вы уверены, что хотите удалить страницу "{pageToDelete?.title}"?
+              <br />
               Если на странице есть вопросы, то они также будут удалены!
             </AlertDialogDescription>
           </AlertDialogHeader>

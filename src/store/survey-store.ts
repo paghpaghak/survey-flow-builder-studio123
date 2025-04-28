@@ -82,14 +82,27 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
   
   updateSurvey: async (updatedSurvey, createNewVersion = false) => {
     try {
-      const updated = await apiUpdateSurvey(updatedSurvey);
+      console.log('Updating survey in store:', updatedSurvey);
       set((state) => ({
-        surveys: state.surveys.map((s) =>
-          s.id === updated.id ? updated : s
+        surveys: state.surveys.map((s) => 
+          s.id === updatedSurvey.id ? { ...s, ...updatedSurvey, updatedAt: new Date() } : s
+        ),
+      }));
+
+      const updated = await apiUpdateSurvey(updatedSurvey);
+      console.log('Server response:', updated);
+      set((state) => ({
+        surveys: state.surveys.map((s) => 
+          s.id === updated.id ? { ...updated, updatedAt: new Date() } : s
         ),
       }));
     } catch (error) {
       console.error('Ошибка при обновлении опроса:', error);
+      set((state) => ({
+        surveys: state.surveys.map((s) => 
+          s.id === updatedSurvey.id ? { ...s, ...updatedSurvey, updatedAt: new Date() } : s
+        ),
+      }));
     }
   },
 
