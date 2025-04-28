@@ -90,9 +90,6 @@ export function SurveyPreview({ questions, pages, onClose }: SurveyPreviewProps)
   return (
     <div className="flex flex-col gap-6 p-6">
       <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-500">
-          Страница {currentPageIndex + 1} из {pages.length}
-        </div>
         <h2 className="text-xl font-semibold">{currentPage.title}</h2>
       </div>
 
@@ -102,12 +99,15 @@ export function SurveyPreview({ questions, pages, onClose }: SurveyPreviewProps)
         onAnswerChange={handleAnswerChange}
       />
 
-      <div className="flex justify-between mt-4">
+      <div className="flex items-center justify-between mt-4 relative">
         {!isFirstPage && (
           <Button onClick={handlePrevious} variant="outline">
             Назад
           </Button>
         )}
+        <div className="absolute left-1/2 -translate-x-1/2 text-sm text-gray-500">
+          Страница {currentPageIndex + 1} из {pages.length}
+        </div>
         {isLastPage ? (
           <Button onClick={handleSubmit} className="ml-auto">
             Завершить
