@@ -49,13 +49,7 @@ export default function SurveyEditor() {
 
   useEffect(() => {
     if (id && !survey) {
-      loadSurveys().then(() => {
-        const allSurveys = useSurveyStore.getState().surveys;
-        console.log('Surveys after load:', allSurveys);
-        console.log('Ищу id:', id);
-        const found = allSurveys.find(s => s.id === id);
-        console.log('Найденный опрос:', found);
-      });
+      loadSurveys();
     }
   }, [id, survey, loadSurveys]);
 
@@ -84,7 +78,19 @@ export default function SurveyEditor() {
   }
 
   function handleDeleteQuestion(qid: string) {
+    console.log('🗑️ SurveyEditor: Delete question initiated:', {
+      questionId: qid,
+      currentVersion: currentVersion?.version,
+      currentQuestions: questions.map(q => ({ id: q.id, pageId: q.pageId }))
+    });
+
     const updatedQuestions = questions.filter(q => q.id !== qid);
+    
+    console.log('📝 SurveyEditor: Questions filtered:', {
+      deletedId: qid,
+      remainingQuestions: updatedQuestions.map(q => ({ id: q.id, pageId: q.pageId }))
+    });
+
     updateSurvey({
       ...survey,
       versions: survey.versions.map(v => 
@@ -97,9 +103,25 @@ export default function SurveyEditor() {
   }
 
   function handleUpdateQuestions(updatedQuestions: Question[]) {
+    // Получаем все вопросы, которые не относятся к текущей странице
+    const otherQuestions = currentVersion.questions.filter(
+      q => q.pageId !== selectedPageId && currentVersion.pages.some(p => p.questions.includes(q.id))
+    );
+
+    // Объединяем обновленные вопросы текущей страницы с вопросами других страниц
+    const allQuestions = [...updatedQuestions, ...otherQuestions];
+
+    const updatedPages = currentVersion.pages.map(page => ({
+      ...page,
+      questions: allQuestions
+        .filter(q => q.pageId === page.id)
+        .map(q => q.id)
+    }));
+
     const updatedVersion = {
       ...currentVersion,
-      questions: updatedQuestions,
+      questions: allQuestions,
+      pages: updatedPages,
       updatedAt: new Date()
     };
 
@@ -241,6 +263,36 @@ export default function SurveyEditor() {
       })
     );
     const [activePageId, setActivePageId] = React.useState(null);
+    const [editingPageId, setEditingPageId] = React.useState(null);
+    const [editingTitle, setEditingTitle] = React.useState("");
+    
+    const handleTitleClick = (e, page) => {
+      e.stopPropagation();
+      setEditingPageId(page.id);
+      setEditingTitle(page.title);
+    };
+
+    const handleTitleChange = (e) => {
+      setEditingTitle(e.target.value);
+    };
+
+    const handleTitleSave = (pageId) => {
+      if (editingTitle.trim()) {
+        const updatedPages = pages.map(p =>
+          p.id === pageId ? { ...p, title: editingTitle.trim() } : p
+        );
+        onMovePage(updatedPages);
+      }
+      setEditingPageId(null);
+    };
+
+    const handleKeyDown = (e, pageId) => {
+      if (e.key === 'Enter') {
+        handleTitleSave(pageId);
+      } else if (e.key === 'Escape') {
+        setEditingPageId(null);
+      }
+    };
 
     return (
       <DndContext
@@ -265,25 +317,45 @@ export default function SurveyEditor() {
         modifiers={[restrictToVerticalAxis]}
       >
         <SortableContext items={pages.map(p => p.id)} strategy={verticalListSortingStrategy}>
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 px-4">
             {pages.map(page => (
               <div key={page.id} className="relative group">
                 <Card
                   className={
                     (page.id === selectedPageId
-                      ? 'border-primary ring-2 ring-primary/30 '
+                      ? 'border-primary '
                       : 'hover:border-primary/50 ') +
                     'transition-all cursor-pointer p-0'
                   }
                   onClick={() => onSelectPage(page.id)}
                 >
                   <div className="px-4 py-2 font-bold text-base flex items-center gap-2 justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="cursor-grab">≡</span>
-                      {page.title}
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="cursor-grab shrink-0">≡</span>
+                      {editingPageId === page.id ? (
+                        <input
+                          type="text"
+                          value={editingTitle}
+                          onChange={handleTitleChange}
+                          onBlur={() => handleTitleSave(page.id)}
+                          onKeyDown={(e) => handleKeyDown(e, page.id)}
+                          className="flex-1 px-1 border rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                          autoFocus
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      ) : (
+                        <span 
+                          onClick={(e) => handleTitleClick(e, page)}
+                          className="flex-1 cursor-text hover:bg-gray-100 px-1 rounded truncate block overflow-hidden text-ellipsis"
+                          style={{ maxWidth: 'calc(100% - 24px)' }}
+                          title={page.title}
+                        >
+                          {page.title}
+                        </span>
+                      )}
                     </div>
                     <button
-                      className="opacity-60 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-rose-600"
+                      className="opacity-60 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-rose-600 shrink-0"
                       onClick={e => {
                         e.stopPropagation();
                         if (window.confirm('Удалить страницу?')) {
@@ -295,7 +367,7 @@ export default function SurveyEditor() {
                       <Trash2 className="w-5 h-5" />
                     </button>
                   </div>
-                  <div className="pl-6 pr-2 pb-2 flex flex-col gap-1">
+                  <div className="pl-4 pr-2 pb-2 flex flex-col gap-1">
                     {questions.filter(q => q.pageId === page.id).map(q => (
                       <div
                         key={q.id}
@@ -305,14 +377,14 @@ export default function SurveyEditor() {
                             : 'hover:bg-gray-50 border border-transparent ') +
                           'rounded px-3 py-1 text-sm text-gray-700 transition flex items-center relative'
                         }
-                        style={{ marginLeft: '-1.25rem' }}
+                        style={{ marginLeft: '0' }}
                         onClick={e => {
                           e.stopPropagation();
                           onSelectQuestion(q.id);
                         }}
                       >
-                        <span className="block w-1 h-5 bg-gray-300 rounded-full absolute left-0 top-1/2 -translate-y-1/2" />
-                        <span className="ml-3">{q.title || 'Без названия'}</span>
+                        <span className="block w-1 h-5 bg-gray-300 rounded-full absolute left-4 top-1/2 -translate-y-1/2" />
+                        <span className="ml-4">{q.title || 'Без названия'}</span>
                       </div>
                     ))}
                   </div>
@@ -350,7 +422,7 @@ export default function SurveyEditor() {
         style={style}
         className={
           (selected
-            ? 'border-primary ring-2 ring-primary/30 '
+            ? 'border-primary '
             : 'hover:border-primary/50 ') +
           (isDragging ? 'opacity-60 shadow-lg ' : '') +
           'transition-all cursor-pointer p-0'
@@ -384,21 +456,21 @@ export default function SurveyEditor() {
           </Button>
           <span
             className="ml-2 text-2xl font-bold truncate whitespace-nowrap overflow-hidden text-ellipsis block"
-            style={{ maxWidth: 'calc(100% - 48px)' }}
+            style={{ maxWidth: 'calc(100% - 64px)' }}
             title={survey.title}
           >
             {survey.title}
           </span>
         </div>
-        <div className="text-gray-500 px-4 pb-2">{survey.description}</div>
-        <div className="flex justify-between gap-2 my-6 px-4">
-          <Button className="w-20 h-12 text-lg" variant="outline" size="icon" onClick={handlePreviewClick}>
+        <div className="text-gray-500 px-4">{survey.description}</div>
+        <div className="flex justify-between gap-2 my-6 px-4" style={{ marginBottom: '12px', marginTop: '12px' }}>
+          <Button className="w-[90px] h-10 text-lg" variant="outline" size="icon" onClick={handlePreviewClick}>
             <Eye className="h-5 w-5" />
           </Button>
-          <Button className="w-20 h-12 text-lg" size="icon" onClick={handleAddQuestion} disabled={!selectedPageId}>
+          <Button className="w-[90px] h-10 text-lg" size="icon" onClick={handleAddQuestion} disabled={!selectedPageId}>
             <span title="Добавить вопрос">+</span>
           </Button>
-          <Button className="w-20 h-12 text-lg" size="icon" onClick={() => {
+          <Button className="w-[90px] h-10 text-lg" size="icon" onClick={() => {
             const newPage = {
               id: crypto.randomUUID(),
               title: `Страница ${pages.length + 1}`,

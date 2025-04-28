@@ -80,7 +80,7 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
   const handleEditQuestion = useCallback((updatedQuestion: Question) => {
     const updatedQuestions = questions.map(q =>
       q.id === updatedQuestion.id 
-        ? { ...updatedQuestion, position: q.position } 
+        ? { ...updatedQuestion, position: q.position || updatedQuestion.position } 
         : q
     );
     onUpdateQuestions?.(updatedQuestions);
@@ -96,28 +96,45 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
       if (change.type === 'position' && change.position) {
         nodesPositionsRef.current[change.id] = change.position;
         
+        const question = questions.find(q => q.id === change.id);
+        if (!question) return;
+
         const updatedQuestions = questions.map(q => 
           q.id === change.id 
-            ? { ...q, position: change.position }
+            ? { 
+                ...q, 
+                position: change.position,
+                pageId: question.pageId
+              }
             : q
         );
+
         onUpdateQuestions?.(updatedQuestions);
       }
     });
     onNodesChange(changes);
   }, [onNodesChange, questions, onUpdateQuestions]);
 
-  // Новый обработчик для обновления позиций вопросов только после окончания drag
   const onNodeDragStop = useCallback((event: any, node: Node) => {
-    if (onUpdateQuestions) {
-      const updatedQuestions = questions.map(q =>
-        q.id === node.id ? { ...q, position: node.position } : q
-      );
-      onUpdateQuestions(updatedQuestions);
-    }
+    if (!onUpdateQuestions) return;
+
+    const question = questions.find(q => q.id === node.id);
+    if (!question) return;
+
+    const updatedQuestions = questions.map(q =>
+      q.id === node.id 
+        ? { 
+            ...q, 
+            position: node.position,
+            pageId: question.pageId
+          }
+        : q
+    );
+
+    nodesPositionsRef.current[node.id] = node.position;
+    onUpdateQuestions(updatedQuestions);
   }, [questions, onUpdateQuestions]);
 
-  // Группировка вопросов по страницам
   const getQuestionsGroupedByPage = useCallback(() => {
     const groupedQuestions: Record<string, Question[]> = {};
     questions.forEach(question => {
@@ -132,37 +149,39 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
 
   useEffect(() => {
     const newNodes: Node[] = [];
-    const groupedQuestions = getQuestionsGroupedByPage();
     
-    Object.entries(groupedQuestions).forEach(([pageId, pageQuestions], pageIndex) => {
-      const pageOffsetY = pageIndex * 400; // Вертикальное смещение для каждой страницы
-      const page = pages.find(p => p.id === pageId);
+    questions.forEach((question, index) => {
+      const savedPosition = nodesPositionsRef.current[question.id];
+      const existingPosition = question.position;
+      const defaultPosition = {
+        x: (index % 3) * 300 + 50,
+        y: Math.floor(index / 3) * 200 + 50
+      };
       
-      pageQuestions.forEach((question, index) => {
-        const savedPosition = nodesPositionsRef.current[question.id];
-        const defaultPosition = {
-          x: (index % 3) * 300 + 50,
-          y: Math.floor(index / 3) * 200 + pageOffsetY + 50
-        };
-        
-        newNodes.push({
-      id: question.id,
-      type: 'questionNode',
-          position: savedPosition || question.position || defaultPosition,
-      data: {
-        question,
-        onDelete: handleDeleteQuestion,
-        onEdit: handleEditQuestion,
-            onEditClick: openEditDialog,
-            pages,
-            pageName: page?.title || 'Без страницы'
+      const finalPosition = savedPosition || existingPosition || defaultPosition;
+      const page = pages.find(p => p.id === question.pageId);
+      
+      newNodes.push({
+        id: question.id,
+        type: 'questionNode',
+        position: finalPosition,
+        data: {
+          question: {
+            ...question,
+            position: finalPosition,
+            pageId: question.pageId
           },
-        });
+          onDelete: handleDeleteQuestion,
+          onEdit: handleEditQuestion,
+          onEditClick: openEditDialog,
+          pages,
+          pageName: page?.title || 'Без страницы'
+        },
       });
     });
 
     setNodes(newNodes);
-  }, [questions, handleDeleteQuestion, handleEditQuestion, openEditDialog, getQuestionsGroupedByPage, pages]);
+  }, [questions, handleDeleteQuestion, handleEditQuestion, openEditDialog, pages]);
 
   useEffect(() => {
     const newEdges = [];
