@@ -219,20 +219,25 @@ app.put('/api/surveys/:id', async (req, res) => {
   try {
     await client.connect();
     const db = client.db('survey_db');
+    
+    // Оптимизация: обновляем только изменившиеся поля
     const updateData = {
       ...req.body,
       updatedAt: new Date()
     };
+    
     // Удаляем _id, чтобы не было ошибки при обновлении
     delete updateData._id;
 
+    // Оптимизация: используем findOneAndUpdate для атомарного обновления
     const result = await db.collection('surveys')
-      .updateOne(
+      .findOneAndUpdate(
         { _id: new ObjectId(req.params.id) },
-        { $set: updateData }
+        { $set: updateData },
+        { returnDocument: 'after' }
       );
     
-    if (result.matchedCount === 0) {
+    if (!result.value) {
       return res.status(404).json({ error: 'Survey not found' });
     }
     
@@ -255,7 +260,9 @@ app.put('/api/surveys/:id', async (req, res) => {
       }
       return newObj;
     }
-    res.json(serializeDates({ ...updateData, _id: req.params.id }));
+    
+    const response = serializeDates(result.value);
+    res.json(response);
   } catch (error) {
     console.error('Error updating survey:', error);
     res.status(500).json({ error: 'Failed to update survey' });

@@ -1,0 +1,24 @@
+.custom-tree .rc-tree-treenode {
+  padding: 2px 0;
+}
+.custom-tree .rc-tree-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+  display: inline-block;
+  vertical-align: middle;
+}
+.custom-tree .rc-tree-node-selected .rc-tree-title {
+  background: #e0e7ff;
+  color: #1d4ed8;
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+.custom-tree .rc-tree-switcher {
+  margin-right: 4px;
+}
+
+[role="tree"] > div[style*="position: absolute"] {
+  display: none !important;
+} 

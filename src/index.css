@@ -99,3 +99,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Скрываем overlay react-arborist, который мешает кликам */
+div[style*="position: absolute"][style*="left: 0px"][style*="right: 0px"] {
+  display: none !important;
+}

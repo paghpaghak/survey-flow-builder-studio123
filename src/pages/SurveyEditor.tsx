@@ -21,14 +21,22 @@ import {
   SidebarTabsContent,
   SidebarTabsList
 } from "@/components/ui/sidebar";
+import { SidebarTreeView } from '@/components/survey-editor/SidebarTreeView';
+import { TreeNodeApi } from 'react-arborist';
+import { Card } from '@/components/ui/card';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 
 export default function SurveyEditor() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { surveys, updateSurvey, loadSurveys } = useSurveyStore();
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'questions' | 'pages'>('questions');
+  const [activeTab, setActiveTab] = useState<'questions' | 'pages' | 'tree'>('questions');
   const [selectedPageId, setSelectedPageId] = useState<string | undefined>();
+  const [selectedQuestionId, setSelectedQuestionId] = useState<string | undefined>();
 
   const survey = surveys.find(s => s.id === id);
   const currentVersion = survey?.versions.find(v => v.version === survey.currentVersion);
@@ -52,6 +60,13 @@ export default function SurveyEditor() {
       });
     }
   }, [id, survey, loadSurveys]);
+
+  useEffect(() => {
+    console.log('selectedPageId:', selectedPageId);
+    console.log('currentPageQuestions:', questions.filter(q => !selectedPageId || q.pageId === selectedPageId));
+    console.log('pages:', pages.map(p => p.id));
+    console.log('questions:', questions.map(q => ({id: q.id, pageId: q.pageId})));
+  }, [selectedPageId, questions, pages]);
 
   if (!survey || !currentVersion) {
     return (
@@ -178,9 +193,148 @@ export default function SurveyEditor() {
     }
   };
 
-  const currentPageQuestions = questions.filter(q => 
-    !selectedPageId || q.pageId === selectedPageId
-  );
+  const currentPageQuestions = questions.filter(q => !selectedPageId || q.pageId === selectedPageId);
+  console.log('Текущая выбранная страница:', selectedPageId);
+
+  function handleTreeMove(nodes, parent, index) {
+    if (!nodes.length) return;
+    const node = nodes[0];
+    const data = node.data;
+    if (data.type === 'page') {
+      const oldIndex = pages.findIndex(p => p.id === data.id);
+      if (oldIndex === -1) return;
+      const newPages = [...pages];
+      const [removed] = newPages.splice(oldIndex, 1);
+      newPages.splice(index, 0, removed);
+      handleUpdatePages(newPages);
+    } else if (data.type === 'question') {
+      const oldIndex = questions.findIndex(q => q.id === data.id);
+      if (oldIndex === -1) return;
+      const newQuestions = [...questions];
+      const [removed] = newQuestions.splice(oldIndex, 1);
+      const newPageId = parent ? parent.data.id : undefined;
+      removed.pageId = newPageId;
+      const pageQuestions = newQuestions.filter(q => q.pageId === newPageId);
+      const insertIndex = newQuestions.findIndex((q, i) => q.pageId === newPageId && pageQuestions.indexOf(q) === index);
+      if (insertIndex === -1) {
+        newQuestions.push(removed);
+      } else {
+        newQuestions.splice(insertIndex, 0, removed);
+      }
+      handleUpdateQuestions(newQuestions);
+    }
+  }
+
+  function SimplePageTree({ pages, questions, selectedPageId, selectedQuestionId, onSelectPage, onSelectQuestion, onMovePage }) {
+    const sensors = useSensors(
+      useSensor(PointerSensor, {
+        activationConstraint: { distance: 8 },
+      })
+    );
+    const [activePageId, setActivePageId] = React.useState(null);
+
+    return (
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={event => {
+          setActivePageId(event.active.id);
+        }}
+        onDragEnd={event => {
+          setActivePageId(null);
+          const { active, over } = event;
+          if (!over || active.id === over.id) return;
+          const oldIndex = pages.findIndex(p => p.id === active.id);
+          const newIndex = pages.findIndex(p => p.id === over.id);
+          if (oldIndex !== -1 && newIndex !== -1) {
+            const newPages = [...pages];
+            const [removed] = newPages.splice(oldIndex, 1);
+            newPages.splice(newIndex, 0, removed);
+            onMovePage(newPages);
+          }
+        }}
+        modifiers={[restrictToVerticalAxis]}
+      >
+        <SortableContext items={pages.map(p => p.id)} strategy={verticalListSortingStrategy}>
+          <div className="flex flex-col gap-3">
+            {pages.map(page => (
+              <DraggablePageCard
+                key={page.id}
+                page={page}
+                selected={page.id === selectedPageId}
+                onClick={() => onSelectPage(page.id)}
+              >
+                <div className="pl-6 pr-2 pb-2 flex flex-col gap-1">
+                  {questions.filter(q => q.pageId === page.id).map(q => (
+                    <div
+                      key={q.id}
+                      className={
+                        (q.id === selectedQuestionId
+                          ? 'bg-blue-100 border border-blue-400 font-semibold '
+                          : 'hover:bg-gray-50 border border-transparent ') +
+                        'rounded px-3 py-1 text-sm text-gray-700 transition flex items-center relative'
+                      }
+                      style={{ marginLeft: '-1.25rem' }}
+                      onClick={e => {
+                        e.stopPropagation();
+                        onSelectQuestion(q.id);
+                      }}
+                    >
+                      <span className="block w-1 h-5 bg-gray-300 rounded-full absolute left-0 top-1/2 -translate-y-1/2" />
+                      <span className="ml-3">{q.title || 'Без названия'}</span>
+                    </div>
+                  ))}
+                </div>
+              </DraggablePageCard>
+            ))}
+          </div>
+        </SortableContext>
+        <DragOverlay>
+          {activePageId ? (
+            <Card className="transition-all cursor-pointer p-0 w-full max-w-[95%]">
+              <div className="px-4 py-2 font-bold text-base flex items-center gap-2">
+                <span className="cursor-grab">≡</span>
+                {pages.find(p => p.id === activePageId)?.title}
+              </div>
+            </Card>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+    );
+  }
+
+  function DraggablePageCard({ page, selected, onClick, children }) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+      id: page.id,
+    });
+    const style = transform ? {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      zIndex: 10,
+    } : undefined;
+    return (
+      <Card
+        ref={setNodeRef}
+        style={style}
+        className={
+          (selected
+            ? 'border-primary ring-2 ring-primary/30 '
+            : 'hover:border-primary/50 ') +
+          (isDragging ? 'opacity-60 shadow-lg ' : '') +
+          'transition-all cursor-pointer p-0'
+        }
+        onClick={onClick}
+        {...attributes}
+        {...listeners}
+      >
+        <div className="px-4 py-2 font-bold text-base flex items-center gap-2">
+          <span className="cursor-grab">≡</span>
+          {page.title}
+        </div>
+        {children}
+      </Card>
+    );
+  }
 
   return (
     <div className="flex min-h-screen w-full">
@@ -194,10 +348,11 @@ export default function SurveyEditor() {
               </div>
             </SidebarHeader>
 
-            <SidebarTabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'questions' | 'pages')}>
+            <SidebarTabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'questions' | 'pages' | 'tree')}>
               <SidebarTabsList>
                 <SidebarTab value="questions">Вопросы</SidebarTab>
                 <SidebarTab value="pages">Страницы</SidebarTab>
+                <SidebarTab value="tree">Дерево</SidebarTab>
               </SidebarTabsList>
 
               <SidebarTabsContent value="questions">
@@ -232,6 +387,27 @@ export default function SurveyEditor() {
                     onUpdatePages={handleUpdatePages}
                     onSelectPage={setSelectedPageId}
                     selectedPageId={selectedPageId}
+                  />
+                </SidebarContent>
+              </SidebarTabsContent>
+
+              <SidebarTabsContent value="tree">
+                <SidebarContent>
+                  <SimplePageTree
+                    pages={pages}
+                    questions={questions}
+                    selectedPageId={selectedPageId}
+                    selectedQuestionId={selectedQuestionId}
+                    onSelectPage={(id) => {
+                      setSelectedPageId(id);
+                      setSelectedQuestionId(undefined);
+                      setActiveTab('tree');
+                    }}
+                    onSelectQuestion={(id) => {
+                      setSelectedQuestionId(id);
+                      setActiveTab('questions');
+                    }}
+                    onMovePage={handleUpdatePages}
                   />
                 </SidebarContent>
               </SidebarTabsContent>

@@ -68,7 +68,7 @@ export default function QuestionNode({ data, selected = false }: QuestionNodePro
       
       <div className="drag-handle cursor-move">
         <div className="flex items-center gap-2 mb-2">
-          <Badge variant="outline" className="text-xs">
+          <Badge variant="outline" className="text-xs max-w-[120px] truncate" title={pageName}>
             {pageName}
           </Badge>
           {isParallelGroup && (
