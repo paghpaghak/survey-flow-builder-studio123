@@ -2,6 +2,12 @@ import * as React from "react"
 
 const MOBILE_BREAKPOINT = 768
 
+/**
+ * <summary>
+ * Хук для определения, находится ли пользователь на мобильном устройстве (по ширине экрана).
+ * </summary>
+ * <returns>Булево значение: true — мобильное устройство, false — десктоп</returns>
+ */
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)
 

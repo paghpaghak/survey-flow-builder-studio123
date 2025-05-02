@@ -10,8 +10,15 @@ interface UseSurveyVersionsResult {
   survey: Survey;
 }
 
-export function useSurveyVersions(initialSurvey: Survey): UseSurveyVersionsResult {
-  const [survey, setSurvey] = useState<Survey>(initialSurvey);
+/**
+ * <summary>
+ * Кастомный хук для управления версиями опроса: создание, публикация, загрузка, получение текущей и опубликованной версии.
+ * </summary>
+ * <param name="survey">Опрос, с которым работает хук</param>
+ * <returns>API для управления версиями опроса</returns>
+ */
+export function useSurveyVersions(survey: Survey): UseSurveyVersionsResult {
+  const [survey, setSurvey] = useState<Survey>(survey);
 
   const createNewVersion = (title: string, description: string, questions: SurveyQuestion[]) => {
     const newVersion: SurveyVersion = {

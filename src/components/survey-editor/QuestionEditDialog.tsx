@@ -20,6 +20,17 @@ interface QuestionEditDialogProps {
   readOnly?: boolean;
 }
 
+/**
+ * <summary>
+ * Диалог редактирования вопроса опроса.
+ * Позволяет настраивать текст, тип, варианты, правила перехода и дополнительные параметры вопроса.
+ * </summary>
+ * <param name="question">Редактируемый вопрос</param>
+ * <param name="availableQuestions">Список всех доступных вопросов для переходов</param>
+ * <param name="onClose">Закрытие диалога</param>
+ * <param name="onSave">Сохранение изменений</param>
+ * <param name="readOnly">Режим только для просмотра</param>
+ */
 export default function QuestionEditDialog({
   question,
   availableQuestions,
@@ -49,7 +60,7 @@ export default function QuestionEditDialog({
       setSettings(question.settings);
       setCurrentQuestion(question);
     }
-  }, [question, open]);
+  }, [question]);
 
   function handleSave() {
     if (!currentQuestion) return;
@@ -250,7 +261,7 @@ export default function QuestionEditDialog({
                       <Button
                         variant="outline"
                         className="w-full"
-                        onClick={() => setOptions([...options, { id: `opt-${Date.now()}`, text: 'Новый вариант' }])}
+                        onClick={() => setOptions([...options, { id: crypto.randomUUID(), text: 'Новый вариант' }])}
                       >
                         <Plus className="h-4 w-4 mr-2" />
                         Добавить вариант
@@ -319,7 +330,7 @@ export default function QuestionEditDialog({
                     variant="outline"
                     className="w-full"
                     onClick={() => setTransitionRules([...transitionRules, { 
-                      id: `rule-${Date.now()}`,
+                      id: crypto.randomUUID(),
                       answer: '',
                       nextQuestionId: ''
                     }])}

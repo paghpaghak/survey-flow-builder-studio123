@@ -1,5 +1,20 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import clientPromise from './mongodb';
+import { ObjectId } from 'mongodb';
+import { Survey } from '@/types/survey';
+
+interface MongoDocument {
+  _id: ObjectId;
+  [key: string]: any; // Для остальных полей документа
+}
+
+// Функция для преобразования _id в id
+const transformMongoDocument = <T extends { id?: string }>(doc: MongoDocument | null): T | null => {
+  if (!doc) return null;
+  const transformed = { ...doc, id: doc._id.toString() };
+  delete transformed._id;
+  return transformed as T;
+};
 
 export default async function handler(
   req: NextApiRequest,
@@ -26,8 +41,27 @@ export default async function handler(
 
     switch (req.method) {
       case 'GET':
-        const surveys = await db.collection('surveys').find({}).toArray();
-        res.json(surveys);
+        if (req.query.id) {
+          // Получение конкретного опроса по ID
+          const survey = await db.collection('surveys').findOne(
+            { _id: new ObjectId(req.query.id as string) }
+          );
+          
+          if (!survey) {
+            res.status(404).json({ error: 'Survey not found' });
+            return;
+          }
+
+          // Преобразуем документ и отправляем ответ
+          const transformedSurvey = transformMongoDocument(survey);
+          console.log('Transformed survey:', transformedSurvey);
+          res.json(transformedSurvey);
+        } else {
+          // Получение списка всех опросов
+          const surveys = await db.collection('surveys').find({}).toArray();
+          const transformedSurveys = surveys.map(transformMongoDocument);
+          res.json(transformedSurveys);
+        }
         break;
 
       case 'POST':
@@ -37,26 +71,29 @@ export default async function handler(
           createdAt: new Date(),
           updatedAt: new Date()
         });
-        res.json(result);
+        res.json(transformMongoDocument(result));
         break;
 
       case 'PUT':
         const { id, ...updateData } = req.body;
-        const updateResult = await db.collection('surveys').updateOne(
-          { _id: id },
+        const updateResult = await db.collection('surveys').findOneAndUpdate(
+          { _id: new ObjectId(id) },
           { 
             $set: {
               ...updateData,
               updatedAt: new Date()
             }
-          }
+          },
+          { returnDocument: 'after' }
         );
-        res.json(updateResult);
+        res.json(transformMongoDocument(updateResult.value));
         break;
 
       case 'DELETE':
         const { surveyId } = req.query;
-        const deleteResult = await db.collection('surveys').deleteOne({ _id: surveyId });
+        const deleteResult = await db.collection('surveys').deleteOne(
+          { _id: new ObjectId(surveyId as string) }
+        );
         res.json(deleteResult);
         break;
 

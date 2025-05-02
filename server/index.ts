@@ -5,6 +5,8 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './swagger.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { UpdateSurveyRequest, SurveyResponse } from '../src/types/requests';
+import { serializeDates } from './utils/serializeDates.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -27,6 +29,12 @@ app.use(express.json());
 
 // Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Security header: X-Content-Type-Options
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  next();
+});
 
 // MongoDB connection
 const uri = process.env.MONGODB_URI || 'mongodb+srv://database:database@cluster0.bf05rzr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
@@ -215,100 +223,27 @@ app.post('/api/surveys', async (req, res) => {
  *       404:
  *         description: Опрос не найден
  */
-app.put('/api/surveys/:id', async (req, res) => {
+app.put('/api/surveys/:id', async (req: Request<{ id: string }, {}, UpdateSurveyRequest>, res) => {
   try {
+    const surveyId = new ObjectId(req.params.id);
+    const updateData = req.body;
+
+    // Prepare update data by converting date strings to Date objects
+    const serializedData = serializeDates(updateData);
+
     await client.connect();
     const db = client.db('survey_db');
-    
-    console.log('Получены данные для обновления:', JSON.stringify(req.body, null, 2));
 
-    // Создаем карту всех вопросов для быстрого доступа
-    const questionsMap = new Map();
-    if (Array.isArray(req.body.questions)) {
-      req.body.questions.forEach((q: any) => {
-        questionsMap.set(q.id, { ...q });
-      });
-    }
+    const result = await db.collection('surveys').updateOne(
+      { _id: surveyId },
+      { $set: serializedData }
+    );
 
-    // Подготавливаем данные для обновления
-    const updateData = {
-      ...req.body,
-      updatedAt: new Date(),
-      versions: req.body.versions.map((version: any) => {
-        // Обрабатываем вопросы в версии
-        const versionQuestions = Array.isArray(version.questions) ? version.questions : [];
-        versionQuestions.forEach((q: any) => {
-          if (!questionsMap.has(q.id)) {
-            questionsMap.set(q.id, { ...q });
-          }
-        });
-
-        return {
-          ...version,
-          pages: version.pages.map((page: any) => {
-            // Находим вопросы, принадлежащие этой странице
-            const pageQuestions = Array.from(questionsMap.values())
-              .filter((q: any) => q.pageId === page.id)
-              .map((q: any) => ({
-                ...q,
-                pageId: page.id // Гарантируем правильный pageId
-              }));
-
-            console.log(`Страница ${page.id}: найдено ${pageQuestions.length} вопросов`);
-
-            return {
-              ...page,
-              questions: pageQuestions
-            };
-          })
-        };
-      })
-    };
-    
-    // Удаляем _id, чтобы не было ошибки при обновлении
-    delete updateData._id;
-
-    console.log('Подготовленные данные:', JSON.stringify(updateData, null, 2));
-
-    // Используем findOneAndUpdate для атомарного обновления
-    const result = await db.collection('surveys')
-      .findOneAndUpdate(
-        { _id: new ObjectId(req.params.id) },
-        { $set: updateData },
-        { 
-          returnDocument: 'after',
-          upsert: false
-        }
-      );
-    
-    if (!result.value) {
-      console.error('Опрос не найден:', req.params.id);
+    if (result.matchedCount === 0) {
       return res.status(404).json({ error: 'Survey not found' });
     }
-    
-    // Сериализация дат в Survey и SurveyVersion
-    function serializeDates(obj) {
-      if (!obj || typeof obj !== 'object') return obj;
-      const newObj = Array.isArray(obj) ? [] : {};
-      for (const key in obj) {
-        if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
-        const value = obj[key];
-        if (value instanceof Date) {
-          newObj[key] = value.toISOString();
-        } else if (Array.isArray(value)) {
-          newObj[key] = value.map(serializeDates);
-        } else if (typeof value === 'object' && value !== null) {
-          newObj[key] = serializeDates(value);
-        } else {
-          newObj[key] = value;
-        }
-      }
-      return newObj;
-    }
-    
-    const response = serializeDates(result.value);
-    console.log('Отправляем ответ:', JSON.stringify(response, null, 2));
-    res.json(response);
+
+    res.json({ success: true });
   } catch (error) {
     console.error('Error updating survey:', error);
     res.status(500).json({ error: 'Failed to update survey' });
@@ -337,14 +272,22 @@ app.delete('/api/surveys/:id', async (req, res) => {
   try {
     await client.connect();
     const db = client.db('survey_db');
+    const surveyObjectId = new ObjectId(req.params.id);
     const result = await db.collection('surveys')
-      .deleteOne({ _id: new ObjectId(req.params.id) });
+      .deleteOne({ _id: surveyObjectId });
     
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: 'Survey not found' });
     }
-    
-    res.status(204).send();
+
+    // Каскадное удаление ответов
+    const responsesResult = await db.collection('responses').deleteMany({ surveyId: surveyObjectId });
+
+    res.status(200).json({
+      message: 'Survey and related responses deleted',
+      deletedSurvey: result.deletedCount,
+      deletedResponses: responsesResult.deletedCount,
+    });
   } catch (error) {
     console.error('Error deleting survey:', error);
     res.status(500).json({ error: 'Failed to delete survey' });
@@ -377,21 +320,23 @@ app.delete('/api/surveys/:id', async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Response'
  */
-app.post('/api/surveys/:surveyId/responses', async (req, res) => {
+app.post('/api/surveys/:id/responses', async (req: Request<{ id: string }, {}, Omit<SurveyResponse, '_id' | 'surveyId' | 'createdAt'>>, res) => {
   try {
-    await client.connect();
-    const db = client.db('survey_db');
-    const response = {
-      surveyId: new ObjectId(req.params.surveyId),
+    const surveyId = new ObjectId(req.params.id);
+    const response: SurveyResponse = {
+      surveyId,
       answers: req.body.answers,
       createdAt: new Date()
     };
-    
+
+    await client.connect();
+    const db = client.db('survey_db');
+
     const result = await db.collection('responses').insertOne(response);
     res.status(201).json({ ...response, _id: result.insertedId });
   } catch (error) {
-    console.error('Error saving response:', error);
-    res.status(500).json({ error: 'Failed to save response' });
+    console.error('Error saving survey response:', error);
+    res.status(500).json({ error: 'Failed to save survey response' });
   }
 });
 

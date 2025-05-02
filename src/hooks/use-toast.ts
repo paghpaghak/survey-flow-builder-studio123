@@ -139,6 +139,13 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">
 
+/**
+ * <summary>
+ * Показывает новый тост (уведомление).
+ * </summary>
+ * <param name="props">Параметры тоста</param>
+ * <returns>Объект с id, dismiss и update</returns>
+ */
 function toast({ ...props }: Toast) {
   const id = genId()
 
@@ -168,6 +175,12 @@ function toast({ ...props }: Toast) {
   }
 }
 
+/**
+ * <summary>
+ * Кастомный хук для работы с системой тостов (уведомлений).
+ * </summary>
+ * <returns>API для управления тостами</returns>
+ */
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState)
 

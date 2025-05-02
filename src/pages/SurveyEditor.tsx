@@ -28,6 +28,12 @@ import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-
 import { CSS } from '@dnd-kit/utilities';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 
+/**
+ * <summary>
+ * Страница редактора опроса. Позволяет создавать, редактировать и структурировать страницы и вопросы опроса.
+ * Использует Zustand для хранения состояния, поддерживает drag-and-drop, предпросмотр и визуальное редактирование.
+ * </summary>
+ */
 export default function SurveyEditor() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -77,6 +83,12 @@ export default function SurveyEditor() {
     );
   }
 
+  /**
+   * <summary>
+   * Удаляет вопрос по id из текущей версии опроса.
+   * </summary>
+   * <param name="qid">ID вопроса для удаления</param>
+   */
   function handleDeleteQuestion(qid: string) {
     console.log('🗑️ SurveyEditor: Delete question initiated:', {
       questionId: qid,
@@ -102,27 +114,36 @@ export default function SurveyEditor() {
     toast.success('Вопрос удалён');
   }
 
+  /**
+   * <summary>
+   * Обновляет вопросы для выбранной страницы, исключая дубликаты по id.
+   * </summary>
+   * <param name="updatedQuestions">Массив вопросов для текущей страницы</param>
+   */
   function handleUpdateQuestions(updatedQuestions: Question[]) {
     // Получаем все вопросы, которые не относятся к текущей странице
     const otherQuestions = currentVersion.questions.filter(
-      q => q.pageId !== selectedPageId && currentVersion.pages.some(p => p.questions.includes(q.id))
+      q => q.pageId !== selectedPageId
     );
 
-    // Объединяем обновленные вопросы текущей страницы с вопросами других страниц
-    const allQuestions = [...updatedQuestions, ...otherQuestions];
+    // Удаляем дубликаты по id
+    const allQuestions = [
+      ...updatedQuestions,
+      ...otherQuestions.filter(
+        oq => !updatedQuestions.some(uq => uq.id === oq.id)
+      ),
+    ];
 
     const updatedPages = currentVersion.pages.map(page => ({
       ...page,
-      questions: allQuestions
-        .filter(q => q.pageId === page.id)
-        .map(q => q.id)
+      questions: allQuestions.filter(q => q.pageId === page.id)
     }));
 
     const updatedVersion = {
       ...currentVersion,
       questions: allQuestions,
       pages: updatedPages,
-      updatedAt: new Date()
+      updatedAt: new Date().toISOString()
     };
 
     const updatedSurvey = {
@@ -130,12 +151,18 @@ export default function SurveyEditor() {
       versions: survey.versions.map(v =>
         v.version === survey.currentVersion ? updatedVersion : v
       ),
-      updatedAt: new Date()
+      updatedAt: new Date().toISOString()
     };
 
     updateSurvey(updatedSurvey);
   }
 
+  /**
+   * <summary>
+   * Обновляет список страниц опроса.
+   * </summary>
+   * <param name="updatedPages">Новый массив страниц</param>
+   */
   function handleUpdatePages(updatedPages: Page[]) {
     if (updatedPages.length === 0) {
       toast.error('Должна быть хотя бы одна страница');
@@ -149,7 +176,7 @@ export default function SurveyEditor() {
     const updatedVersion = {
       ...currentVersion,
       pages: updatedPages,
-      updatedAt: new Date()
+      updatedAt: new Date().toISOString()
     };
 
     const updatedSurvey = {
@@ -157,12 +184,17 @@ export default function SurveyEditor() {
       versions: survey.versions.map(v =>
         v.version === survey.currentVersion ? updatedVersion : v
       ),
-      updatedAt: new Date()
+      updatedAt: new Date().toISOString()
     };
 
     updateSurvey(updatedSurvey);
   }
 
+  /**
+   * <summary>
+   * Добавляет новый вопрос на выбранную страницу.
+   * </summary>
+   */
   function handleAddQuestion() {
     if (pages.length === 0) {
       toast.error('Создайте хотя бы одну страницу перед добавлением вопроса');
@@ -172,8 +204,14 @@ export default function SurveyEditor() {
     const targetPageId = selectedPageId || pages[0].id;
     const pageQuestions = questions.filter(q => q.pageId === targetPageId);
 
+    // Проверяем, что id уникален
+    let newId = crypto.randomUUID();
+    while (questions.some(q => q.id === newId)) {
+      newId = crypto.randomUUID();
+    }
+
     const newQuestion: Question = {
-      id: crypto.randomUUID(),
+      id: newId,
       pageId: targetPageId,
       title: 'Новый вопрос',
       type: QuestionType.Text,
@@ -185,6 +223,11 @@ export default function SurveyEditor() {
     handleUpdateQuestions(updatedQuestions);
   }
 
+  /**
+   * <summary>
+   * Открывает предпросмотр опроса, если есть хотя бы один вопрос.
+   * </summary>
+   */
   function handlePreviewClick() {
     if (questions.length === 0) {
       toast.error('Добавьте хотя бы один вопрос для предпросмотра');
@@ -193,6 +236,13 @@ export default function SurveyEditor() {
     setIsPreviewOpen(true);
   }
 
+  /**
+   * <summary>
+   * Возвращает человекочитаемое название типа вопроса.
+   * </summary>
+   * <param name="type">Тип вопроса</param>
+   * <returns>Строка с названием типа</returns>
+   */
   const getQuestionTypeLabel = (type: QuestionType): string => {
     switch (type) {
       case QuestionType.Text:
@@ -212,7 +262,7 @@ export default function SurveyEditor() {
     }
   };
 
-  const currentPageQuestions = questions.filter(q => !selectedPageId || q.pageId === selectedPageId);
+  const currentPageQuestions = questions.filter(q => q.pageId === selectedPageId);
   console.log('Текущая выбранная страница:', selectedPageId);
 
   function handleTreeMove(nodes, parent, index) {
@@ -244,9 +294,10 @@ export default function SurveyEditor() {
     }
   }
 
-  function handleDeletePage(pageId) {
+  // Функция для удаления страницы
+  function handleDeletePage(pageId: string) {
     if (pages.length <= 1) {
-      toast.error('Нельзя удалить единственную страницу опроса');
+      // Не даём удалить последнюю страницу
       return;
     }
     const updatedPages = pages.filter(p => p.id !== pageId);
@@ -256,6 +307,11 @@ export default function SurveyEditor() {
     }
   }
 
+  /**
+   * <summary>
+   * Дерево страниц и вопросов с drag-and-drop и редактированием названий.
+   * </summary>
+   */
   function SimplePageTree({ pages, questions, selectedPageId, selectedQuestionId, onSelectPage, onSelectQuestion, onMovePage, handleDeletePage }) {
     const sensors = useSensors(
       useSensor(PointerSensor, {
@@ -407,6 +463,11 @@ export default function SurveyEditor() {
     );
   }
 
+  /**
+   * <summary>
+   * Карточка страницы с drag-and-drop для сортировки.
+   * </summary>
+   */
   function DraggablePageCard({ page, selected, onClick, children }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
       id: page.id,
@@ -438,6 +499,26 @@ export default function SurveyEditor() {
         {children}
       </Card>
     );
+  }
+
+  const handleQuestionOrderChange = (newQuestions: Question[]) => {
+    handleUpdateQuestions(newQuestions);
+  };
+
+  // Функция для обновления названия страницы
+  function handleUpdatePageTitle(pageId: string, newTitle: string) {
+    const updatedPages = pages.map(page =>
+      page.id === pageId ? { ...page, title: newTitle } : page
+    );
+    handleUpdatePages(updatedPages);
+  }
+
+  // Функция для обновления названия вопроса
+  function handleUpdateQuestionTitle(questionId: string, newTitle: string) {
+    const updatedQuestions = questions.map(q =>
+      q.id === questionId ? { ...q, title: newTitle } : q
+    );
+    handleUpdateQuestions(updatedQuestions);
   }
 
   return (
@@ -484,7 +565,7 @@ export default function SurveyEditor() {
         </div>
         <div className="flex-1 min-h-0 flex flex-col">
           <div className="flex-1 min-h-0 overflow-y-auto">
-            <SimplePageTree
+            <SidebarTreeView
               pages={pages}
               questions={questions}
               selectedPageId={selectedPageId}
@@ -493,11 +574,12 @@ export default function SurveyEditor() {
                 setSelectedPageId(id);
                 setSelectedQuestionId(undefined);
               }}
-              onSelectQuestion={(id) => {
-                setSelectedQuestionId(id);
-              }}
-              onMovePage={handleUpdatePages}
-              handleDeletePage={handleDeletePage}
+              onSelectQuestion={setSelectedQuestionId}
+              onQuestionOrderChange={handleQuestionOrderChange}
+              onUpdatePageTitle={handleUpdatePageTitle}
+              onUpdateQuestionTitle={handleUpdateQuestionTitle}
+              onDeleteQuestion={handleDeleteQuestion}
+              onDeletePage={handleDeletePage}
             />
           </div>
         </div>
