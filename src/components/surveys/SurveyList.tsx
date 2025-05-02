@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSurveyStore } from '@/store/survey-store';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Filter, Edit, Trash, ArrowUpDown, Settings, History } from 'lucide-react';
+import { Search, Filter, Edit, Trash, ArrowUpDown, Settings, History, BarChart2 } from 'lucide-react';
 import { Survey, SurveyStatus } from '@/types/survey';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -213,6 +213,14 @@ export function SurveyList() {
                           onClick={() => navigate(`/surveys/${survey.id}/edit`)}
                         >
                           <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => navigate(`/surveys/${survey.id}/results`)}
+                        >
+                          <BarChart2 className="h-4 w-4" />
+                          Результаты
                         </Button>
                         <Dialog open={showDeleteDialog === survey.id} onOpenChange={(open) => setShowDeleteDialog(open ? survey.id : null)}>
                           <DialogTrigger asChild>

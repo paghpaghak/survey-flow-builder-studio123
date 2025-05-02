@@ -1,5 +1,16 @@
+/**
+ * <summary>
+ * Типы и интерфейсы для описания структуры опроса, страниц и вопросов.
+ * </summary>
+ */
+
 export type SurveyStatus = 'draft' | 'published' | 'archived';
 
+/**
+ * <summary>
+ * Перечисление всех поддерживаемых типов вопросов.
+ * </summary>
+ */
 export enum QuestionType {
   Text = 'text',
   Radio = 'radio',
@@ -56,15 +67,38 @@ export interface TransitionRule {
   nextQuestionId: string;
 }
 
-// Тип для страницы опроса
+/**
+ * <summary>
+ * Интерфейс страницы опроса.
+ * </summary>
+ * <property name="id">Уникальный идентификатор страницы</property>
+ * <property name="title">Название страницы</property>
+ * <property name="description">Описание страницы</property>
+ * <property name="questions">Вопросы, относящиеся к странице</property>
+ */
 export interface Page {
   id: string;
   title: string;
   description?: string;
-  questions?: string[];
+  questions: Question[];  // Массив вопросов вместо массива ID
 }
 
-// Базовый тип для всех вопросов
+/**
+ * <summary>
+ * Интерфейс вопроса опроса.
+ * </summary>
+ * <property name="id">Уникальный идентификатор вопроса</property>
+ * <property name="pageId">ID страницы, к которой относится вопрос</property>
+ * <property name="title">Текст вопроса</property>
+ * <property name="type">Тип вопроса</property>
+ * <property name="required">Обязательный ли вопрос</property>
+ * <property name="description">Описание вопроса</property>
+ * <property name="options">Варианты ответа (для select/radio/checkbox)</property>
+ * <property name="position">Позиция на странице (x, y)</property>
+ * <property name="settings">Дополнительные настройки</property>
+ * <property name="transitionRules">Правила перехода</property>
+ * <property name="parallelQuestions">ID параллельных вопросов</property>
+ */
 export interface Question {
   id: string;
   pageId: string;
@@ -88,6 +122,21 @@ export interface ParallelAnswer {
   answers: Record<string, QuestionAnswer[]>;  // Ответы для каждого повторения
 }
 
+/**
+ * <summary>
+ * Интерфейс версии опроса.
+ * </summary>
+ * <property name="id">Уникальный идентификатор версии</property>
+ * <property name="surveyId">ID опроса</property>
+ * <property name="version">Номер версии</property>
+ * <property name="status">Статус версии</property>
+ * <property name="title">Название опроса</property>
+ * <property name="description">Описание опроса</property>
+ * <property name="questions">Вопросы в этой версии</property>
+ * <property name="pages">Страницы в этой версии</property>
+ * <property name="createdAt">Дата создания</property>
+ * <property name="updatedAt">Дата обновления</property>
+ */
 export interface SurveyVersion {
   id: string;
   surveyId: string;
@@ -103,14 +152,39 @@ export interface SurveyVersion {
   archivedAt?: Date;
 }
 
+/**
+ * <summary>
+ * Интерфейс опроса.
+ * </summary>
+ * <property name="id">Уникальный идентификатор опроса</property>
+ * <property name="title">Название опроса</property>
+ * <property name="description">Описание опроса</property>
+ * <property name="status">Статус опроса</property>
+ * <property name="versions">Версии опроса</property>
+ * <property name="currentVersion">Текущая версия</property>
+ * <property name="publishedVersion">Опубликованная версия</property>
+ * <property name="createdAt">Дата создания</property>
+ * <property name="updatedAt">Дата обновления</property>
+ */
 export interface Survey {
   id: string;
   title: string;
   description: string;
-  currentVersion: number;
-  publishedVersion?: number;
-  versions: SurveyVersion[];
-  createdAt: Date;
-  updatedAt: Date;
   status: SurveyStatus;
+  currentVersion: number;
+  publishedVersion: number;
+  versions: {
+    id: string;
+    version: number;
+    status: SurveyStatus;
+    title: string;
+    description: string;
+    pages: Page[];
+    questions: Question[];
+    createdAt: string;
+    updatedAt: string;
+    publishedAt?: string;
+  }[];
+  createdAt: string;
+  updatedAt: string;
 }

@@ -3,15 +3,61 @@ import { Survey, SurveyStatus, SurveyVersion } from '@/types/survey';
 import { v4 as uuidv4 } from 'uuid';
 import { fetchSurveys, createSurvey, deleteSurvey as apiDeleteSurvey, updateSurvey as apiUpdateSurvey } from '../lib/api';
 
+/**
+ * <summary>
+ * Интерфейс состояния стора опросов.
+ * </summary>
+ */
 interface SurveyState {
+  /**
+   * <summary>Список всех опросов в системе.</summary>
+   */
   surveys: Survey[];
+  /**
+   * <summary>Добавляет новый опрос.</summary>
+   * <param name="title">Название опроса</param>
+   * <param name="description">Описание опроса</param>
+   * <returns>ID созданного опроса</returns>
+   */
   addSurvey: (title: string, description: string) => Promise<string | undefined>;
+  /**
+   * <summary>Удаляет опрос по ID.</summary>
+   * <param name="id">ID опроса</param>
+   */
   deleteSurvey: (id: string) => void;
+  /**
+   * <summary>Обновляет статус опроса.</summary>
+   * <param name="id">ID опроса</param>
+   * <param name="status">Новый статус</param>
+   */
   updateSurveyStatus: (id: string, status: SurveyStatus) => void;
+  /**
+   * <summary>Обновляет опрос (и его версию).</summary>
+   * <param name="updatedSurvey">Обновлённый объект опроса</param>
+   * <param name="createNewVersion">Создать новую версию?</param>
+   */
   updateSurvey: (updatedSurvey: Survey, createNewVersion?: boolean) => void;
+  /**
+   * <summary>Создаёт новую версию опроса.</summary>
+   * <param name="surveyId">ID опроса</param>
+   */
   createNewVersion: (surveyId: string) => void;
+  /**
+   * <summary>Получает версию опроса по номеру.</summary>
+   * <param name="surveyId">ID опроса</param>
+   * <param name="version">Номер версии</param>
+   * <returns>Объект версии опроса</returns>
+   */
   getVersion: (surveyId: string, version: number) => SurveyVersion | undefined;
+  /**
+   * <summary>Откатывает опрос к указанной версии.</summary>
+   * <param name="surveyId">ID опроса</param>
+   * <param name="version">Номер версии</param>
+   */
   revertToVersion: (surveyId: string, version: number) => void;
+  /**
+   * <summary>Загружает все опросы из API.</summary>
+   */
   loadSurveys: () => Promise<void>;
 }
 

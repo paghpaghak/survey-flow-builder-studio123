@@ -106,6 +106,15 @@ function SortablePageItem({ page, isSelected, onSelect, onTitleChange, onDelete,
   );
 }
 
+/**
+ * <summary>
+ * Компонент управления страницами опроса (создание, удаление, сортировка, редактирование названий).
+ * </summary>
+ * <param name="pages">Список страниц</param>
+ * <param name="onUpdatePages">Колбэк для обновления страниц</param>
+ * <param name="onSelectPage">Колбэк для выбора страницы</param>
+ * <param name="selectedPageId">ID выбранной страницы</param>
+ */
 export function PageManager({ pages, onUpdatePages, onSelectPage, selectedPageId }: PageManagerProps) {
   const [pageToDelete, setPageToDelete] = useState<Page | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);

@@ -57,6 +57,15 @@ function DraggableQuestion({ question, children, readOnly, onPositionChange }: {
   );
 }
 
+/**
+ * <summary>
+ * Компонент визуального редактора вопросов для страницы опроса.
+ * Позволяет перетаскивать, редактировать и группировать вопросы.
+ * </summary>
+ * <param name="questions">Вопросы для отображения</param>
+ * <param name="onUpdateQuestions">Колбэк для обновления вопросов</param>
+ * <param name="pages">Список страниц</param>
+ */
 export default function VisualEditor({ questions, onUpdateQuestions, readOnly = false, pages }: VisualEditorProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, {

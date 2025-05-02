@@ -12,7 +12,7 @@ let clientPromise: Promise<MongoClient>;
 
 if (process.env.NODE_ENV === 'development') {
   // В режиме разработки используем глобальную переменную
-  let globalWithMongo = global as typeof globalThis & {
+  const globalWithMongo = global as typeof globalThis & {
     _mongoClientPromise?: Promise<MongoClient>;
   };
 
