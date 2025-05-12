@@ -6,12 +6,10 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import SurveyEditor from "./pages/SurveyEditor";
 import NotFound from "./pages/NotFound";
-import SurveyList from '@/components/surveys/SurveyList';
 import SurveyView from '@/pages/SurveyView';
 import { TakeSurvey } from '@/pages/TakeSurvey';
 import { ThankYou } from '@/pages/ThankYou';
 import { SurveyResults } from '@/pages/SurveyResults';
-import AdminDashboard from './pages/AdminDashboard';
 
 const queryClient = new QueryClient();
 
@@ -23,7 +21,6 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/surveys/:id/edit" element={<SurveyEditor />} />
           <Route path="/surveys/:id/view" element={<SurveyView />} />
           <Route path="/take/:surveyId" element={<TakeSurvey />} />

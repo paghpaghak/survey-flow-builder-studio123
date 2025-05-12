@@ -118,10 +118,7 @@ export function SurveyResults() {
     <div className="container py-8">
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={() => navigate('/admin')}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Назад
-          </Button>
+          <Button onClick={() => navigate('/')}>Назад</Button>
           <h1 className="text-2xl font-bold">{survey.title}</h1>
         </div>
         <div className="text-sm text-muted-foreground">

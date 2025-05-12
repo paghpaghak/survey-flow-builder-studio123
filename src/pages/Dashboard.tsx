@@ -1,24 +1,49 @@
-import { SurveyList } from '@/components/surveys/SurveyList';
-import { Button } from '@/components/ui/button';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings } from 'lucide-react';
+import { Survey } from '@/types/survey';
+import { fetchSurveys } from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
+import { SurveyList } from '@/components/surveys/SurveyList';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
+  const [surveys, setSurveys] = useState<Survey[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadSurveys = useCallback(async () => {
+    try {
+      const fetchedSurveys = await fetchSurveys();
+      setSurveys(fetchedSurveys);
+    } catch (error) {
+      console.error('Ошибка при загрузке опросов:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSurveys();
+  }, [loadSurveys]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[200px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto py-6 px-4">
-      <div className="mb-8 flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Конструктор опросов</h1>
-        <Button 
-          variant="outline" 
-          onClick={() => navigate('/admin')}
-        >
-          <Settings className="h-4 w-4 mr-2" />
-          Панель администратора
-        </Button>
+    <div className="container mx-auto py-8 px-4">
+      <div className="mb-8 flex items-center gap-4">
+        <h1 className="text-3xl font-bold">
+          {isAdmin ? 'Панель управления опросами' : 'Опросы'}
+        </h1>
       </div>
-      <SurveyList />
+      <SurveyList surveys={surveys} reloadSurveys={loadSurveys} />
     </div>
   );
 }

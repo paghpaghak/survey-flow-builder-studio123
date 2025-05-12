@@ -188,3 +188,27 @@ export interface Survey {
   createdAt: string;
   updatedAt: string;
 }
+
+// Тип условия перехода между страницами
+export type PageTransitionCondition =
+  | { type: 'answer_equals'; questionId: string; value: string | number | boolean }
+  | { type: 'answered'; questionId: string }
+  | { type: 'answer_includes'; questionId: string; value: string }
+  | { type: 'score_greater_than'; score: number }
+  | { type: 'any_answer_equals'; value: string }
+  | { type: 'default' };
+
+// Тип правила перехода между страницами
+export type PageTransitionRule = {
+  condition: PageTransitionCondition;
+  nextPageId: string | null; // null — завершить опрос
+};
+
+// Добавляю поле transitionRules в SurveyPage
+export interface SurveyPage {
+  id: string;
+  title: string;
+  questions: SurveyQuestion[];
+  transitionRules?: PageTransitionRule[];
+  // ... другие поля ...
+}

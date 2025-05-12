@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSurveyStore } from '@/store/survey-store';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Filter, Edit, Trash, ArrowUpDown, Settings, History, BarChart2 } from 'lucide-react';
+import { Search, Filter, Edit, Trash, ArrowUpDown, Settings, History, BarChart2, UserSquare2 } from 'lucide-react';
 import { Survey, SurveyStatus } from '@/types/survey';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -21,6 +21,13 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { SurveyVersionHistory } from './SurveyVersionHistory';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useAuth } from '@/hooks/useAuth';
 
 const STATUS_LABELS: Record<SurveyStatus, string> = {
   draft: "Черновик",
@@ -34,29 +41,35 @@ const SORT_LABELS = {
   status: "Статусу",
 };
 
-export function SurveyList() {
-  const { surveys, deleteSurvey, loadSurveys } = useSurveyStore();
+interface SurveyListProps {
+  surveys: Survey[];
+  reloadSurveys?: () => void;
+  onSurveyCreated?: (survey: Survey) => void;
+}
+
+export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyListProps) {
+  const { deleteSurvey, loadSurveys } = useSurveyStore();
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'title' | 'status'>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [statusFilters, setStatusFilters] = useState<SurveyStatus[]>([]);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all');
   const [showDeleteDialog, setShowDeleteDialog] = useState<string | null>(null);
   const [editingSurvey, setEditingSurvey] = useState<Survey | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const prevCreateDialogOpen = useRef(false);
 
   useEffect(() => {
     loadSurveys();
   }, [loadSurveys]);
 
-  // Filter surveys based on search query and status filters
   const filteredSurveys = surveys.filter(survey => {
-    const matchesQuery = survey.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      survey.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilters.length === 0 || statusFilters.includes(survey.status);
-    return matchesQuery && matchesStatus;
+    const matchesSearch = survey.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || survey.status === statusFilter;
+    return matchesSearch && matchesStatus;
   });
 
-  // Sort filtered surveys
   const sortedSurveys = [...filteredSurveys].sort((a, b) => {
     if (sortBy === 'date') {
       return sortDirection === 'asc'
@@ -73,18 +86,6 @@ export function SurveyList() {
     }
   });
 
-  const toggleStatusFilter = (status: SurveyStatus) => {
-    setStatusFilters(prev =>
-      prev.includes(status)
-        ? prev.filter(s => s !== status)
-        : [...prev, status]
-    );
-  };
-
-  const toggleSortDirection = () => {
-    setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
-  };
-
   const getStatusColor = (status: string) => {
     switch(status) {
       case 'draft': return 'bg-yellow-500';
@@ -97,6 +98,17 @@ export function SurveyList() {
   const getCurrentVersionQuestions = (survey: Survey) => {
     const currentVersion = survey.versions.find(v => v.version === survey.currentVersion);
     return currentVersion?.questions || [];
+  };
+
+  const handleSurveyCreated = async (survey: Survey) => {
+    if (onSurveyCreated) onSurveyCreated(survey);
+    if (reloadSurveys) await reloadSurveys();
+    setCreateDialogOpen(false);
+  };
+
+  const handleSurveyEdited = async () => {
+    if (reloadSurveys) await reloadSurveys();
+    setEditingSurvey(null);
   };
 
   return (
@@ -123,15 +135,15 @@ export function SurveyList() {
               <div className="p-2">
                 <div className="font-medium mb-2">Статус</div>
                 <div className="space-y-2">
-                  {(['draft', 'published', 'closed'] as SurveyStatus[]).map(status => (
+                  {(['all', 'published', 'draft'] as ('all' | 'published' | 'draft')[]).map(status => (
                     <div key={status} className="flex items-center space-x-2">
                       <Checkbox
                         id={`status-${status}`}
-                        checked={statusFilters.includes(status)}
-                        onCheckedChange={() => toggleStatusFilter(status)}
+                        checked={statusFilter === status}
+                        onCheckedChange={() => setStatusFilter(status)}
                       />
                       <Label htmlFor={`status-${status}`} className="capitalize">
-                        {STATUS_LABELS[status]}
+                        {status === 'all' ? 'Все опросы' : status === 'published' ? 'Опубликованные' : 'Черновики'}
                       </Label>
                     </div>
                   ))}
@@ -147,19 +159,23 @@ export function SurveyList() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => { setSortBy('date'); toggleSortDirection(); }}>
+              <DropdownMenuItem onClick={() => { setSortBy('date'); setSortDirection('asc'); }}>
                 Дате {sortBy === 'date' && (sortDirection === 'asc' ? '↑' : '↓')}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { setSortBy('title'); toggleSortDirection(); }}>
+              <DropdownMenuItem onClick={() => { setSortBy('title'); setSortDirection('asc'); }}>
                 Названию {sortBy === 'title' && (sortDirection === 'asc' ? '↑' : '↓')}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { setSortBy('status'); toggleSortDirection(); }}>
+              <DropdownMenuItem onClick={() => { setSortBy('status'); setSortDirection('asc'); }}>
                 Статусу {sortBy === 'status' && (sortDirection === 'asc' ? '↑' : '↓')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <CreateSurveyDialog />
+          <CreateSurveyDialog 
+            open={createDialogOpen}
+            onOpenChange={setCreateDialogOpen}
+            onSurveyCreated={handleSurveyCreated}
+          />
         </div>
       </div>
 
@@ -170,9 +186,9 @@ export function SurveyList() {
               <TableRow>
                 <TableHead className="w-[300px]">Название</TableHead>
                 <TableHead>Описание</TableHead>
-                <TableHead>Статус</TableHead>
+                {isAdmin && <TableHead>Статус</TableHead>}
                 <TableHead>Дата создания</TableHead>
-                <TableHead>Количество вопросов</TableHead>
+                {isAdmin && <TableHead>Количество вопросов</TableHead>}
                 <TableHead className="text-right">Действия</TableHead>
               </TableRow>
             </TableHeader>
@@ -186,66 +202,121 @@ export function SurveyList() {
                   <TableRow key={key}>
                     <TableCell className="font-medium">{survey.title}</TableCell>
                     <TableCell>{survey.description}</TableCell>
-                    <TableCell>
-                      <Badge className={`${getStatusColor(survey.status)} text-white`}>
-                        {STATUS_LABELS[survey.status]}
-                      </Badge>
-                    </TableCell>
+                    {isAdmin && (
+                      <TableCell>
+                        <Badge className={`${getStatusColor(survey.status)} text-white`}>
+                          {STATUS_LABELS[survey.status]}
+                        </Badge>
+                      </TableCell>
+                    )}
                     <TableCell>{new Date(survey.createdAt).toLocaleDateString('ru-RU')}</TableCell>
-                    <TableCell>{getCurrentVersionQuestions(survey).length}</TableCell>
+                    {isAdmin && (
+                      <TableCell>{getCurrentVersionQuestions(survey).length}</TableCell>
+                    )}
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditingSurvey(survey)}
-                        >
-                          <Settings className="h-4 w-4" />
-                        </Button>
-                        <SurveyVersionHistory surveyId={survey.id}>
-                          <Button variant="ghost" size="sm">
-                            <History className="h-4 w-4" />
-                          </Button>
-                        </SurveyVersionHistory>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/surveys/${survey.id}/edit`)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => navigate(`/surveys/${survey.id}/results`)}
-                        >
-                          <BarChart2 className="h-4 w-4" />
-                          Результаты
-                        </Button>
-                        <Dialog open={showDeleteDialog === survey.id} onOpenChange={(open) => setShowDeleteDialog(open ? survey.id : null)}>
-                          <DialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Удалить опрос</DialogTitle>
-                              <DialogDescription>
-                                Вы действительно хотите удалить «{survey.title}»? Это действие нельзя отменить.
-                              </DialogDescription>
-                            </DialogHeader>
-                            <DialogFooter>
-                              <DialogClose asChild>
-                                <Button variant="outline">Отмена</Button>
-                              </DialogClose>
-                              <Button variant="destructive" onClick={() => {
-                                deleteSurvey(survey.id);
-                                setShowDeleteDialog(null);
-                              }}>Удалить</Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => navigate(`/take/${survey.id}`)}
+                              >
+                                <UserSquare2 className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Пройти опрос</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setEditingSurvey(survey)}
+                              >
+                                <Settings className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Настройки</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <SurveyVersionHistory surveyId={survey.id}>
+                                <Button variant="ghost" size="icon">
+                                  <History className="h-4 w-4" />
+                                </Button>
+                              </SurveyVersionHistory>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>История версий</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => navigate(`/surveys/${survey.id}/edit`)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Редактировать</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="default"
+                                size="icon"
+                                onClick={() => navigate(`/surveys/${survey.id}/results`)}
+                              >
+                                <BarChart2 className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Результаты</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Dialog open={showDeleteDialog === survey.id} onOpenChange={(open) => setShowDeleteDialog(open ? survey.id : null)}>
+                                <DialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-700">
+                                    <Trash className="h-4 w-4" />
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                  <DialogHeader>
+                                    <DialogTitle>Удалить опрос</DialogTitle>
+                                    <DialogDescription>
+                                      Вы действительно хотите удалить «{survey.title}»? Это действие нельзя отменить.
+                                    </DialogDescription>
+                                  </DialogHeader>
+                                  <DialogFooter>
+                                    <DialogClose asChild>
+                                      <Button variant="outline">Отмена</Button>
+                                    </DialogClose>
+                                    <Button variant="destructive" onClick={async () => {
+                                      await deleteSurvey(survey.id);
+                                      setShowDeleteDialog(null);
+                                      if (reloadSurveys) await reloadSurveys();
+                                    }}>Удалить</Button>
+                                  </DialogFooter>
+                                </DialogContent>
+                              </Dialog>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Удалить</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -257,7 +328,7 @@ export function SurveyList() {
       ) : (
         <div className="bg-gray-50 rounded-lg p-8 text-center">
           <p className="text-lg font-medium text-gray-500 mb-4">Опросы не найдены</p>
-          {(searchQuery || statusFilters.length > 0) && (
+          {(searchQuery || statusFilter !== 'all') && (
             <p className="text-gray-400 mb-6">
               Попробуйте изменить условия поиска или фильтры
             </p>
@@ -269,7 +340,9 @@ export function SurveyList() {
         <EditSurveyDialog
           survey={editingSurvey}
           open={!!editingSurvey}
-          onOpenChange={(open) => !open && setEditingSurvey(null)}
+          onOpenChange={(open) => {
+            if (!open) handleSurveyEdited();
+          }}
         />
       )}
     </div>

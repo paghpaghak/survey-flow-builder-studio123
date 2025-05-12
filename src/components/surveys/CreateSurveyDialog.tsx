@@ -7,27 +7,28 @@ import { Textarea } from '@/components/ui/textarea';
 import { Plus } from 'lucide-react';
 import { useSurveyStore } from '@/store/survey-store';
 import { toast } from '@/components/ui/sonner';
-import { useNavigate } from 'react-router-dom';
 
-export function CreateSurveyDialog() {
+interface CreateSurveyDialogProps {
+  onSurveyCreated?: () => void;
+}
+
+export function CreateSurveyDialog({ onSurveyCreated }: CreateSurveyDialogProps) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const { addSurvey, surveys } = useSurveyStore();
-  const navigate = useNavigate();
+  const { addSurvey } = useSurveyStore();
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!title.trim()) {
       toast.error('Пожалуйста, введите название опроса');
       return;
     }
 
-    addSurvey(title, description);
+    await addSurvey(title, description);
     setTitle('');
     setDescription('');
     setOpen(false);
-    toast.success('Опрос успешно создан');
-    navigate('/');
+    if (onSurveyCreated) onSurveyCreated();
   };
 
   return (
