@@ -19,64 +19,98 @@ interface PagePreviewProps {
 export function PagePreview({ questions, answers, onAnswerChange }: PagePreviewProps) {
   const [activeParallelGroups, setActiveParallelGroups] = useState<Record<string, number>>({});
 
+  // Собираем все id вложенных вопросов из всех параллельных веток
+  const allParallelQuestionIds = questions
+    .filter(q => q.type === QuestionType.ParallelGroup)
+    .flatMap(q => (q.parallelQuestions || []));
+  // Собираем все id числовых вопросов-источников
+  const allSourceQuestionIds = questions
+    .filter(q => q.type === QuestionType.ParallelGroup)
+    .map(q => (q.settings as ParallelGroupSettings)?.sourceQuestionId)
+    .filter(Boolean);
+
+  let questionsToRender = questions.filter(q =>
+    // Показываем только те вопросы, которые не входят в параллельные ветки,
+    // или являются числовым вопросом-источником
+    !allParallelQuestionIds.includes(q.id) || allSourceQuestionIds.includes(q.id)
+  );
+
+  questions.forEach((q, idx) => {
+    if (q.type === QuestionType.ParallelGroup) {
+      const settings = q.settings as ParallelGroupSettings;
+      const sourceQuestion = questions.find(q2 => q2.id === settings.sourceQuestionId);
+      if (sourceQuestion && !questionsToRender.some(q2 => q2.id === sourceQuestion.id)) {
+        questionsToRender.splice(idx, 0, sourceQuestion);
+      }
+    }
+  });
+
+  // --- DEBUG ---
+  console.log('questionsToRender', questionsToRender);
+
   const renderQuestion = (question: Question) => {
     switch (question.type) {
       case QuestionType.ParallelGroup: {
         const settings = question.settings as ParallelGroupSettings;
-        const sourceQuestion = questions.find(q => q.id === settings.sourceQuestionId);
-        const count = answers[settings.sourceQuestionId] || 0;
-        
-        if (!sourceQuestion || count === 0) {
-          return (
-            <div className="text-gray-500 italic">
-              Сначала ответьте на вопрос "{sourceQuestion?.title || 'количество повторений'}"
-            </div>
-          );
-        }
-
-        const parallelQuestions = (question.parallelQuestions || [])
-          .map(qId => questions.find(q => q.id === qId))
-          .filter((q): q is Question => q !== undefined);
-
-        const activeIndex = activeParallelGroups[question.id] ?? 0;
-
+        const countKey = question.id + '_count';
+        const count = Number(answers[countKey]) || 0;
+        // Рендерим поле для ввода количества повторений внутри блока
         return (
           <div className="space-y-4">
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {Array.from({ length: count }).map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setActiveParallelGroups(prev => ({ ...prev, [question.id]: index }))}
-                  className={`px-4 py-2 rounded-lg min-w-[120px] transition-colors ${
-                    activeIndex === index
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary hover:bg-secondary/80'
-                  }`}
-                >
-                  {settings.itemLabel} {index + 1}
-                </button>
-              ))}
+            <div className="space-y-2">
+              <Label>{settings.countLabel || 'Сколько повторений?'}</Label>
+              {settings.countDescription && (
+                <p className="text-sm text-gray-500">{settings.countDescription}</p>
+              )}
+              <Input
+                type="number"
+                value={answers[countKey] || ''}
+                onChange={e => onAnswerChange(countKey, e.target.value)}
+                required={!!settings.countRequired}
+                placeholder="Введите число"
+              />
             </div>
-
-            <div className="border rounded-lg p-4 bg-card">
-              <h3 className="font-medium mb-4">
-                {settings.itemLabel} {activeIndex + 1}
-              </h3>
-              <div className="space-y-4">
-                {parallelQuestions.map(subQuestion => (
-                  <div key={subQuestion.id} className="space-y-2">
-                    <Label>
-                      {subQuestion.title}
-                      {subQuestion.required && <span className="text-red-500 ml-1">*</span>}
-                    </Label>
-                    {renderQuestion({
-                      ...subQuestion,
-                      id: `${question.id}.${activeIndex}.${subQuestion.id}`
-                    })}
+            {count > 0 && (
+              <>
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {Array.from({ length: count }).map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setActiveParallelGroups(prev => ({ ...prev, [question.id]: index }))}
+                      className={`px-4 py-2 rounded-lg min-w-[120px] transition-colors ${
+                        (activeParallelGroups[question.id] ?? 0) === index
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-secondary hover:bg-secondary/80'
+                      }`}
+                    >
+                      {settings.itemLabel} {index + 1}
+                    </button>
+                  ))}
+                </div>
+                <div className="border rounded-lg p-4 bg-card">
+                  <h3 className="font-medium mb-4">
+                    {settings.itemLabel} {(activeParallelGroups[question.id] ?? 0) + 1}
+                  </h3>
+                  <div className="space-y-4">
+                    {(question.parallelQuestions || [])
+                      .map(qId => questions.find(q => q.id === qId))
+                      .filter((q): q is Question => q !== undefined)
+                      .map(subQuestion => (
+                        <div key={subQuestion.id} className="space-y-2">
+                          <Label>
+                            {subQuestion.title}
+                            {subQuestion.required && <span className="text-red-500 ml-1">*</span>}
+                          </Label>
+                          {renderQuestion({
+                            ...subQuestion,
+                            id: `${question.id}.${activeParallelGroups[question.id] ?? 0}.${subQuestion.id}`
+                          })}
+                        </div>
+                      ))}
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
+              </>
+            )}
           </div>
         );
       }
@@ -212,7 +246,7 @@ export function PagePreview({ questions, answers, onAnswerChange }: PagePreviewP
 
   return (
     <div className="space-y-6">
-      {questions.map((question) => (
+      {questionsToRender.map((question) => (
         <div key={question.id} className="space-y-2">
           <div className="space-y-1">
             <Label className="text-base">

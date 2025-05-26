@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSurveyStore } from '@/store/survey-store';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Filter, Edit, Trash, ArrowUpDown, Settings, History, BarChart2, UserSquare2 } from 'lucide-react';
+import { Search, Filter, Edit, Trash, ArrowUpDown, Settings, History, BarChart2, UserSquare2, MoreVertical } from 'lucide-react';
 import { Survey, SurveyStatus } from '@/types/survey';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -28,6 +28,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAuth } from '@/hooks/useAuth';
+import { v4 as uuidv4 } from 'uuid';
+import { createSurvey } from '@/lib/api';
 
 const STATUS_LABELS: Record<SurveyStatus, string> = {
   draft: "Черновик",
@@ -59,12 +61,15 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
   const [editingSurvey, setEditingSurvey] = useState<Survey | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const prevCreateDialogOpen = useRef(false);
+  const [localSurveys, setLocalSurveys] = useState<Survey[]>([]);
+  const [showVersionHistory, setShowVersionHistory] = useState<string | null>(null);
 
   useEffect(() => {
     loadSurveys();
   }, [loadSurveys]);
 
-  const filteredSurveys = surveys.filter(survey => {
+  const allSurveys = localSurveys.length > 0 ? [...localSurveys, ...surveys] : surveys;
+  const filteredSurveys = allSurveys.filter(survey => {
     const matchesSearch = survey.title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || survey.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -109,6 +114,75 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
   const handleSurveyEdited = async () => {
     if (reloadSurveys) await reloadSurveys();
     setEditingSurvey(null);
+  };
+
+  const handleDuplicateSurvey = async (survey: Survey) => {
+    // Копируем только структуру, без ответов
+    const newSurveyId = uuidv4();
+    const original = survey;
+    // Копируем все версии, страницы, вопросы, группы, настройки
+    const newVersions = original.versions.map(version => {
+      const pageIdMap: Record<string, string> = {};
+      const questionIdMap: Record<string, string> = {};
+      // Копируем страницы с новыми id
+      const newPages = version.pages.map(page => {
+        const newPageId = uuidv4();
+        pageIdMap[page.id] = newPageId;
+        return {
+          ...page,
+          id: newPageId,
+          questions: page.questions.map(q => {
+            if (!questionIdMap[q.id]) questionIdMap[q.id] = uuidv4();
+            return questionIdMap[q.id];
+          })
+        };
+      });
+      // Копируем вопросы с новыми id
+      const newQuestions = version.questions.map(q => {
+        const newQId = questionIdMap[q.id] || uuidv4();
+        questionIdMap[q.id] = newQId;
+        // Копируем параллельные вопросы, если есть
+        let parallelQuestions = undefined;
+        if (q.parallelQuestions) {
+          parallelQuestions = q.parallelQuestions.map(pid => questionIdMap[pid] || uuidv4());
+        }
+        return {
+          ...q,
+          id: newQId,
+          pageId: pageIdMap[q.pageId] || q.pageId,
+          parallelQuestions
+        };
+      });
+      return {
+        ...version,
+        id: uuidv4(),
+        version: 1, // Новая копия всегда с первой версией
+        title: `${version.title || original.title} (Копия)` ,
+        pages: newPages,
+        questions: newQuestions,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        publishedAt: undefined,
+        status: 'draft',
+      };
+    });
+    const newSurvey = {
+      ...original,
+      id: newSurveyId,
+      title: `${original.title} (Копия)` ,
+      status: 'draft',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      versions: newVersions,
+      currentVersion: 1,
+      publishedVersion: 1,
+    };
+    const created = await createSurvey(newSurvey);
+    if (reloadSurveys) {
+      await reloadSurveys();
+    } else {
+      setLocalSurveys(prev => [created, ...prev]);
+    }
   };
 
   return (
@@ -216,46 +290,27 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={() => navigate(`/take/${survey.id}`)}
-                              >
-                                <UserSquare2 className="h-4 w-4" />
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" size="icon">
+                                <MoreVertical className="h-4 w-4" />
                               </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Пройти опрос</p>
-                            </TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setEditingSurvey(survey)}
-                              >
-                                <Settings className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Настройки</p>
-                            </TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <SurveyVersionHistory surveyId={survey.id}>
-                                <Button variant="ghost" size="icon">
-                                  <History className="h-4 w-4" />
-                                </Button>
-                              </SurveyVersionHistory>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>История версий</p>
-                            </TooltipContent>
-                          </Tooltip>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => navigate(`/take/${survey.id}`)}>
+                                <UserSquare2 className="h-4 w-4 mr-2" /> Пройти опрос
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setShowVersionHistory(survey.id)}>
+                                <History className="h-4 w-4 mr-2" /> История версий
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setEditingSurvey(survey)}>
+                                <Settings className="h-4 w-4 mr-2" /> Настройки
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => navigate(`/surveys/${survey.id}/results`)}>
+                                <BarChart2 className="h-4 w-4 mr-2" /> Результаты
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
@@ -273,49 +328,56 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
-                                variant="default"
+                                variant="outline"
                                 size="icon"
-                                onClick={() => navigate(`/surveys/${survey.id}/results`)}
+                                onClick={() => handleDuplicateSurvey(survey)}
                               >
-                                <BarChart2 className="h-4 w-4" />
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16h8M8 12h8m-7 8h6a2 2 0 002-2V6a2 2 0 00-2-2H8a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Результаты</p>
+                              <p>Дублировать</p>
                             </TooltipContent>
                           </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Dialog open={showDeleteDialog === survey.id} onOpenChange={(open) => setShowDeleteDialog(open ? survey.id : null)}>
+                          <Dialog open={showDeleteDialog === survey.id} onOpenChange={(open) => setShowDeleteDialog(open ? survey.id : null)}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
                                 <DialogTrigger asChild>
                                   <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-700">
                                     <Trash className="h-4 w-4" />
                                   </Button>
                                 </DialogTrigger>
-                                <DialogContent>
-                                  <DialogHeader>
-                                    <DialogTitle>Удалить опрос</DialogTitle>
-                                    <DialogDescription>
-                                      Вы действительно хотите удалить «{survey.title}»? Это действие нельзя отменить.
-                                    </DialogDescription>
-                                  </DialogHeader>
-                                  <DialogFooter>
-                                    <DialogClose asChild>
-                                      <Button variant="outline">Отмена</Button>
-                                    </DialogClose>
-                                    <Button variant="destructive" onClick={async () => {
-                                      await deleteSurvey(survey.id);
-                                      setShowDeleteDialog(null);
-                                      if (reloadSurveys) await reloadSurveys();
-                                    }}>Удалить</Button>
-                                  </DialogFooter>
-                                </DialogContent>
-                              </Dialog>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Удалить</p>
-                            </TooltipContent>
-                          </Tooltip>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Удалить</p>
+                              </TooltipContent>
+                            </Tooltip>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Удалить опрос</DialogTitle>
+                                <DialogDescription>
+                                  Вы действительно хотите удалить «{survey.title}»? Это действие нельзя отменить.
+                                </DialogDescription>
+                              </DialogHeader>
+                              <DialogFooter>
+                                <DialogClose asChild>
+                                  <Button variant="outline">Отмена</Button>
+                                </DialogClose>
+                                <Button variant="destructive" onClick={async () => {
+                                  await deleteSurvey(survey.id);
+                                  setShowDeleteDialog(null);
+                                  if (reloadSurveys) await reloadSurveys();
+                                }}>Удалить</Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                          {showVersionHistory === survey.id && (
+                            <SurveyVersionHistory
+                              surveyId={survey.id}
+                              open={showVersionHistory === survey.id}
+                              onOpenChange={open => setShowVersionHistory(open ? survey.id : null)}
+                            />
+                          )}
                         </TooltipProvider>
                       </div>
                     </TableCell>

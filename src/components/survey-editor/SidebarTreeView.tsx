@@ -40,7 +40,7 @@ function buildTreeData(pages: Page[], questions: Question[]): TreeNodeData[] {
   return nodes;
 }
 
-function SortableQuestionNode({ node, style, isSelected, onSelect, onUpdateTitle, onDelete, editing, setEditing, editingTitle, setEditingTitle }: {
+function SortableQuestionNode({ node, style, isSelected, onSelect, onUpdateTitle, onDelete, editing, setEditing, editingTitle, setEditingTitle, number }: {
   node: any;
   style: React.CSSProperties;
   isSelected: boolean;
@@ -51,6 +51,7 @@ function SortableQuestionNode({ node, style, isSelected, onSelect, onUpdateTitle
   setEditing?: (v: boolean) => void;
   editingTitle?: string;
   setEditingTitle?: (v: string) => void;
+  number?: number;
 }) {
   if (!node?.data) return null;
   const {
@@ -76,7 +77,7 @@ function SortableQuestionNode({ node, style, isSelected, onSelect, onUpdateTitle
       onClick={onSelect}
       className={cn(
         'transition-all cursor-pointer select-none w-full group',
-        'px-3 py-1 rounded text-sm flex items-center gap-2 bg-gray-50 border-l-4 pl-6',
+        'px-2 py-1 rounded text-sm flex items-center gap-0 bg-gray-50 border-l-4 pl-2',
         'border-b border-gray-200 mb-1',
         isSelected
           ? 'border-primary bg-primary/10 shadow border-l-blue-400'
@@ -86,11 +87,14 @@ function SortableQuestionNode({ node, style, isSelected, onSelect, onUpdateTitle
       <div
         {...attributes}
         {...listeners}
-        className="opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+        className="opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing w-4 flex-shrink-0"
         onClick={e => e.stopPropagation()}
       >
         <GripVertical className="h-4 w-4 text-gray-400" />
       </div>
+      {number !== undefined && (
+        <span className="text-sm font-medium text-muted-foreground mr-1 w-4 text-right select-none">{number}.</span>
+      )}
       {editing && setEditing && editingTitle !== undefined && setEditingTitle && onUpdateTitle ? (
         <input
           type="text"
@@ -294,7 +298,7 @@ export const SidebarTreeView: React.FC<SidebarTreeViewProps> = ({
                   ) : (
                     <SortableContext items={pageQuestions.map(q => q.id)} strategy={verticalListSortingStrategy}>
                       <div className="space-y-1">
-                        {pageQuestions.map(q => (
+                        {pageQuestions.map((q, idx) => (
                           <SortableQuestionNode
                             key={q.id}
                             node={{ data: { ...q, type: 'question', title: q.title || 'Без названия' } }}
@@ -310,6 +314,7 @@ export const SidebarTreeView: React.FC<SidebarTreeViewProps> = ({
                             }}
                             editingTitle={editingQuestionId === q.id ? editingQuestionTitle : undefined}
                             setEditingTitle={setEditingQuestionTitle}
+                            number={idx + 1}
                           />
                         ))}
                       </div>

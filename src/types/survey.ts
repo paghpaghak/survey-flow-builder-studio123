@@ -45,6 +45,9 @@ export interface ParallelGroupSettings {
   minItems?: number;        // Минимальное количество повторений
   maxItems?: number;        // Максимальное количество повторений
   displayMode: 'sequential' | 'tabs';  // Режим отображения повторений
+  countLabel?: string; // Заголовок поля 'Сколько повторений?'
+  countDescription?: string; // Описание поля
+  countRequired?: boolean; // Обязательность
 }
 
 // Тип для настроек вопроса в зависимости от его типа
