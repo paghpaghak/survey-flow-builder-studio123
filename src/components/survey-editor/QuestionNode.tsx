@@ -71,12 +71,6 @@ export default function QuestionNode({ data, selected = false }: QuestionNodePro
           <Badge variant="outline" className="text-xs max-w-[120px] truncate" title={pageName}>
             {pageName}
           </Badge>
-          {isParallelGroup && (
-            <Badge variant="secondary" className="text-xs">
-              <Users className="h-3 w-3 mr-1" />
-              Группа
-            </Badge>
-          )}
         </div>
         <div 
           className="text-sm font-medium mb-1 truncate" 
@@ -87,21 +81,6 @@ export default function QuestionNode({ data, selected = false }: QuestionNodePro
         <div className="text-xs text-gray-500 space-y-1">
           <div>Тип: {getQuestionTypeLabel(question.type)}</div>
           {question.required && <div>• Обязательный</div>}
-          {isParallelGroup && question.parallelQuestions && (
-            <div className="mt-2 p-2 bg-gray-50 rounded text-xs">
-              <div className="font-medium mb-1">Вложенные вопросы:</div>
-              <div className="space-y-1">
-                {question.parallelQuestions.map((qId, index) => (
-                  <div key={qId} className="flex items-center gap-1">
-                    <GripVertical className="h-3 w-3 text-gray-400" />
-                    <div className="truncate">
-                      {index + 1}. {data.pages?.find(p => p.questions?.includes(qId))?.title || 'Вопрос'}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 

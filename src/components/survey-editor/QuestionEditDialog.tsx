@@ -271,6 +271,18 @@ export default function QuestionEditDialog({
                 )}
 
                 {renderTypeSpecificSettings()}
+
+                {/* Секция для параллельной ветки */}
+                {type === QuestionType.ParallelGroup && !readOnly && (
+                  <div className="space-y-2">
+                    <Button
+                      variant="secondary"
+                      onClick={() => setShowParallelGroupDialog(true)}
+                    >
+                      Настроить параллельную ветку
+                    </Button>
+                  </div>
+                )}
               </div>
             </TabsContent>
 

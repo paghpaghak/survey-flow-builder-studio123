@@ -87,11 +87,17 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
   }, [questions, onUpdateQuestions]);
 
   const handleEditQuestion = useCallback((updatedQuestion: Question) => {
-    const updatedQuestions = questions.map(q =>
-      q.id === updatedQuestion.id 
-        ? { ...updatedQuestion, position: q.position || updatedQuestion.position } 
-        : q
-    );
+    const exists = questions.some(q => q.id === updatedQuestion.id);
+    let updatedQuestions: Question[];
+    if (exists) {
+      updatedQuestions = questions.map(q =>
+        q.id === updatedQuestion.id
+          ? { ...updatedQuestion, position: q.position || updatedQuestion.position }
+          : q
+      );
+    } else {
+      updatedQuestions = [...questions, updatedQuestion];
+    }
     onUpdateQuestions?.(updatedQuestions);
   }, [questions, onUpdateQuestions]);
 

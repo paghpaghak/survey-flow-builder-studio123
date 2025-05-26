@@ -126,12 +126,30 @@ export default function SurveyEditor() {
       q => q.pageId !== selectedPageId
     );
 
-    // Удаляем дубликаты по id
+    // Проверяем наличие числового вопроса-источника для параллельной ветки
+    const parallelGroups = updatedQuestions.filter(q => q.type === QuestionType.ParallelGroup);
+    const sourceQuestionIds = parallelGroups.map(q => (q.settings as any)?.sourceQuestionId).filter(Boolean);
+    const missingSourceQuestions = sourceQuestionIds.filter(id => !updatedQuestions.some(q => q.id === id));
+    const sourceQuestions = currentVersion.questions.filter(q => missingSourceQuestions.includes(q.id));
+
+    // Проверяем наличие вложенных вопросов для параллельных веток
+    let allParallelQuestionIds: string[] = [];
+    parallelGroups.forEach(pg => {
+      if (Array.isArray(pg.parallelQuestions)) {
+        allParallelQuestionIds = allParallelQuestionIds.concat(pg.parallelQuestions);
+      }
+    });
+    const missingParallelQuestions = allParallelQuestionIds.filter(id => !updatedQuestions.some(q => q.id === id));
+    const parallelQuestionsToAdd = currentVersion.questions.filter(q => missingParallelQuestions.includes(q.id));
+
+    // Удаляем дубликаты по id и добавляем недостающие вопросы
     const allQuestions = [
       ...updatedQuestions,
       ...otherQuestions.filter(
         oq => !updatedQuestions.some(uq => uq.id === oq.id)
       ),
+      ...sourceQuestions,
+      ...parallelQuestionsToAdd,
     ];
 
     const updatedPages = currentVersion.pages.map(page => ({

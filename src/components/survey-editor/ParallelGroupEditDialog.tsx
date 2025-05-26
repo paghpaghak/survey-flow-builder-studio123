@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { SurveyQuestion, QuestionType } from '@/types/survey';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { GripVertical, Trash } from 'lucide-react';
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ParallelGroupEditDialogProps {
   question: SurveyQuestion;
@@ -21,6 +22,9 @@ interface ParallelGroupSettings {
   minItems: number;
   maxItems?: number;
   displayMode: 'sequential' | 'tabs';
+  countLabel?: string;
+  countDescription?: string;
+  countRequired?: boolean;
 }
 
 export function ParallelGroupEditDialog({
@@ -49,6 +53,9 @@ export function ParallelGroupEditDialog({
     q.type === QuestionType.Number && q.id !== question.id
   );
 
+  // Получаем числовой вопрос-источник по id
+  const numberQuestion = availableQuestions.find(q => q.id === settings.sourceQuestionId);
+
   // Получаем вопросы, доступные для включения в группу
   const availableGroupQuestions = availableQuestions.filter(q => 
     q.type !== QuestionType.ParallelGroup && 
@@ -57,30 +64,30 @@ export function ParallelGroupEditDialog({
   );
 
   const handleSave = () => {
-    if (!settings.sourceQuestionId) {
-      alert('Пожалуйста, выберите вопрос-источник');
-      return;
+    let finalSettings = { ...settings };
+    // Если sourceQuestionId не установлен, ищем числовой вопрос на странице и подставляем его id
+    if (!finalSettings.sourceQuestionId) {
+      const numberQuestion = availableQuestions.find(q => q.type === QuestionType.Number && q.id !== question.id);
+      if (numberQuestion) {
+        finalSettings.sourceQuestionId = numberQuestion.id;
+      }
     }
-
-    if (!settings.itemLabel) {
+    if (!finalSettings.itemLabel) {
       alert('Пожалуйста, укажите название единицы повторения');
       return;
     }
-
     if (selectedQuestions.length === 0) {
       alert('Пожалуйста, добавьте хотя бы один вопрос для повторения');
       return;
     }
-
     const updatedQuestion: SurveyQuestion = {
       ...question,
       title,
       description,
       type: QuestionType.ParallelGroup,
-      settings,
+      settings: finalSettings,
       parallelQuestions: selectedQuestions
     };
-
     onSave(updatedQuestion);
     onClose();
   };
@@ -97,7 +104,7 @@ export function ParallelGroupEditDialog({
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Настройка параллельной группы</DialogTitle>
         </DialogHeader>
@@ -121,24 +128,28 @@ export function ParallelGroupEditDialog({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>Вопрос-источник (количество повторений)</Label>
-            <Select
-              value={settings.sourceQuestionId}
-              onValueChange={(value) => setSettings({ ...settings, sourceQuestionId: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Выберите числовой вопрос" />
-              </SelectTrigger>
-              <SelectContent>
-                {numberQuestions.map((q) => (
-                  <SelectItem key={q.id} value={q.id}>
-                    {q.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Блок для редактирования числового вопроса-источника */}
+          {numberQuestion && (
+            <div className="space-y-2">
+              <Label>Вопрос-источник (количество повторений)</Label>
+              <Input
+                value={numberQuestion.title}
+                onChange={e => {
+                  numberQuestion.title = e.target.value;
+                  // Если есть функция обновления вопроса в store, вызовите её здесь
+                }}
+                placeholder="Введите заголовок числового вопроса"
+              />
+              <Input
+                value={numberQuestion.description || ''}
+                onChange={e => {
+                  numberQuestion.description = e.target.value;
+                  // Если есть функция обновления вопроса в store, вызовите её здесь
+                }}
+                placeholder="Описание (необязательно)"
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Название единицы повторения</Label>
@@ -192,6 +203,31 @@ export function ParallelGroupEditDialog({
                 <SelectItem value="tabs">Вкладки</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Заголовок поля "Сколько повторений?"</Label>
+            <Input
+              value={settings.countLabel || ''}
+              onChange={e => setSettings({ ...settings, countLabel: e.target.value })}
+              placeholder="Сколько повторений?"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Описание поля</Label>
+            <Input
+              value={settings.countDescription || ''}
+              onChange={e => setSettings({ ...settings, countDescription: e.target.value })}
+              placeholder="Описание (необязательно)"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="countRequired"
+              checked={settings.countRequired || false}
+              onCheckedChange={checked => setSettings({ ...settings, countRequired: !!checked })}
+            />
+            <Label htmlFor="countRequired">Обязательное поле</Label>
           </div>
 
           <div className="space-y-2">
