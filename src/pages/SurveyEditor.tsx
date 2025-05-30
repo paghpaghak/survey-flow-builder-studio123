@@ -45,7 +45,10 @@ export default function SurveyEditor() {
   const survey = surveys.find(s => s.id === id);
   const currentVersion = survey?.versions.find(v => v.version === survey.currentVersion);
   const questions = currentVersion?.questions || [];
-  const pages = currentVersion?.pages || [];
+  const pages = (currentVersion?.pages || []).map(p => ({
+    ...p,
+    descriptionPosition: typeof p.descriptionPosition === 'string' ? p.descriptionPosition : 'before',
+  }));
 
   useEffect(() => {
     if (pages.length > 0 && !selectedPageId) {
@@ -58,13 +61,6 @@ export default function SurveyEditor() {
       loadSurveys();
     }
   }, [id, survey, loadSurveys]);
-
-  useEffect(() => {
-    console.log('selectedPageId:', selectedPageId);
-    console.log('currentPageQuestions:', questions.filter(q => !selectedPageId || q.pageId === selectedPageId));
-    console.log('pages:', pages.map(p => p.id));
-    console.log('questions:', questions.map(q => ({id: q.id, pageId: q.pageId})));
-  }, [selectedPageId, questions, pages]);
 
   if (!survey || !currentVersion) {
     return (
@@ -90,19 +86,8 @@ export default function SurveyEditor() {
    * <param name="qid">ID вопроса для удаления</param>
    */
   function handleDeleteQuestion(qid: string) {
-    console.log('🗑️ SurveyEditor: Delete question initiated:', {
-      questionId: qid,
-      currentVersion: currentVersion?.version,
-      currentQuestions: questions.map(q => ({ id: q.id, pageId: q.pageId }))
-    });
-
     const updatedQuestions = questions.filter(q => q.id !== qid);
     
-    console.log('📝 SurveyEditor: Questions filtered:', {
-      deletedId: qid,
-      remainingQuestions: updatedQuestions.map(q => ({ id: q.id, pageId: q.pageId }))
-    });
-
     updateSurvey({
       ...survey,
       versions: survey.versions.map(v => 
@@ -111,7 +96,6 @@ export default function SurveyEditor() {
           : v
       )
     });
-    toast.success('Вопрос удалён');
   }
 
   /**
@@ -222,6 +206,9 @@ export default function SurveyEditor() {
     const targetPageId = selectedPageId || pages[0].id;
     const pageQuestions = questions.filter(q => q.pageId === targetPageId);
 
+    // Определяем номер для нового вопроса на этой странице
+    const nextNumber = pageQuestions.length + 1;
+
     // Проверяем, что id уникален
     let newId = crypto.randomUUID();
     while (questions.some(q => q.id === newId)) {
@@ -231,11 +218,20 @@ export default function SurveyEditor() {
     const newQuestion: Question = {
       id: newId,
       pageId: targetPageId,
-      title: 'Новый вопрос',
+      title: `Новый вопрос ${nextNumber}`,
       type: QuestionType.Text,
       required: false,
-      position: { x: 250, y: pageQuestions.length * 150 }
+      position: { x: 250, y: pageQuestions.length * 150 },
+      options: undefined
     };
+
+    // Если тип вопроса — Radio, Checkbox или Select, сразу добавляем два варианта
+    if ([QuestionType.Radio, QuestionType.Checkbox, QuestionType.Select].includes(newQuestion.type)) {
+      newQuestion.options = [
+        { id: crypto.randomUUID(), text: 'Вариант 1' },
+        { id: crypto.randomUUID(), text: 'Вариант 2' }
+      ];
+    }
 
     const updatedQuestions = [...questions, newQuestion];
     handleUpdateQuestions(updatedQuestions);
@@ -281,7 +277,6 @@ export default function SurveyEditor() {
   };
 
   const currentPageQuestions = questions.filter(q => q.pageId === selectedPageId);
-  console.log('Текущая выбранная страница:', selectedPageId);
 
   function handleTreeMove(nodes, parent, index) {
     if (!nodes.length) return;
@@ -539,6 +534,25 @@ export default function SurveyEditor() {
     handleUpdateQuestions(updatedQuestions);
   }
 
+  function handleUpdatePageDescription(pageId: string, newDescription: string, position: string) {
+    const updatedPages = pages.map(p =>
+      p.id === pageId ? { ...p, description: newDescription, descriptionPosition: position } : p
+    );
+    const updatedVersion = {
+      ...currentVersion,
+      pages: updatedPages,
+      updatedAt: new Date().toISOString()
+    };
+    const updatedSurvey = {
+      ...survey,
+      versions: survey.versions.map(v =>
+        v.version === survey.currentVersion ? updatedVersion : v
+      ),
+      updatedAt: new Date().toISOString()
+    };
+    updateSurvey(updatedSurvey);
+  }
+
   return (
     <div className="flex h-screen w-full">
       <div className="w-[340px] h-screen flex flex-col bg-gray-50 border-r min-h-0">
@@ -592,12 +606,29 @@ export default function SurveyEditor() {
                 setSelectedPageId(id);
                 setSelectedQuestionId(undefined);
               }}
-              onSelectQuestion={setSelectedQuestionId}
+              onSelectQuestion={questionId => {
+                const q = questions.find(q => q.id === questionId);
+                if (!q) return;
+                // Если вопрос не на текущей странице — переключаем страницу
+                if (q.pageId !== selectedPageId) {
+                  setSelectedPageId(q.pageId);
+                }
+                // Если вопрос вложенный в параллельную ветку — выделяем ветку
+                const parentParallel = questions.find(
+                  pq => (pq.type === 'parallel_group' || pq.type === 'ParallelGroup') && Array.isArray(pq.parallelQuestions) && pq.parallelQuestions.includes(questionId)
+                );
+                if (parentParallel) {
+                  setSelectedQuestionId(parentParallel.id);
+                } else {
+                  setSelectedQuestionId(questionId);
+                }
+              }}
               onQuestionOrderChange={handleQuestionOrderChange}
               onUpdatePageTitle={handleUpdatePageTitle}
               onUpdateQuestionTitle={handleUpdateQuestionTitle}
               onDeleteQuestion={handleDeleteQuestion}
               onDeletePage={handleDeletePage}
+              onUpdatePageDescription={handleUpdatePageDescription}
             />
           </div>
         </div>
@@ -608,6 +639,8 @@ export default function SurveyEditor() {
             questions={currentPageQuestions}
             onUpdateQuestions={handleUpdateQuestions}
             pages={pages}
+            selectedQuestionId={selectedQuestionId}
+            setSelectedQuestionId={setSelectedQuestionId}
           />
         </ReactFlowProvider>
       </div>

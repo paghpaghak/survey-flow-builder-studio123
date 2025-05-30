@@ -94,9 +94,12 @@ export function SurveyPreview({ questions, pages, onClose }: SurveyPreviewProps)
       </div>
 
       <PagePreview
-        questions={currentQuestions}
+        questions={questions}
         answers={answers}
         onAnswerChange={handleAnswerChange}
+        pages={pages}
+        pageId={currentPage.id}
+        page={currentPage}
       />
 
       <div className="flex items-center justify-between mt-4 relative">

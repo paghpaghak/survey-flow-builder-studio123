@@ -100,11 +100,6 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
     }
   };
 
-  const getCurrentVersionQuestions = (survey: Survey) => {
-    const currentVersion = survey.versions.find(v => v.version === survey.currentVersion);
-    return currentVersion?.questions || [];
-  };
-
   const handleSurveyCreated = async (survey: Survey) => {
     if (onSurveyCreated) onSurveyCreated(survey);
     if (reloadSurveys) await reloadSurveys();
@@ -258,12 +253,13 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[300px]">Название</TableHead>
-                <TableHead>Описание</TableHead>
+                <TableHead className="w-12 text-center">№</TableHead>
+                <TableHead className="w-[320px]">Название</TableHead>
+                <TableHead className="w-[320px]">Описание</TableHead>
                 {isAdmin && <TableHead>Статус</TableHead>}
-                <TableHead>Дата создания</TableHead>
-                {isAdmin && <TableHead>Количество вопросов</TableHead>}
-                <TableHead className="text-right">Действия</TableHead>
+                <TableHead className="w-[130px]">Дата создания</TableHead>
+                <TableHead className="w-[150px]">Дата изменения</TableHead>
+                <TableHead className="w-[100px]">Действия</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -274,6 +270,7 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
                 const key = survey.id || `survey-idx-${idx}`;
                 return (
                   <TableRow key={key}>
+                    <TableCell className="text-center font-medium">{idx + 1}</TableCell>
                     <TableCell className="font-medium">{survey.title}</TableCell>
                     <TableCell>{survey.description}</TableCell>
                     {isAdmin && (
@@ -284,37 +281,14 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
                       </TableCell>
                     )}
                     <TableCell>{new Date(survey.createdAt).toLocaleDateString('ru-RU')}</TableCell>
-                    {isAdmin && (
-                      <TableCell>{getCurrentVersionQuestions(survey).length}</TableCell>
-                    )}
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
+                    <TableCell>{new Date(survey.updatedAt).toLocaleDateString('ru-RU')}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
                         <TooltipProvider>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="outline" size="icon">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => navigate(`/take/${survey.id}`)}>
-                                <UserSquare2 className="h-4 w-4 mr-2" /> Пройти опрос
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setShowVersionHistory(survey.id)}>
-                                <History className="h-4 w-4 mr-2" /> История версий
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setEditingSurvey(survey)}>
-                                <Settings className="h-4 w-4 mr-2" /> Настройки
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => navigate(`/surveys/${survey.id}/results`)}>
-                                <BarChart2 className="h-4 w-4 mr-2" /> Результаты
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="icon"
                                 onClick={() => navigate(`/surveys/${survey.id}/edit`)}
                               >
@@ -328,7 +302,7 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="icon"
                                 onClick={() => handleDuplicateSurvey(survey)}
                               >
@@ -371,6 +345,27 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
                               </DialogFooter>
                             </DialogContent>
                           </Dialog>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => navigate(`/take/${survey.id}`)}>
+                                <UserSquare2 className="h-4 w-4 mr-2" /> Пройти опрос
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setShowVersionHistory(survey.id)}>
+                                <History className="h-4 w-4 mr-2" /> История версий
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setEditingSurvey(survey)}>
+                                <Settings className="h-4 w-4 mr-2" /> Настройки
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => navigate(`/surveys/${survey.id}/results`)}>
+                                <BarChart2 className="h-4 w-4 mr-2" /> Результаты
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                           {showVersionHistory === survey.id && (
                             <SurveyVersionHistory
                               surveyId={survey.id}
