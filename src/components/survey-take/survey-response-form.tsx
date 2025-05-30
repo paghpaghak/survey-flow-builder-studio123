@@ -25,6 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { PlaceholderText } from '@/components/ui/placeholder-text';
 
 interface SurveyResponseFormProps {
   survey: Survey;
@@ -138,6 +139,8 @@ export function SurveyResponseForm({ survey }: SurveyResponseFormProps) {
     });
   };
 
+  const answers = form.watch('answers');
+
   return (
     <>
       <FormProvider {...form}>
@@ -156,7 +159,7 @@ export function SurveyResponseForm({ survey }: SurveyResponseFormProps) {
                 <h3 className="text-lg font-medium">{currentPage.title}</h3>
                 {currentPage.description && (
                   <p className="text-sm text-muted-foreground">
-                    {currentPage.description}
+                    <PlaceholderText text={currentPage.description} answers={answers} questions={currentPage.questions} />
                   </p>
                 )}
                 
@@ -169,7 +172,7 @@ export function SurveyResponseForm({ survey }: SurveyResponseFormProps) {
                       </label>
                       {question.description && (
                         <p className="text-sm text-muted-foreground">
-                          {question.description}
+                          <PlaceholderText text={question.description} answers={answers} questions={currentPage.questions} />
                         </p>
                       )}
                       <QuestionInput

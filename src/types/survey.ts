@@ -39,7 +39,7 @@ export interface NumberSettings {
   step?: number;
 }
 
-export interface ParallelGroupSettings {
+export interface ParallelBranchSettings {
   sourceQuestionId: string;  // ID вопроса-источника (тип Number)
   itemLabel: string;        // Название единицы повторения (например, "Человек")
   minItems?: number;        // Минимальное количество повторений
@@ -60,7 +60,7 @@ export type QuestionTypeSettings = {
   [QuestionType.Select]: Record<string, never>;
   [QuestionType.Email]: Record<string, never>;
   [QuestionType.Number]: NumberSettings;
-  [QuestionType.ParallelGroup]: ParallelGroupSettings;
+  [QuestionType.ParallelGroup]: ParallelBranchSettings;
 };
 
 // Тип для правил перехода
@@ -84,6 +84,7 @@ export interface Page {
   title: string;
   description?: string;
   questions: Question[];  // Массив вопросов вместо массива ID
+  descriptionPosition?: 'before' | 'after';
 }
 
 /**

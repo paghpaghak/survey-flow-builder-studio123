@@ -1,7 +1,7 @@
 import { Handle, Position } from '@xyflow/react';
 import { Question, QuestionType } from '@/types/survey';
 import { Button } from '@/components/ui/button';
-import { Trash, Pencil, Users, GripVertical } from 'lucide-react';
+import { Trash, Pencil, Users, GripVertical, Repeat2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -39,7 +39,7 @@ export default function QuestionNode({ data, selected = false }: QuestionNodePro
       case QuestionType.Number:
         return 'Число';
       case QuestionType.ParallelGroup:
-        return 'Параллельная группа';
+        return 'Параллельная ветка';
       default:
         return type;
     }
@@ -50,8 +50,8 @@ export default function QuestionNode({ data, selected = false }: QuestionNodePro
   return (
     <div 
       className={cn(
-        'rounded-lg shadow-md p-4 bg-white border w-[250px]',
-        selected ? 'border-blue-500' : 'border-gray-200',
+        'rounded-lg shadow-md p-4 bg-white border w-[250px] transition-all',
+        selected ? 'border-2 border-blue-500 shadow-lg z-10' : 'border border-gray-200',
         isParallelGroup && 'border-2 border-dashed'
       )}
       role="button"
@@ -73,13 +73,14 @@ export default function QuestionNode({ data, selected = false }: QuestionNodePro
           </Badge>
         </div>
         <div 
-          className="text-sm font-medium mb-1 truncate" 
+          className="text-sm font-medium mb-1 truncate flex items-center gap-1" 
           title={question.title}
         >
+          {isParallelGroup && <Repeat2 className="w-4 h-4 text-blue-500 flex-shrink-0" />}
           {question.title}
         </div>
         <div className="text-xs text-gray-500 space-y-1">
-          <div>Тип: {getQuestionTypeLabel(question.type)}</div>
+          <div>Тип: {isParallelGroup ? 'Параллельная ветка' : getQuestionTypeLabel(question.type)}</div>
           {question.required && <div>• Обязательный</div>}
         </div>
       </div>
