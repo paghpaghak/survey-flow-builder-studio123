@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { SurveyList } from '@/components/surveys/SurveyList';
 import { useAuth } from '@/hooks/useAuth';
+import { Header } from '@/components/layout/header';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -37,13 +38,11 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="mb-8 flex items-center gap-4">
-        <h1 className="text-3xl font-bold">
-          {isAdmin ? 'Панель управления опросами' : 'Опросы'}
-        </h1>
+    <>
+      <Header />
+      <div className="container mx-auto py-8 px-4">
+        <SurveyList surveys={surveys} reloadSurveys={loadSurveys} />
       </div>
-      <SurveyList surveys={surveys} reloadSurveys={loadSurveys} />
-    </div>
+    </>
   );
 }

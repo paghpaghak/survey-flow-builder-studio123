@@ -57,6 +57,7 @@ export default function QuestionNode({ data, selected = false }: QuestionNodePro
       role="button"
       tabIndex={0}
       aria-label={`Вопрос: ${question.title}`}
+      data-testid="question-node-title"
     >
       <Handle
         type="target"

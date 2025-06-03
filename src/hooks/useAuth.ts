@@ -1,26 +1,30 @@
 import { useState, useEffect } from 'react';
+import { User } from '@/types/auth';
 
 interface AuthState {
-  isAdmin: boolean;
+  user: User | null;
   isLoading: boolean;
+  error: string | null;
 }
 
 export function useAuth(): AuthState {
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Здесь должна быть реальная проверка прав доступа
-    // Например, через API или JWT токен
     const checkAuth = async () => {
       try {
-        // Временная заглушка для демонстрации
-        // В реальном приложении здесь будет запрос к API
-        const isUserAdmin = localStorage.getItem('isAdmin') === 'true';
-        setIsAdmin(isUserAdmin);
+        const response = await fetch('/api/auth/me');
+        if (!response.ok) {
+          throw new Error('Не авторизован');
+        }
+        const data = await response.json();
+        setUser(data.user);
       } catch (error) {
-        console.error('Ошибка при проверке прав доступа:', error);
-        setIsAdmin(false);
+        console.error('Ошибка при проверке авторизации:', error);
+        setError(error instanceof Error ? error.message : 'Неизвестная ошибка');
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
@@ -29,5 +33,5 @@ export function useAuth(): AuthState {
     checkAuth();
   }, []);
 
-  return { isAdmin, isLoading };
+  return { user, isLoading, error };
 } 

@@ -1,4 +1,4 @@
-import { cn } from './utils';
+import { cn, parsePlaceholders } from "../../src/lib/utils";
 
 describe('cn', () => {
   it('объединяет простые классы', () => {
@@ -24,5 +24,28 @@ describe('cn', () => {
 
   it('оставляет только последний конфликтующий Tailwind-класс', () => {
     expect(cn('p-2', 'p-4')).toBe('p-4');
+  });
+});
+
+describe('parsePlaceholders edge cases', () => {
+  it('should return [] for undefined', () => {
+    // @ts-expect-error
+    expect(parsePlaceholders(undefined)).toEqual([]);
+  });
+  it('should return [] for null', () => {
+    // @ts-expect-error
+    expect(parsePlaceholders(null)).toEqual([]);
+  });
+  it('should return [] for number', () => {
+    // @ts-expect-error
+    expect(parsePlaceholders(123)).toEqual([]);
+  });
+  it('should return [] for array', () => {
+    // @ts-expect-error
+    expect(parsePlaceholders([1,2,3])).toEqual([]);
+  });
+  it('should return [] for object', () => {
+    // @ts-expect-error
+    expect(parsePlaceholders({ foo: 'bar' })).toEqual([]);
   });
 }); 

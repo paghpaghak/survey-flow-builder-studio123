@@ -13,14 +13,17 @@ export type SurveyStatus = 'draft' | 'published' | 'archived';
  */
 export enum QuestionType {
   Text = 'text',
+  Number = 'number',
   Radio = 'radio',
   Checkbox = 'checkbox',
   Select = 'select',
   Date = 'date',
-  Email = 'email',
+  Time = 'time',
+  DateTime = 'datetime',
   Phone = 'phone',
+  Email = 'email',
   ParallelGroup = 'parallel_group',
-  Number = 'number'
+  Resolution = 'resolution',
 }
 
 // Метаданные для разных типов вопросов
@@ -115,6 +118,8 @@ export interface Question {
   settings?: QuestionTypeSettings[QuestionType];
   transitionRules?: TransitionRule[];
   parallelQuestions?: string[];  // ID вопросов, которые нужно повторять в параллельной группе
+  resolutionRules?: ResolutionRule[];
+  defaultResolution?: string;
 }
 
 // Тип для ответов на вопросы
@@ -215,4 +220,12 @@ export interface SurveyPage {
   questions: SurveyQuestion[];
   transitionRules?: PageTransitionRule[];
   // ... другие поля ...
+}
+
+// Тип для одного правила резолюции
+export interface ResolutionRule {
+  id: string;
+  conditions: Array<{ questionId: string; operator: string; value: any }>;
+  logic: 'AND' | 'OR';
+  resultText: string;
 }

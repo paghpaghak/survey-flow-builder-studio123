@@ -21,6 +21,7 @@ export function parsePlaceholders(input: string): Array<
   | { type: 'text'; value: string }
   | { type: 'placeholder'; value: string; key: string; field?: string }
 > {
+  if (typeof input !== 'string') return [];
   const regex = /\{\{\s*([\w-]+)(?:\.(\w+))?\s*\}\}/g;
   const result: Array<any> = [];
   let lastIndex = 0;

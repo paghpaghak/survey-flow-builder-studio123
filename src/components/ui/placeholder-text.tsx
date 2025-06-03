@@ -10,7 +10,10 @@ interface PlaceholderTextProps {
   maxLength?: number;
 }
 
-export function PlaceholderText({ text, answers, questions = [], maxLength = 40 }: PlaceholderTextProps) {
+export function PlaceholderText({ text = '', answers, questions = [], maxLength = 40 }: PlaceholderTextProps) {
+  // Защита от undefined/null
+  const safeQuestions = Array.isArray(questions) ? questions : [];
+  const safeAnswers = answers && typeof answers === 'object' ? answers : {};
   const parts = parsePlaceholders(text);
 
   // Ещё больше логов для отладки
@@ -20,11 +23,11 @@ export function PlaceholderText({ text, answers, questions = [], maxLength = 40 
   });
 
   function renderValue(key: string, field?: string) {
-    const value = answers[key];
-    const question = questions.find(q => q.id === key);
+    const value = safeAnswers[key];
+    const question = safeQuestions.find(q => q.id === key);
     console.log('[PlaceholderText] key:', key, 'value:', value, 'question:', question);
     if (question && [QuestionType.Radio, QuestionType.Select].includes(question.type)) {
-      console.log('[PlaceholderText] options:', question.options, 'value:', value, 'allQuestions:', questions, 'answers:', answers);
+      console.log('[PlaceholderText] options:', question.options, 'value:', value, 'allQuestions:', safeQuestions, 'answers:', safeAnswers);
       const option = question.options?.find(opt => opt.id === value);
       if (option) return <span className="font-semibold text-blue-900">{option.text}</span>;
       return <span className="text-red-500">{String(value)} (нет текста)</span>;

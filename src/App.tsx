@@ -10,6 +10,8 @@ import SurveyView from '@/pages/SurveyView';
 import { TakeSurvey } from '@/pages/TakeSurvey';
 import { ThankYou } from '@/pages/ThankYou';
 import { SurveyResults } from '@/pages/SurveyResults';
+import { RequireAuth } from '@/components/auth/RequireAuth';
+import LoginPage from '@/app/login/page';
 
 const queryClient = new QueryClient();
 
@@ -20,12 +22,55 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/surveys/:id/edit" element={<SurveyEditor />} />
-          <Route path="/surveys/:id/view" element={<SurveyView />} />
-          <Route path="/take/:surveyId" element={<TakeSurvey />} />
-          <Route path="/surveys/:surveyId/thank-you" element={<ThankYou />} />
-          <Route path="/surveys/:surveyId/results" element={<SurveyResults />} />
+          <Route
+            path="/"
+            element={
+              <RequireAuth>
+                <Dashboard />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/surveys/:id/edit"
+            element={
+              <RequireAuth>
+                <SurveyEditor />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/surveys/:id/view"
+            element={
+              <RequireAuth>
+                <SurveyView />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/take/:surveyId"
+            element={
+              <RequireAuth>
+                <TakeSurvey />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/surveys/:surveyId/thank-you"
+            element={
+              <RequireAuth>
+                <ThankYou />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/surveys/:surveyId/results"
+            element={
+              <RequireAuth>
+                <SurveyResults />
+              </RequireAuth>
+            }
+          />
+          <Route path="/login" element={<LoginPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

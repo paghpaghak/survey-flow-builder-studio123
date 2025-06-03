@@ -34,7 +34,7 @@ export function CreateSurveyDialog({ onSurveyCreated }: CreateSurveyDialogProps)
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-1">
+        <Button className="gap-1" data-testid="create-survey-btn">
           <Plus className="h-4 w-4" /> Новый опрос
         </Button>
       </DialogTrigger>
@@ -51,6 +51,7 @@ export function CreateSurveyDialog({ onSurveyCreated }: CreateSurveyDialogProps)
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               autoComplete="off"
+              data-testid="survey-title-input"
             />
           </div>
           <div className="space-y-2">
@@ -66,7 +67,7 @@ export function CreateSurveyDialog({ onSurveyCreated }: CreateSurveyDialogProps)
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={handleSubmit}>Создать опрос</Button>
+          <Button onClick={handleSubmit} data-testid="survey-create-confirm">Создать опрос</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
