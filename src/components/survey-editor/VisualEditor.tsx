@@ -20,9 +20,11 @@ import '@xyflow/react/dist/style.css';
 import './flow.css';
 import { Question } from '@/types/survey';
 import QuestionNode from './QuestionNode';
+import ResolutionNode from './ResolutionNode';
 import QuestionEditDialog from './QuestionEditDialog';
 import { DndContext, useDraggable, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
 import { useSurveyStore } from '@/store/survey-store';
+import ResolutionEditDialog from './ResolutionEditDialog';
 
 interface VisualEditorProps {
   questions: Question[];
@@ -31,6 +33,7 @@ interface VisualEditorProps {
   pages: { id: string; title: string }[];
   selectedQuestionId?: string;
   setSelectedQuestionId?: (id: string) => void;
+  allQuestions: Question[];
 }
 
 const nodeTypes: NodeTypes = {
@@ -108,7 +111,7 @@ function withDefaultTransitions(questions: Question[]): Question[] {
   return result;
 }
 
-export default function VisualEditor({ questions, onUpdateQuestions, readOnly = false, pages, selectedQuestionId, setSelectedQuestionId }: VisualEditorProps) {
+export default function VisualEditor({ questions, onUpdateQuestions, readOnly = false, pages, selectedQuestionId, setSelectedQuestionId, allQuestions }: VisualEditorProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -124,6 +127,7 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
   const nodesPositionsRef = useRef<Record<string, { x: number, y: number }>>({});
   const [editingParallelGroup, setEditingParallelGroup] = useState<Question | null>(null);
   const reactFlow = useReactFlow();
+  const [editingResolution, setEditingResolution] = useState<Question | null>(null);
 
   // --- обёртка для onUpdateQuestions с автогенерацией дефолтных переходов ---
   const callUpdateQuestionsWithDefaults = useCallback((updatedQuestions: Question[]) => {
@@ -232,8 +236,8 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
         // Не добавляем вложенные вопросы на основную схему
         return;
       }
-      // Обычные вопросы
-      if (question.type !== 'parallel_group' && question.type !== 'ParallelGroup') {
+      // Обычные вопросы (все, кроме параллельных и резолюции)
+      if (question.type !== 'parallel_group' && question.type !== 'ParallelGroup' && question.type !== 'resolution') {
         // Проверяем, не вложенный ли это вопрос
         const isInParallel = questions.some(q => q.type === 'parallel_group' && q.parallelQuestions?.includes(question.id));
         if (isInParallel) return;

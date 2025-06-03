@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { transformSurveyData, fetchSurveys, fetchSurveyById, createSurvey, updateSurvey, deleteSurvey } from './api';
+import { transformSurveyData, fetchSurveys, fetchSurveyById, createSurvey, updateSurvey, deleteSurvey } from '../../src/lib/api';
 
 // Мокируем глобальный fetch
 const mockFetch = vi.fn();

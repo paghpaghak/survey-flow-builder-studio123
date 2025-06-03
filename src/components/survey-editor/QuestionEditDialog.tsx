@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useEffect, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash } from "lucide-react";
+import { Plus, Trash, Pencil, Repeat2 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Slider } from "@/components/ui/slider";
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
@@ -80,6 +80,7 @@ export default function QuestionEditDialog({
   );
 
   const [maxItemsError, setMaxItemsError] = useState<string | null>(null);
+  const [editingSubQuestionId, setEditingSubQuestionId] = useState<string | null>(null);
 
   useEffect(() => {
     if (question) {
@@ -244,6 +245,61 @@ export default function QuestionEditDialog({
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
     setParallelQuestions(items);
+  }
+
+  function RenderParallelBranchEdit({ q, questions, parallelQuestions, setEditingSubQuestionId, setParallelQuestions, editingSubQuestionId, availableQuestions }) {
+    return (
+      <div className="ml-4 border-l pl-2">
+        <div className="font-semibold text-primary flex items-center gap-2">
+          <Repeat2 className="w-4 h-4" />
+          {q.title}
+        </div>
+        <div className="mt-1 space-y-1">
+          {(q.parallelQuestions || []).map((subId, i) => {
+            const subQ = questions.find(qq => qq.id === subId);
+            if (!subQ) return null;
+            if (subQ.type === 'parallel_group' || subQ.type === 'ParallelGroup') {
+              return (
+                <RenderParallelBranchEdit
+                  key={subQ.id}
+                  q={subQ}
+                  questions={questions}
+                  parallelQuestions={parallelQuestions}
+                  setEditingSubQuestionId={setEditingSubQuestionId}
+                  setParallelQuestions={setParallelQuestions}
+                  editingSubQuestionId={editingSubQuestionId}
+                  availableQuestions={availableQuestions}
+                />
+              );
+            }
+            return (
+              <div key={subQ.id} className="flex items-center gap-2 bg-white p-2 rounded border">
+                <div className="flex-1">
+                  <div className="font-medium">{subQ.title}</div>
+                  <div className="text-sm text-gray-500">{subQ.type}</div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setEditingSubQuestionId(subQ.id)}
+                  className="text-gray-500 hover:text-primary"
+                  title="Редактировать вопрос"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setParallelQuestions(parallelQuestions.filter(id => id !== subQ.id))}
+                >
+                  <Trash className="h-4 w-4" />
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -608,6 +664,15 @@ export default function QuestionEditDialog({
                                           </div>
                                           <Button
                                             variant="ghost"
+                                            size="icon"
+                                            onClick={() => setEditingSubQuestionId(q.id)}
+                                            className="text-gray-500 hover:text-primary"
+                                            title="Редактировать вопрос"
+                                          >
+                                            <Pencil className="h-4 w-4" />
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
                                             size="sm"
                                             onClick={() => setParallelQuestions(
                                               parallelQuestions.filter(id => id !== q.id)
@@ -732,6 +797,17 @@ export default function QuestionEditDialog({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {editingSubQuestionId && (
+        <QuestionEditDialog
+          question={availableQuestions.find(q => q.id === editingSubQuestionId)!}
+          availableQuestions={availableQuestions.filter(q => parallelQuestions.includes(q.id) && q.id !== editingSubQuestionId)}
+          onClose={() => setEditingSubQuestionId(null)}
+          onSave={updatedQ => {
+            onSave?.(updatedQ);
+            setEditingSubQuestionId(null);
+          }}
+        />
+      )}
     </>
   );
 }

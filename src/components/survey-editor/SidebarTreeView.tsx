@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
-import { GripVertical, Trash, ChevronDown, ChevronRight, Repeat2, Pencil } from 'lucide-react';
+import { GripVertical, Trash, ChevronDown, ChevronRight, Repeat2, Pencil, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -24,6 +24,8 @@ interface SidebarTreeViewProps {
   onDeleteQuestion?: (questionId: string) => void;
   onDeletePage?: (pageId: string) => void;
   onUpdatePageDescription?: (pageId: string, newDescription: string, position: string) => void;
+  onAddResolution?: () => void;
+  onEditResolution?: (resolution: Question) => void;
 }
 
 type TreeNodeData = {
@@ -170,6 +172,65 @@ function SortableQuestionNode({ node, style, isSelected, onSelect, onUpdateTitle
   );
 }
 
+function RenderParallelBranch({ q, questions, selectedQuestionId, onSelectQuestion, onUpdateQuestionTitle, onDeleteQuestion, editingQuestionId, setEditingQuestionId, editingQuestionTitle, setEditingQuestionTitle, setConfirmDeleteParallelId, level = 1 }) {
+  const isExpanded = true; // Можно добавить управление сворачиванием
+  return (
+    <div style={{ marginLeft: level * 16 }}>
+      <div className="font-semibold text-primary flex items-center gap-2">
+        <Repeat2 className="w-4 h-4" />
+        {q.title}
+      </div>
+      {isExpanded && (
+        <div className="mt-1 space-y-1">
+          {(q.parallelQuestions || []).map((subId, i) => {
+            const subQ = questions.find(qq => qq.id === subId);
+            if (!subQ) return null;
+            if (subQ.type === 'parallel_group' || subQ.type === 'ParallelGroup') {
+              return (
+                <RenderParallelBranch
+                  key={subQ.id}
+                  q={subQ}
+                  questions={questions}
+                  selectedQuestionId={selectedQuestionId}
+                  onSelectQuestion={onSelectQuestion}
+                  onUpdateQuestionTitle={onUpdateQuestionTitle}
+                  onDeleteQuestion={onDeleteQuestion}
+                  editingQuestionId={editingQuestionId}
+                  setEditingQuestionId={setEditingQuestionId}
+                  editingQuestionTitle={editingQuestionTitle}
+                  setEditingQuestionTitle={setEditingQuestionTitle}
+                  setConfirmDeleteParallelId={setConfirmDeleteParallelId}
+                  level={level + 1}
+                />
+              );
+            }
+            return (
+              <SortableQuestionNode
+                key={subQ.id}
+                node={{ data: { ...subQ, type: 'question', title: subQ.title || 'Без названия' } }}
+                style={{}}
+                isSelected={subQ.id === selectedQuestionId}
+                onSelect={() => onSelectQuestion && onSelectQuestion(subQ.id)}
+                onUpdateTitle={newTitle => onUpdateQuestionTitle?.(subQ.id, newTitle)}
+                onDelete={onDeleteQuestion ? () => onDeleteQuestion(subQ.id) : undefined}
+                editing={editingQuestionId === subQ.id}
+                setEditing={v => {
+                  setEditingQuestionId && setEditingQuestionId(v ? subQ.id : null);
+                  setEditingQuestionTitle && setEditingQuestionTitle(subQ.title || '');
+                }}
+                editingTitle={editingQuestionId === subQ.id ? editingQuestionTitle : undefined}
+                setEditingTitle={setEditingQuestionTitle}
+                number={i + 1}
+                nested
+              />
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SortableParallelGroupNode({ q, idx, isSelected, isExpanded, onSelect, onToggleExpand, questions, selectedQuestionId, onSelectQuestion, onUpdateQuestionTitle, onDeleteQuestion, editingQuestionId, setEditingQuestionId, editingQuestionTitle, setEditingQuestionTitle, setConfirmDeleteParallelId }: {
   q: any;
   idx: number;
@@ -249,29 +310,19 @@ function SortableParallelGroupNode({ q, idx, isSelected, isExpanded, onSelect, o
       </div>
       {isExpanded && (
         <div className="ml-7 mt-1 space-y-1">
-          {(q.parallelQuestions || []).map((subId, i) => {
-            const subQ = questions.find(qq => qq.id === subId);
-            return subQ ? (
-              <SortableQuestionNode
-                key={subQ.id}
-                node={{ data: { ...subQ, type: 'question', title: subQ.title || 'Без названия' } }}
-                style={{}}
-                isSelected={subQ.id === selectedQuestionId}
-                onSelect={() => onSelectQuestion && onSelectQuestion(subQ.id)}
-                onUpdateTitle={newTitle => onUpdateQuestionTitle?.(subQ.id, newTitle)}
-                onDelete={onDeleteQuestion ? () => onDeleteQuestion(subQ.id) : undefined}
-                editing={editingQuestionId === subQ.id}
-                setEditing={v => {
-                  setEditingQuestionId && setEditingQuestionId(v ? subQ.id : null);
-                  setEditingQuestionTitle && setEditingQuestionTitle(subQ.title || '');
-                }}
-                editingTitle={editingQuestionId === subQ.id ? editingQuestionTitle : undefined}
-                setEditingTitle={setEditingQuestionTitle}
-                number={i + 1}
-                nested
-              />
-            ) : null;
-          })}
+          <RenderParallelBranch
+            q={q}
+            questions={questions}
+            selectedQuestionId={selectedQuestionId}
+            onSelectQuestion={onSelectQuestion}
+            onUpdateQuestionTitle={onUpdateQuestionTitle}
+            onDeleteQuestion={onDeleteQuestion}
+            editingQuestionId={editingQuestionId}
+            setEditingQuestionId={setEditingQuestionId}
+            editingQuestionTitle={editingQuestionTitle}
+            setEditingQuestionTitle={setEditingQuestionTitle}
+            setConfirmDeleteParallelId={setConfirmDeleteParallelId}
+          />
         </div>
       )}
     </div>
@@ -302,6 +353,8 @@ export const SidebarTreeView: React.FC<SidebarTreeViewProps> = ({
   onDeleteQuestion,
   onDeletePage,
   onUpdatePageDescription,
+  onAddResolution,
+  onEditResolution,
 }) => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
@@ -321,6 +374,8 @@ export const SidebarTreeView: React.FC<SidebarTreeViewProps> = ({
       },
     })
   );
+  // Для textarea описания страниц: один ref-объект для всех страниц
+  const descriptionRefs = React.useRef<Record<string, HTMLTextAreaElement | null>>({});
 
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveId(null);
@@ -358,6 +413,21 @@ export const SidebarTreeView: React.FC<SidebarTreeViewProps> = ({
     onQuestionOrderChange?.(newQuestions);
   };
 
+  function handleInsertVariable(questionId: string, pageId: string) {
+    const textarea = descriptionRefs.current[pageId];
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const before = editDescription.slice(0, start);
+    const after = editDescription.slice(end);
+    const variable = `{{${questionId}}}`;
+    setEditDescription(before + variable + after);
+    setTimeout(() => {
+      textarea.focus();
+      textarea.selectionStart = textarea.selectionEnd = start + variable.length;
+    }, 0);
+  }
+
   return (
     <div className="p-2">
       <DndContext
@@ -385,20 +455,39 @@ export const SidebarTreeView: React.FC<SidebarTreeViewProps> = ({
             // Для модального окна редактирования описания страницы:
             const prevPages = pages.slice(0, pages.findIndex(p => p.id === page.id));
             const availableQuestions = prevPages.flatMap(p => questions.filter(q => q.pageId === p.id));
-            const descriptionRef = React.useRef<HTMLTextAreaElement>(null);
-            function handleInsertVariable(questionId: string) {
-              if (!descriptionRef.current) return;
-              const textarea = descriptionRef.current;
-              const start = textarea.selectionStart;
-              const end = textarea.selectionEnd;
-              const before = editDescription.slice(0, start);
-              const after = editDescription.slice(end);
-              const variable = `{{${questionId}}}`;
-              setEditDescription(before + variable + after);
-              setTimeout(() => {
-                textarea.focus();
-                textarea.selectionStart = textarea.selectionEnd = start + variable.length;
-              }, 0);
+            // Проверяем, есть ли резолюция на этой странице
+            const resolution = questions.find(q => q.pageId === page.id && q.type === 'resolution');
+            if (resolution) {
+              return (
+                <div
+                  key={resolution.id}
+                  className={cn(
+                    'flex items-center gap-2 px-3 py-1 rounded text-sm font-semibold mt-2 bg-blue-50 border border-blue-300',
+                    selectedQuestionId === resolution.id ? 'border-blue-500 bg-blue-100' : ''
+                  )}
+                  style={{ cursor: 'pointer' }}
+                  onClick={e => {
+                    e.stopPropagation();
+                    onSelectQuestion(resolution.id);
+                  }}
+                  title="Резолюция"
+                >
+                  <Scale className="w-4 h-4 text-blue-600" />
+                  <span>Резолюция</span>
+                  <button
+                    className="ml-auto opacity-80 hover:opacity-100 transition-opacity text-gray-400 hover:text-blue-600 flex-shrink-0"
+                    title="Редактировать резолюцию"
+                    onClick={e => {
+                      e.stopPropagation();
+                      if (typeof onEditResolution === 'function') {
+                        onEditResolution(resolution);
+                      }
+                    }}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                </div>
+              );
             }
             return (
               <div
@@ -573,7 +662,7 @@ export const SidebarTreeView: React.FC<SidebarTreeViewProps> = ({
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="start" className="max-h-60 overflow-y-auto">
                             {availableQuestions.map(q => (
-                              <DropdownMenuItem key={q.id} onClick={() => handleInsertVariable(q.id)}>
+                              <DropdownMenuItem key={q.id} onClick={() => handleInsertVariable(q.id, page.id)}>
                                 {q.title}
                               </DropdownMenuItem>
                             ))}
@@ -581,7 +670,7 @@ export const SidebarTreeView: React.FC<SidebarTreeViewProps> = ({
                         </DropdownMenu>
                       </div>
                       <textarea
-                        ref={descriptionRef}
+                        ref={el => descriptionRefs.current[page.id] = el}
                         className="w-full border rounded p-2 min-h-[60px]"
                         value={editDescription}
                         onChange={e => setEditDescription(e.target.value)}
@@ -617,6 +706,17 @@ export const SidebarTreeView: React.FC<SidebarTreeViewProps> = ({
               </div>
             );
           })}
+          {onAddResolution && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="mt-2 w-full"
+              disabled={questions.some(q => q.type === 'resolution')}
+              onClick={onAddResolution}
+            >
+              <Scale className="w-4 h-4 mr-1" /> Добавить резолюцию
+            </Button>
+          )}
         </div>
         <DragOverlay>
           {activeId && questions.find(q => q.id === activeId) ? (

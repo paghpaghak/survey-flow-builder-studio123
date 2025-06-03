@@ -35,6 +35,14 @@ export function SurveyPreview({ questions, pages, onClose }: SurveyPreviewProps)
   const isLastPage = currentPageIndex === pages.length - 1;
   const isFirstPage = currentPageIndex === 0;
 
+  // === DEBUG LOGS ===
+  console.log('[SurveyPreview] pages:', pages);
+  console.log('[SurveyPreview] questions:', questions);
+  console.log('[SurveyPreview] currentPageIndex:', currentPageIndex);
+  console.log('[SurveyPreview] currentPage:', currentPage);
+  console.log('[SurveyPreview] questionsByPage:', questionsByPage);
+  // === END DEBUG LOGS ===
+
   const handleAnswerChange = (questionId: string, value: any) => {
     setAnswers(prev => ({
       ...prev,
@@ -75,11 +83,29 @@ export function SurveyPreview({ questions, pages, onClose }: SurveyPreviewProps)
 
   const handleNext = () => {
     if (!validateCurrentPage()) return;
-    setCurrentPageIndex(prev => prev + 1);
+    setCurrentPageIndex(prev => {
+      const next = prev + 1;
+      // DEBUG LOG
+      setTimeout(() => {
+        console.log('[SurveyPreview] handleNext: currentPageIndex ->', next);
+        console.log('[SurveyPreview] currentPage:', pages[next]);
+        console.log('[SurveyPreview] questionsByPage:', questionsByPage);
+      }, 0);
+      return next;
+    });
   };
 
   const handlePrevious = () => {
-    setCurrentPageIndex(prev => prev - 1);
+    setCurrentPageIndex(prev => {
+      const next = prev - 1;
+      // DEBUG LOG
+      setTimeout(() => {
+        console.log('[SurveyPreview] handlePrevious: currentPageIndex ->', next);
+        console.log('[SurveyPreview] currentPage:', pages[next]);
+        console.log('[SurveyPreview] questionsByPage:', questionsByPage);
+      }, 0);
+      return next;
+    });
   };
 
   const handleSubmit = () => {

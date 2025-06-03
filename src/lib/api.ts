@@ -8,8 +8,6 @@ export const transformSurveyData = (data: any): Survey => {
     throw new Error('No survey data provided');
   }
 
-  console.log('Transforming survey data:', data);
-  
   // Преобразуем версии опроса
   const versions = Array.isArray(data.versions) ? data.versions.map((version: any) => {
     // Преобразуем вопросы
@@ -73,21 +71,16 @@ export const transformSurveyData = (data: any): Survey => {
     updatedAt: data.updatedAt || new Date().toISOString()
   };
 
-  console.log('Transformed survey:', transformedSurvey);
   return transformedSurvey;
 };
 
 export async function fetchSurveys(): Promise<Survey[]> {
-  console.log('Fetching surveys from:', `${API_BASE_URL}/surveys`);
   const response = await fetch(`${API_BASE_URL}/surveys`);
-  console.log('Response status:', response.status);
   if (!response.ok) {
-    console.error('Failed to fetch surveys:', response.statusText);
     throw new Error('Failed to fetch surveys');
   }
   const data = await response.json();
   const transformedData = data.map(transformSurveyData);
-  console.log('Transformed surveys:', transformedData);
   return transformedData;
 }
 
@@ -99,11 +92,8 @@ export async function fetchSurveys(): Promise<Survey[]> {
  * <returns>Данные опроса</returns>
  */
 export async function fetchSurveyById(id: string): Promise<Survey> {
-  console.log('Fetching survey by ID:', `${API_BASE_URL}/surveys?id=${id}`);
   const response = await fetch(`${API_BASE_URL}/surveys?id=${id}`);
-  console.log('Response status:', response.status);
   if (!response.ok) {
-    console.error('Failed to fetch survey:', response.statusText);
     throw new Error('Failed to fetch survey');
   }
   const data = await response.json();
@@ -111,14 +101,12 @@ export async function fetchSurveyById(id: string): Promise<Survey> {
   const surveyData = Array.isArray(data)
     ? data.find(s => s._id === id || s.id === id)
     : data;
-  console.log('Raw survey data:', surveyData);
   
   if (!surveyData) {
     throw new Error('Survey not found');
   }
 
   const transformedData = transformSurveyData(surveyData);
-  console.log('Transformed survey data:', transformedData);
   return transformedData;
 }
 

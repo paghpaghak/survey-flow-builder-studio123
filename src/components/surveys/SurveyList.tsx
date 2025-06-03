@@ -287,39 +287,34 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
+                              <button
                                 onClick={() => navigate(`/surveys/${survey.id}/edit`)}
+                                className="hover:text-blue-600 transition-colors"
+                                title="Редактировать"
+                                data-testid="edit-survey-btn"
                               >
                                 <Edit className="h-4 w-4" />
-                              </Button>
+                              </button>
                             </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Редактировать</p>
-                            </TooltipContent>
                           </Tooltip>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
+                              <button
                                 onClick={() => handleDuplicateSurvey(survey)}
+                                className="hover:text-blue-600 transition-colors"
+                                title="Дублировать"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16h8M8 12h8m-7 8h6a2 2 0 002-2V6a2 2 0 00-2-2H8a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                              </Button>
+                              </button>
                             </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Дублировать</p>
-                            </TooltipContent>
                           </Tooltip>
                           <Dialog open={showDeleteDialog === survey.id} onOpenChange={(open) => setShowDeleteDialog(open ? survey.id : null)}>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <DialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-700">
+                                  <button className="text-red-600 hover:text-red-700 transition-colors" title="Удалить">
                                     <Trash className="h-4 w-4" />
-                                  </Button>
+                                  </button>
                                 </DialogTrigger>
                               </TooltipTrigger>
                               <TooltipContent>
@@ -347,9 +342,9 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
                           </Dialog>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
+                              <button className="hover:text-blue-600 transition-colors" title="Ещё">
                                 <MoreVertical className="h-4 w-4" />
-                              </Button>
+                              </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => navigate(`/take/${survey.id}`)}>

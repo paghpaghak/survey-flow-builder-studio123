@@ -7,6 +7,9 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { UpdateSurveyRequest, SurveyResponse } from '../src/types/requests';
 import { serializeDates } from './utils/serializeDates.js';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+import cookieParser from 'cookie-parser';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -26,6 +29,7 @@ const corsOptions = {
 // Middleware
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use((cookieParser as any)());
 
 // Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
@@ -223,7 +227,7 @@ app.post('/api/surveys', async (req, res) => {
  *       404:
  *         description: Опрос не найден
  */
-app.put('/api/surveys/:id', async (req: Request<{ id: string }, {}, UpdateSurveyRequest>, res) => {
+app.put('/api/surveys/:id', async (req, res) => {
   try {
     const surveyId = new ObjectId(req.params.id);
     const updateData = req.body;
@@ -320,10 +324,10 @@ app.delete('/api/surveys/:id', async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Response'
  */
-app.post('/api/surveys/:id/responses', async (req: Request<{ id: string }, {}, Omit<SurveyResponse, '_id' | 'surveyId' | 'createdAt'>>, res) => {
+app.post('/api/surveys/:id/responses', async (req, res) => {
   try {
     const surveyId = new ObjectId(req.params.id);
-    const response: SurveyResponse = {
+    const response = {
       surveyId,
       answers: req.body.answers,
       createdAt: new Date()
@@ -450,6 +454,131 @@ app.post('/api/init-db', async (req, res) => {
       message: 'Failed to initialize database',
       error: error.message
     });
+  }
+});
+
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Вход пользователя
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Успешный вход
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   type: object
+ *                 token:
+ *                   type: string
+ *       401:
+ *         description: Неверный email или пароль
+ */
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    console.log('Login attempt:', email);
+    await client.connect();
+    const db = client.db('survey_db');
+    const user = await db.collection('users').findOne({ email });
+    console.log('User found:', user);
+    if (!user) return res.status(401).json({ error: 'Неверный email или пароль' });
+
+    const isValid = await bcrypt.compare(password, user.passwordHash);
+    console.log('Password valid:', isValid);
+    if (!isValid) return res.status(401).json({ error: 'Неверный email или пароль' });
+
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '24h' }
+    );
+
+    res
+      .cookie('auth-token', token, {
+        httpOnly: true,
+        sameSite: 'strict',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000 // 1 день
+      })
+      .json({
+        user: {
+          id: user._id,
+          email: user.email,
+          role: user.role,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        },
+        token,
+      });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     summary: Получить информацию о текущем пользователе
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Информация о пользователе
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   type: object
+ *       401:
+ *         description: Не авторизован
+ */
+app.get('/api/auth/me', async (req, res) => {
+  try {
+    // Получаем токен из cookie или заголовка Authorization
+    const token = req.cookies?.['auth-token'] || req.headers['authorization']?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'Не авторизован' });
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    } catch (err) {
+      return res.status(401).json({ error: 'Недействительный токен' });
+    }
+
+    await client.connect();
+    const db = client.db('survey_db');
+    const user = await db.collection('users').findOne({ _id: new ObjectId(decoded.userId) });
+    if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
+
+    // Не возвращаем passwordHash
+    const { passwordHash, ...userWithoutPassword } = user;
+    res.json({ user: userWithoutPassword });
+  } catch (error) {
+    console.error('Get user error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
