@@ -48,9 +48,16 @@ export function SurveyResponseForm({ survey }: SurveyResponseFormProps) {
     return <div>Error: Survey version not found</div>;
   }
   
+  const versionWithSurveyId = {
+    ...version,
+    surveyId: survey.id,
+    createdAt: new Date(version.createdAt),
+    updatedAt: new Date(version.updatedAt),
+    publishedAt: version.publishedAt ? new Date(version.publishedAt) : undefined,
+  };
   const { progress, updateProgress, clearProgress } = useSurveyProgress(
     survey,
-    version
+    versionWithSurveyId
   );
 
   const form = useForm<FormValues>({

@@ -7,7 +7,6 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useState } from 'react';
 import { Trash2, GripVertical, Pencil } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -29,9 +28,12 @@ interface SortablePageItemProps {
   onTitleChange: (title: string) => void;
   onDelete: () => void;
   isDragging: boolean;
+  availableQuestions: any[];
+  onUpdatePages: (pages: Page[]) => void;
+  pages: Page[];
 }
 
-function SortablePageItem({ page, isSelected, onSelect, onTitleChange, onDelete, isDragging }: SortablePageItemProps) {
+function SortablePageItem({ page, isSelected, onSelect, onTitleChange, onDelete, isDragging, availableQuestions, onUpdatePages, pages }: SortablePageItemProps) {
   const {
     attributes,
     listeners,
@@ -52,7 +54,6 @@ function SortablePageItem({ page, isSelected, onSelect, onTitleChange, onDelete,
   const [description, setDescription] = useState(page.description || '');
   const [descriptionPosition, setDescriptionPosition] = useState(page.descriptionPosition || 'after');
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
-  const availableQuestions = pages.flatMap(p => p.questions);
 
   // Синхронизируем локальный стейт с актуальными данными страницы при каждом открытии модалки
   useEffect(() => {
@@ -320,6 +321,9 @@ export function PageManager({ pages, onUpdatePages, onSelectPage, selectedPageId
                   onTitleChange={(title) => handleTitleChange(page.id, title)}
                   onDelete={() => handleDeletePage(page.id)}
                   isDragging={page.id === draggedId}
+                  availableQuestions={pages.flatMap(p => p.questions)}
+                  onUpdatePages={onUpdatePages}
+                  pages={pages}
                 />
               ))}
             </AnimatePresence>

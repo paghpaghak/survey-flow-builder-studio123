@@ -24,6 +24,8 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
   // ЛОГИРУЮ входные пропсы
   console.log('[PagePreview] questions:', questions);
   console.log('[PagePreview] answers:', answers);
+  console.log('[PagePreview] pages:', pages);
+  console.log('[PagePreview] pageId:', pageId);
 
   // Получаем индекс текущей страницы
   const pageIndex = pages.findIndex(p => p.id === pageId);
@@ -47,7 +49,7 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
     };
     return (
       <div className="space-y-6">
-        {page?.descriptionPosition === 'before' && (
+        {page?.description && (
           <div className="mb-4 text-muted-foreground">
             <PlaceholderText text={page.description} answers={answers} questions={questions} />
           </div>
@@ -61,7 +63,6 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
               </Label>
               {question.description && (
                 <p className="text-sm text-gray-500">
-                  {console.log('[PagePreview] question', question.id, 'desc:', question.description, 'answers:', answers)}
                   <PlaceholderText text={question.description} answers={answers} questions={questions} />
                 </p>
               )}
@@ -69,6 +70,7 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
             {question.type === QuestionType.ParallelGroup ? (
               (() => {
                 const settings: ParallelBranchSettings = {
+                  sourceQuestionId: '',
                   itemLabel: 'Элемент',
                   displayMode: 'sequential',
                   minItems: 1,
@@ -78,6 +80,15 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
                 const count = Number(answers[countKey]) || 0;
                 const hasSubQuestions = Array.isArray(question.parallelQuestions) && question.parallelQuestions.length > 0;
                 const repeatIndex = repeatIndexes[question.id] || 0;
+                console.log('[PARALLEL] Рендер параллельной группы', { questionId: question.id, count, repeatIndex, hasSubQuestions });
+                if (hasSubQuestions) {
+                  (question.parallelQuestions || []).forEach((qId, idx) => {
+                    const subQ = questions.find(q => q.id === qId);
+                    if (subQ) {
+                      console.log('[PARALLEL] Ветка', idx, 'Вопрос:', subQ);
+                    }
+                  });
+                }
                 return (
                   <div className="space-y-4">
                     <div className="space-y-2">
@@ -141,11 +152,6 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
             )}
           </div>
         ))}
-        {page?.descriptionPosition !== 'before' && (
-          <div className="mb-4 text-muted-foreground">
-            <PlaceholderText text={page.description} answers={answers} questions={questions} />
-          </div>
-        )}
       </div>
     );
   }
@@ -191,7 +197,7 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
 
   return (
     <div className="space-y-6">
-      {page?.descriptionPosition === 'before' && (
+      {page?.description && (
         <div className="mb-4 text-muted-foreground">
           <PlaceholderText text={page.description} answers={answers} questions={questions} />
         </div>
@@ -204,24 +210,19 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
           </Label>
           {currentQuestion.description && (
             <p className="text-sm text-gray-500">
-              {console.log('[PagePreview] currentQuestion', currentQuestion.id, 'desc:', currentQuestion.description, 'answers:', answers)}
               <PlaceholderText text={currentQuestion.description} answers={answers} questions={questions} />
             </p>
           )}
         </div>
         {RenderParallelBranchPreview({ q: currentQuestion, questions, answers, onAnswerChange })}
       </div>
-      {page?.descriptionPosition !== 'before' && (
-        <div className="mb-4 text-muted-foreground">
-          <PlaceholderText text={page.description} answers={answers} questions={questions} />
-        </div>
-      )}
     </div>
   );
 }
 
 function RenderParallelBranchPreview({ q, questions, answers, onAnswerChange }) {
   const settings = {
+    sourceQuestionId: '',
     itemLabel: 'Элемент',
     displayMode: 'sequential',
     minItems: 1,
@@ -229,6 +230,7 @@ function RenderParallelBranchPreview({ q, questions, answers, onAnswerChange }) 
   };
   const countKey = q.id + '_count';
   const count = Number(answers[countKey]) || 0;
+  console.log('[PARALLEL] RenderParallelBranchPreview', { q, count, answers });
   return (
     <div className="space-y-4">
       <div className="space-y-2">
@@ -248,9 +250,10 @@ function RenderParallelBranchPreview({ q, questions, answers, onAnswerChange }) 
         <div className="border rounded-lg p-4 bg-card">
           <h3 className="font-medium mb-4">{settings.itemLabel}</h3>
           <div className="space-y-4">
-            {(q.parallelQuestions || []).map(subId => {
+            {(q.parallelQuestions || []).map((subId, idx) => {
               const subQ = questions.find(qq => qq.id === subId);
               if (!subQ) return null;
+              console.log('[PARALLEL] Ветка', idx, 'Вопрос:', subQ);
               if (subQ.type === 'parallel_group' || subQ.type === 'ParallelGroup') {
                 return <RenderParallelBranchPreview key={subQ.id} q={subQ} questions={questions} answers={answers} onAnswerChange={onAnswerChange} />;
               }
@@ -260,7 +263,7 @@ function RenderParallelBranchPreview({ q, questions, answers, onAnswerChange }) 
                     {subQ.title}
                     {subQ.required && <span className="text-red-500 ml-1">*</span>}
                   </Label>
-                  {renderQuestion(subQ, (id, value) => onAnswerChange(id, value))}
+                  {renderQuestion(subQ, questions, answers, (id, value) => onAnswerChange(id, value))}
                 </div>
               );
             })}
@@ -271,10 +274,16 @@ function RenderParallelBranchPreview({ q, questions, answers, onAnswerChange }) 
   );
 }
 
-function renderQuestion(question: Question, answerHandler: (id: string, value: any) => void) {
+function renderQuestion(
+  question: Question,
+  questions: Question[],
+  answers: Record<string, any>,
+  answerHandler: (id: string, value: any) => void
+) {
   switch (question.type) {
     case QuestionType.ParallelGroup: {
       const settings: ParallelBranchSettings = {
+        sourceQuestionId: '',
         itemLabel: 'Элемент',
         displayMode: 'sequential',
         minItems: 1,
@@ -305,12 +314,7 @@ function renderQuestion(question: Question, answerHandler: (id: string, value: a
                 {Array.from({ length: count }).map((_, index) => (
                   <button
                     key={index}
-                    onClick={() => setCurrentQuestionId(prev => prev ? `${question.id}.${index}` : null)}
-                    className={`px-4 py-2 rounded-lg min-w-[120px] transition-colors ${
-                      currentQuestionId === `${question.id}.${index}`
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-secondary hover:bg-secondary/80'
-                    }`}
+                    className={`px-4 py-2 rounded-lg min-w-[120px] transition-colors bg-secondary hover:bg-secondary/80`}
                   >
                     {settings.itemLabel} {index + 1}
                   </button>
@@ -318,7 +322,7 @@ function renderQuestion(question: Question, answerHandler: (id: string, value: a
               </div>
               <div className="border rounded-lg p-4 bg-card">
                 <h3 className="font-medium mb-4">
-                  {settings.itemLabel} {currentQuestionId?.split('.').pop()}
+                  {settings.itemLabel}
                 </h3>
                 <div className="space-y-4">
                   {(question.parallelQuestions || [])
@@ -330,7 +334,7 @@ function renderQuestion(question: Question, answerHandler: (id: string, value: a
                           {subQuestion.title}
                           {subQuestion.required && <span className="text-red-500 ml-1">*</span>}
                         </Label>
-                        {renderQuestion(subQuestion, answerHandler)}
+                        {renderQuestion(subQuestion, questions, answers, answerHandler)}
                       </div>
                     ))}
                 </div>

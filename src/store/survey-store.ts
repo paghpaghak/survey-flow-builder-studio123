@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { Survey, SurveyStatus, SurveyVersion } from '@/types/survey';
 import { v4 as uuidv4 } from 'uuid';
-import { fetchSurveys, createSurvey, deleteSurvey as apiDeleteSurvey, updateSurvey as apiUpdateSurvey } from '../lib/api';
+import { fetchSurveys, createSurvey, deleteSurvey as apiDeleteSurvey, updateSurvey as apiUpdateSurvey } from "../lib/api";
 
 /**
  * <summary>
@@ -76,11 +76,11 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
   addSurvey: async (title, description) => {
     try {
       console.log('Создание опроса через API...');
-      const now = new Date();
+      const now = new Date().toISOString();
       const initialPage = {
         id: crypto.randomUUID(),
         title: 'Страница 1',
-        questions: []
+        questions: [] as any[],
       };
       const initialVersion = {
         id: crypto.randomUUID(),
@@ -99,6 +99,7 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
         description,
         status: 'draft',
         currentVersion: 1,
+        publishedVersion: 1,
         versions: [initialVersion],
         createdAt: now,
         updatedAt: now,
@@ -122,7 +123,7 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
   
   updateSurveyStatus: (id, status) => set((state) => ({
     surveys: state.surveys.map((survey) => 
-      survey.id === id ? { ...survey, status, updatedAt: new Date() } : survey
+      survey.id === id ? { ...survey, status, updatedAt: new Date().toISOString() } : survey
     ),
   })),
   
@@ -149,15 +150,16 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
       // Create maps for quick lookups
       const previousQuestionsMap = new Map();
       previousVersion.pages.forEach(page => {
-        page.questions.forEach(questionId => {
-          const question = previousVersion.questions.find(q => q.id === questionId);
-          if (question) {
-            previousQuestionsMap.set(questionId, { ...question, pageId: page.id });
+        page.questions.forEach((question) => {
+          const questionId = typeof question === 'string' ? question : question.id;
+          const questionObj = previousVersion.questions.find(q => q.id === questionId);
+          if (questionObj) {
+            previousQuestionsMap.set(questionId, { ...questionObj, pageId: page.id });
           }
         });
       });
 
-      // Process pages and their questions
+      // Process pages and their questions (Question[])
       const processedPages = updatedVersion.pages.map(page => {
         // Get all questions that belong to this page
         const pageQuestions = updatedVersion.questions
@@ -174,7 +176,7 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
 
         return {
           ...page,
-          questions: pageQuestions.map(q => q.id)
+          questions: pageQuestions,
         };
       });
 
@@ -182,15 +184,28 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
         ...updatedVersion,
         pages: processedPages,
         questions: updatedVersion.questions,
-        updatedAt: new Date()
-      };
+        updatedAt: new Date().toISOString(),
+        createdAt: typeof updatedVersion.createdAt === 'string' ? updatedVersion.createdAt : '',
+        publishedAt: typeof updatedVersion.publishedAt === 'string' ? updatedVersion.publishedAt : undefined,
+        archivedAt: typeof updatedVersion.archivedAt === 'string' ? updatedVersion.archivedAt : undefined,
+      } as Survey['versions'][number];
 
       try {
         await apiUpdateSurvey({
           ...updatedSurvey,
           versions: updatedSurvey.versions.map(v =>
             v.version === updatedSurvey.currentVersion ? newVersion : v
-          )
+          ).map(v => ({
+            ...v,
+            createdAt: typeof v.createdAt === 'string' ? v.createdAt : '',
+            updatedAt: typeof v.updatedAt === 'string' ? v.updatedAt : '',
+            publishedAt: typeof v.publishedAt === 'string' ? v.publishedAt : undefined,
+            archivedAt: typeof v.archivedAt === 'string' ? v.archivedAt : undefined,
+            pages: v.pages.map(p => ({
+              ...p,
+              questions: (p.questions as any[]).map(q => typeof q === 'string' ? updatedVersion.questions.find(qq => qq.id === q) : q)
+            })),
+          }) as Survey['versions'][number]),
         });
 
         set((state) => ({
@@ -200,7 +215,17 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
                   ...updatedSurvey,
                   versions: updatedSurvey.versions.map(v =>
                     v.version === updatedSurvey.currentVersion ? newVersion : v
-                  )
+                  ).map(v => ({
+                    ...v,
+                    createdAt: typeof v.createdAt === 'string' ? v.createdAt : '',
+                    updatedAt: typeof v.updatedAt === 'string' ? v.updatedAt : '',
+                    publishedAt: typeof v.publishedAt === 'string' ? v.publishedAt : undefined,
+                    archivedAt: typeof v.archivedAt === 'string' ? v.archivedAt : undefined,
+                    pages: v.pages.map(p => ({
+                      ...p,
+                      questions: (p.questions as any[]).map(q => typeof q === 'string' ? updatedVersion.questions.find(qq => qq.id === q) : q)
+                    })),
+                  }) as Survey['versions'][number]),
                 }
               : s
           )
@@ -224,24 +249,25 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
     const currentVersion = survey.versions.find(v => v.version === survey.currentVersion);
     if (!currentVersion) return;
 
-    const newVersion: SurveyVersion = {
+    const now = new Date().toISOString();
+    const newVersion = {
       id: uuidv4(),
-      surveyId,
       version: survey.currentVersion + 1,
       status: 'draft',
       title: survey.title,
       description: survey.description,
       questions: [...currentVersion.questions],
-      pages: [...currentVersion.pages],
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+      pages: currentVersion.pages.map(p => ({ ...p, questions: [...p.questions] })),
+      createdAt: now,
+      updatedAt: now,
+      publishedAt: undefined,
+    } as Survey['versions'][number];
 
     const updatedSurvey = {
       ...survey,
       currentVersion: newVersion.version,
       versions: [...survey.versions, newVersion],
-      updatedAt: new Date()
+      updatedAt: now,
     };
 
     set((state) => ({
@@ -254,7 +280,9 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
   getVersion: (surveyId, version) => {
     const state = get();
     const survey = state.surveys.find(s => s.id === surveyId);
-    return survey?.versions.find(v => v.version === version);
+    const v = survey?.versions.find(v => v.version === version);
+    if (!v) return undefined;
+    return { ...v, surveyId } as import('@/types/survey').SurveyVersion;
   },
 
   revertToVersion: (surveyId, version) => {
@@ -265,18 +293,18 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
     const targetVersion = survey.versions.find(v => v.version === version);
     if (!targetVersion) return;
 
-    // Create a new version based on the target version
-    const newVersion: SurveyVersion = {
+    const now = new Date().toISOString();
+    const newVersion: Survey['versions'][number] = {
       id: uuidv4(),
-      surveyId,
       version: survey.currentVersion + 1,
       status: 'draft',
       title: targetVersion.title,
       description: targetVersion.description,
       questions: [...targetVersion.questions],
-      pages: [...targetVersion.pages],
-      createdAt: new Date(),
-      updatedAt: new Date()
+      pages: targetVersion.pages.map(p => ({ ...p, questions: [...p.questions] })),
+      createdAt: now,
+      updatedAt: now,
+      publishedAt: undefined,
     };
 
     const updatedSurvey = {
@@ -285,7 +313,7 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
       description: targetVersion.description,
       currentVersion: newVersion.version,
       versions: [...survey.versions, newVersion],
-      updatedAt: new Date()
+      updatedAt: now,
     };
 
     set((state) => ({

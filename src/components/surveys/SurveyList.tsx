@@ -34,7 +34,7 @@ import { createSurvey } from '@/lib/api';
 const STATUS_LABELS: Record<SurveyStatus, string> = {
   draft: "Черновик",
   published: "Опубликован",
-  closed: "Закрыт",
+  archived: "Архив",
 };
 
 const SORT_LABELS = {
@@ -46,13 +46,14 @@ const SORT_LABELS = {
 interface SurveyListProps {
   surveys: Survey[];
   reloadSurveys?: () => void;
-  onSurveyCreated?: (survey: Survey) => void;
+  onSurveyCreated?: () => void;
 }
 
 export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyListProps) {
   const { deleteSurvey, loadSurveys } = useSurveyStore();
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'title' | 'status'>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -100,8 +101,8 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
     }
   };
 
-  const handleSurveyCreated = async (survey: Survey) => {
-    if (onSurveyCreated) onSurveyCreated(survey);
+  const handleSurveyCreated = async () => {
+    if (onSurveyCreated) onSurveyCreated();
     if (reloadSurveys) await reloadSurveys();
     setCreateDialogOpen(false);
   };
@@ -119,24 +120,10 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
     const newVersions = original.versions.map(version => {
       const pageIdMap: Record<string, string> = {};
       const questionIdMap: Record<string, string> = {};
-      // Копируем страницы с новыми id
-      const newPages = version.pages.map(page => {
-        const newPageId = uuidv4();
-        pageIdMap[page.id] = newPageId;
-        return {
-          ...page,
-          id: newPageId,
-          questions: page.questions.map(q => {
-            if (!questionIdMap[q.id]) questionIdMap[q.id] = uuidv4();
-            return questionIdMap[q.id];
-          })
-        };
-      });
       // Копируем вопросы с новыми id
       const newQuestions = version.questions.map(q => {
         const newQId = questionIdMap[q.id] || uuidv4();
         questionIdMap[q.id] = newQId;
-        // Копируем параллельные вопросы, если есть
         let parallelQuestions = undefined;
         if (q.parallelQuestions) {
           parallelQuestions = q.parallelQuestions.map(pid => questionIdMap[pid] || uuidv4());
@@ -148,24 +135,38 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
           parallelQuestions
         };
       });
+      // Копируем страницы с новыми id и массивом вопросов (Question[])
+      const newPages = version.pages.map(page => {
+        const newPageId = uuidv4();
+        pageIdMap[page.id] = newPageId;
+        return {
+          ...page,
+          id: newPageId,
+          questions: page.questions.map(q => {
+            // Находим объект вопроса по id
+            const questionObj = newQuestions.find(nq => nq.id === (questionIdMap[q.id] || q.id));
+            return questionObj || q;
+          })
+        };
+      });
       return {
         ...version,
         id: uuidv4(),
-        version: 1, // Новая копия всегда с первой версией
+        version: 1,
         title: `${version.title || original.title} (Копия)` ,
         pages: newPages,
         questions: newQuestions,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         publishedAt: undefined,
-        status: 'draft',
+        status: 'draft' as SurveyStatus,
       };
     });
     const newSurvey = {
       ...original,
       id: newSurveyId,
       title: `${original.title} (Копия)` ,
-      status: 'draft',
+      status: 'draft' as SurveyStatus,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       versions: newVersions,
@@ -241,9 +242,7 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
           </DropdownMenu>
 
           <CreateSurveyDialog 
-            open={createDialogOpen}
-            onOpenChange={setCreateDialogOpen}
-            onSurveyCreated={handleSurveyCreated}
+            onSurveyCreated={() => handleSurveyCreated()}
           />
         </div>
       </div>
@@ -364,8 +363,6 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
                           {showVersionHistory === survey.id && (
                             <SurveyVersionHistory
                               surveyId={survey.id}
-                              open={showVersionHistory === survey.id}
-                              onOpenChange={open => setShowVersionHistory(open ? survey.id : null)}
                             />
                           )}
                         </TooltipProvider>

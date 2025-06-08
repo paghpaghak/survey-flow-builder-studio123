@@ -1,21 +1,17 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import clientPromise from '@/api/mongodb';
 
 export async function GET(
   request: Request,
   { params }: { params: { surveyId: string } }
 ) {
   try {
-    const responses = await db.surveyResponse.findMany({
-      where: {
-        surveyId: params.surveyId,
-      },
-      orderBy: {
-        metadata: {
-          completedAt: 'desc',
-        },
-      },
-    });
+    const client = await clientPromise;
+    const db = client.db('survey_db');
+    const responses = await db.collection('surveyResponses')
+      .find({ surveyId: params.surveyId })
+      .sort({ 'metadata.completedAt': -1 })
+      .toArray();
 
     return NextResponse.json(responses);
   } catch (error) {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Tree, TreeApi } from 'react-arborist';
-import { Page, Question } from '@/types/survey';
+import { Page, Question, QuestionType } from '@/types/survey';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay } from '@dnd-kit/core';
@@ -42,7 +42,7 @@ function buildTreeData(pages: Page[], questions: Question[]): TreeNodeData[] {
     const pageQuestions = questions.filter(q => q.pageId === page.id);
     const usedIds = new Set<string>();
     for (const q of pageQuestions) {
-      if (q.type === 'parallel_group' || q.type === 'ParallelGroup') {
+      if (q.type === QuestionType.ParallelGroup) {
         nodes.push({ id: q.id, type: 'parallel_group', title: q.title, parentId: page.id });
         (q.parallelQuestions || []).forEach((subId) => {
           usedIds.add(subId);
@@ -50,12 +50,18 @@ function buildTreeData(pages: Page[], questions: Question[]): TreeNodeData[] {
       }
     }
     for (const q of pageQuestions) {
-      if ((q.type !== 'parallel_group' && q.type !== 'ParallelGroup') && !usedIds.has(q.id)) {
+      if (q.type !== QuestionType.ParallelGroup && !usedIds.has(q.id)) {
         nodes.push({ id: q.id, type: 'question', title: q.title || 'Без названия', parentId: page.id });
       }
     }
   }
   return nodes;
+}
+
+function getTransformStyle(transform: any) {
+  if (!transform) return undefined;
+  const { x = 0, y = 0, scaleX = 1, scaleY = 1 } = transform;
+  return `translate3d(${x}px, ${y}px, 0) scaleX(${scaleX}) scaleY(${scaleY})`;
 }
 
 function SortableQuestionNode({ node, style, isSelected, onSelect, onUpdateTitle, onDelete, editing, setEditing, editingTitle, setEditingTitle, number, nested }: {
@@ -83,9 +89,7 @@ function SortableQuestionNode({ node, style, isSelected, onSelect, onUpdateTitle
 
   const styleWithTransform = {
     ...(style ?? {}),
-    ...(typeof CSS?.Transform?.toString === 'function' && transform != null
-      ? { transform: CSS.Transform.toString(transform) }
-      : {}),
+    ...(transform != null ? { transform: getTransformStyle(transform) } : {}),
     ...(typeof transition === 'string' ? { transition } : {}),
   };
 
@@ -173,60 +177,53 @@ function SortableQuestionNode({ node, style, isSelected, onSelect, onUpdateTitle
 }
 
 function RenderParallelBranch({ q, questions, selectedQuestionId, onSelectQuestion, onUpdateQuestionTitle, onDeleteQuestion, editingQuestionId, setEditingQuestionId, editingQuestionTitle, setEditingQuestionTitle, setConfirmDeleteParallelId, level = 1 }) {
-  const isExpanded = true; // Можно добавить управление сворачиванием
   return (
     <div style={{ marginLeft: level * 16 }}>
-      <div className="font-semibold text-primary flex items-center gap-2">
-        <Repeat2 className="w-4 h-4" />
-        {q.title}
-      </div>
-      {isExpanded && (
-        <div className="mt-1 space-y-1">
-          {(q.parallelQuestions || []).map((subId, i) => {
-            const subQ = questions.find(qq => qq.id === subId);
-            if (!subQ) return null;
-            if (subQ.type === 'parallel_group' || subQ.type === 'ParallelGroup') {
-              return (
-                <RenderParallelBranch
-                  key={subQ.id}
-                  q={subQ}
-                  questions={questions}
-                  selectedQuestionId={selectedQuestionId}
-                  onSelectQuestion={onSelectQuestion}
-                  onUpdateQuestionTitle={onUpdateQuestionTitle}
-                  onDeleteQuestion={onDeleteQuestion}
-                  editingQuestionId={editingQuestionId}
-                  setEditingQuestionId={setEditingQuestionId}
-                  editingQuestionTitle={editingQuestionTitle}
-                  setEditingQuestionTitle={setEditingQuestionTitle}
-                  setConfirmDeleteParallelId={setConfirmDeleteParallelId}
-                  level={level + 1}
-                />
-              );
-            }
+      <div className="mt-1 space-y-1">
+        {(q.parallelQuestions || []).map((subId, i) => {
+          const subQ = questions.find(qq => qq.id === subId);
+          if (!subQ) return null;
+          if (subQ.type === 'parallel_group' || subQ.type === 'ParallelGroup') {
             return (
-              <SortableQuestionNode
+              <RenderParallelBranch
                 key={subQ.id}
-                node={{ data: { ...subQ, type: 'question', title: subQ.title || 'Без названия' } }}
-                style={{}}
-                isSelected={subQ.id === selectedQuestionId}
-                onSelect={() => onSelectQuestion && onSelectQuestion(subQ.id)}
-                onUpdateTitle={newTitle => onUpdateQuestionTitle?.(subQ.id, newTitle)}
-                onDelete={onDeleteQuestion ? () => onDeleteQuestion(subQ.id) : undefined}
-                editing={editingQuestionId === subQ.id}
-                setEditing={v => {
-                  setEditingQuestionId && setEditingQuestionId(v ? subQ.id : null);
-                  setEditingQuestionTitle && setEditingQuestionTitle(subQ.title || '');
-                }}
-                editingTitle={editingQuestionId === subQ.id ? editingQuestionTitle : undefined}
-                setEditingTitle={setEditingQuestionTitle}
-                number={i + 1}
-                nested
+                q={subQ}
+                questions={questions}
+                selectedQuestionId={selectedQuestionId}
+                onSelectQuestion={onSelectQuestion}
+                onUpdateQuestionTitle={onUpdateQuestionTitle}
+                onDeleteQuestion={onDeleteQuestion}
+                editingQuestionId={editingQuestionId}
+                setEditingQuestionId={setEditingQuestionId}
+                editingQuestionTitle={editingQuestionTitle}
+                setEditingQuestionTitle={setEditingQuestionTitle}
+                setConfirmDeleteParallelId={setConfirmDeleteParallelId}
+                level={level + 1}
               />
             );
-          })}
-        </div>
-      )}
+          }
+          return (
+            <SortableQuestionNode
+              key={subQ.id}
+              node={{ data: { ...subQ, type: 'question', title: subQ.title || 'Без названия' } }}
+              style={{}}
+              isSelected={subQ.id === selectedQuestionId}
+              onSelect={() => onSelectQuestion && onSelectQuestion(subQ.id)}
+              onUpdateTitle={newTitle => onUpdateQuestionTitle?.(subQ.id, newTitle)}
+              onDelete={onDeleteQuestion ? () => onDeleteQuestion(subQ.id) : undefined}
+              editing={editingQuestionId === subQ.id}
+              setEditing={v => {
+                setEditingQuestionId && setEditingQuestionId(v ? subQ.id : null);
+                setEditingQuestionTitle && setEditingQuestionTitle(subQ.title || '');
+              }}
+              editingTitle={editingQuestionId === subQ.id ? editingQuestionTitle : undefined}
+              setEditingTitle={setEditingQuestionTitle}
+              number={i + 1}
+              nested
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -258,9 +255,7 @@ function SortableParallelGroupNode({ q, idx, isSelected, isExpanded, onSelect, o
   } = useSortable({ id: q.id });
 
   const styleWithTransform = {
-    ...(typeof CSS?.Transform?.toString === 'function' && transform != null
-      ? { transform: CSS.Transform.toString(transform) }
-      : {}),
+    ...(typeof transform !== 'undefined' && transform != null ? { transform: getTransformStyle(transform) } : {}),
     ...(typeof transition === 'string' ? { transition } : {}),
   };
 
@@ -387,14 +382,14 @@ export const SidebarTreeView: React.FC<SidebarTreeViewProps> = ({
     
     // --- Ограничения для параллельных веток ---
     // 1. Запрет перемещения вопроса внутрь/вне ветки
-    const isActiveInParallel = questions.some(q => (q.type === 'parallel_group' || q.type === 'ParallelGroup') && q.parallelQuestions?.includes(active.id));
-    const isOverInParallel = questions.some(q => (q.type === 'parallel_group' || q.type === 'ParallelGroup') && q.parallelQuestions?.includes(over.id));
+    const isActiveInParallel = questions.some(q => q.type === QuestionType.ParallelGroup && q.parallelQuestions?.includes(String(active.id)));
+    const isOverInParallel = questions.some(q => q.type === QuestionType.ParallelGroup && q.parallelQuestions?.includes(String(over.id)));
     // 2. Запрет перемещения между разными ветками
     let activeParallelId = null;
     let overParallelId = null;
     for (const q of questions) {
-      if ((q.type === 'parallel_group' || q.type === 'ParallelGroup') && q.parallelQuestions?.includes(active.id)) activeParallelId = q.id;
-      if ((q.type === 'parallel_group' || q.type === 'ParallelGroup') && q.parallelQuestions?.includes(over.id)) overParallelId = q.id;
+      if (q.type === QuestionType.ParallelGroup && q.parallelQuestions?.includes(String(active.id))) activeParallelId = q.id;
+      if (q.type === QuestionType.ParallelGroup && q.parallelQuestions?.includes(String(over.id))) overParallelId = q.id;
     }
     if (isActiveInParallel !== isOverInParallel || (activeParallelId && overParallelId && activeParallelId !== overParallelId)) {
       window.alert('Перемещение вопросов внутрь/вне параллельной ветки или между ветками запрещено.');
@@ -443,7 +438,7 @@ export const SidebarTreeView: React.FC<SidebarTreeViewProps> = ({
             // Собираем id всех вопросов, входящих в параллельные ветки на этой странице
             const parallelIds = new Set<string>();
             questions.forEach(q => {
-              if ((q.type === 'parallel_group' || q.type === 'ParallelGroup') && Array.isArray(q.parallelQuestions)) {
+              if (q.type === QuestionType.ParallelGroup && Array.isArray(q.parallelQuestions)) {
                 q.parallelQuestions.forEach(id => parallelIds.add(id));
               }
             });
@@ -597,7 +592,7 @@ export const SidebarTreeView: React.FC<SidebarTreeViewProps> = ({
                       <SortableContext items={pageQuestions.map(q => q.id)} strategy={verticalListSortingStrategy}>
                         <div className="space-y-1">
                           {pageQuestions.map((q, idx) => {
-                            if (q.type === 'parallel_group' || q.type === 'ParallelGroup') {
+                            if (q.type === QuestionType.ParallelGroup) {
                               const isExpanded = expandedGroups[q.id] || false;
                               return (
                                 <SortableParallelGroupNode
@@ -670,7 +665,7 @@ export const SidebarTreeView: React.FC<SidebarTreeViewProps> = ({
                         </DropdownMenu>
                       </div>
                       <textarea
-                        ref={el => descriptionRefs.current[page.id] = el}
+                        ref={el => { descriptionRefs.current[page.id] = el; }}
                         className="w-full border rounded p-2 min-h-[60px]"
                         value={editDescription}
                         onChange={e => setEditDescription(e.target.value)}

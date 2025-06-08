@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useSurveyStore } from '@/store/survey-store';
+import { useSurveyStore } from "../store/survey-store";
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Eye, Trash2 } from 'lucide-react';
 import React, { useState, useEffect } from 'react';

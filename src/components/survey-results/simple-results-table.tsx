@@ -1,7 +1,9 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Survey, SurveyResponse, Question } from '@/types/survey';
+import { Survey } from '@/types/survey';
+import { Question } from '@/types/survey';
+import { SurveyResponse } from '@/types/survey-response';
 import {
   Table,
   TableBody,
@@ -59,11 +61,7 @@ export function SimpleResultsTable({
                 <TableRow key={response.id}>
                   <TableCell>
                     {(() => {
-                      const dateStr =
-                        response?.metadata?.completedAt ||
-                        response?.createdAt ||
-                        response?.created_at ||
-                        (response?._id?.getTimestamp ? response._id.getTimestamp() : null);
+                      const dateStr = response?.metadata?.completedAt;
                       if (!dateStr) return '-';
                       try {
                         return format(new Date(dateStr), 'PPP', { locale: ru });

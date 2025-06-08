@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import clientPromise from '@/api/mongodb';
 import { ObjectId } from 'mongodb';
 
 interface RouteParams {
@@ -10,8 +10,10 @@ interface RouteParams {
 
 export async function GET(request: Request, { params }: RouteParams) {
   try {
+    const client = await clientPromise;
+    const db = client.db('survey_db');
     const surveyId = new ObjectId(params.surveyId);
-    const count = await db.surveyResponse.count({ surveyId });
+    const count = await db.collection('surveyResponses').countDocuments({ surveyId });
 
     return NextResponse.json({ count });
   } catch (error) {

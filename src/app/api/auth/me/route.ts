@@ -5,7 +5,8 @@ import { User } from '@/lib/models/user.model';
 
 export async function GET(request: NextRequest) {
   try {
-    const token = cookies().get('auth-token')?.value;
+    const cookieStore = await cookies();
+    const token = cookieStore.get('auth-token')?.value;
 
     if (!token) {
       return NextResponse.json(

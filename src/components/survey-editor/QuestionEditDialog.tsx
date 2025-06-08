@@ -1,4 +1,4 @@
-import { SurveyQuestion, QuestionType, QuestionTypeSettings, ParallelBranchSettings } from "@/types/survey";
+import { Question, QuestionType, QuestionTypeSettings, ParallelBranchSettings } from "@/types/survey";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,10 +15,10 @@ import { GripVertical } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 interface QuestionEditDialogProps {
-  question: SurveyQuestion;
-  availableQuestions: SurveyQuestion[];
+  question: Question;
+  availableQuestions: Question[];
   onClose: () => void;
-  onSave?: (updatedQuestion: SurveyQuestion) => void;
+  onSave?: (updatedQuestion: Question) => void;
   readOnly?: boolean;
 }
 
@@ -46,8 +46,8 @@ export default function QuestionEditDialog({
   const [description, setDescription] = useState("");
   const [options, setOptions] = useState<{ id: string; text: string }[]>([]);
   const [transitionRules, setTransitionRules] = useState<{ id: string; answer: string; nextQuestionId: string; }[]>([]);
-  const [settings, setSettings] = useState<QuestionTypeSettings[QuestionType] | undefined>();
-  const [currentQuestion, setCurrentQuestion] = useState<SurveyQuestion | null>(null);
+  const [settings, setSettings] = useState<any>();
+  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const saveButtonRef = useRef<HTMLButtonElement>(null);
 
   // --- состояние для параллельной ветки ---
@@ -110,11 +110,14 @@ export default function QuestionEditDialog({
         }
       }
       setParallelSettings({
-        ...(question.settings as ParallelBranchSettings) || {},
+        sourceQuestionId: (question.settings as any)?.sourceQuestionId ?? '',
         maxItems,
         minItems: (question.settings as any)?.minItems ?? 1,
         itemLabel: (question.settings as any)?.itemLabel ?? '',
         displayMode: (question.settings as any)?.displayMode ?? 'sequential',
+        countLabel: (question.settings as any)?.countLabel,
+        countDescription: (question.settings as any)?.countDescription,
+        countRequired: (question.settings as any)?.countRequired,
       });
       console.log('[useEffect] parallelSettings инициализированы:', {
         maxItems,
@@ -131,7 +134,7 @@ export default function QuestionEditDialog({
       rule => rule.answer && rule.nextQuestionId
     );
 
-    const regularQuestion: SurveyQuestion = {
+    const regularQuestion: Question = {
       ...currentQuestion,
       title,
       description,
@@ -386,7 +389,7 @@ export default function QuestionEditDialog({
                     <Checkbox
                       id="required"
                       checked={required}
-                      onCheckedChange={setRequired}
+                      onCheckedChange={checked => setRequired(!!checked)}
                       disabled={readOnly}
                     />
                     <Label htmlFor="required">Обязательный вопрос</Label>

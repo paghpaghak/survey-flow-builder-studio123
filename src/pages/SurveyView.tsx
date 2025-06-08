@@ -161,6 +161,7 @@ export default function SurveyView() {
             <ReactFlowProvider>
               <VisualEditor
                 questions={currentPageQuestions}
+                allQuestions={questions}
                 readOnly={true}
                 pages={pages}
               />

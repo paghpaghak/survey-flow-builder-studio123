@@ -18,7 +18,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import './flow.css';
-import { Question } from '@/types/survey';
+import { Question, QuestionType } from '@/types/survey';
 import QuestionNode from './QuestionNode';
 import ResolutionNode from './ResolutionNode';
 import QuestionEditDialog from './QuestionEditDialog';
@@ -206,7 +206,7 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
     const newNodes: Node[] = [];
     questions.forEach((question, index) => {
       // Если это параллельная ветка — отдельный тип ноды
-      if (question.type === 'parallel_group' || question.type === 'ParallelGroup') {
+      if (question.type === QuestionType.ParallelGroup) {
         const savedPosition = nodesPositionsRef.current[question.id];
         const existingPosition = question.position;
         const defaultPosition = {
@@ -237,9 +237,9 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
         return;
       }
       // Обычные вопросы (все, кроме параллельных и резолюции)
-      if (question.type !== 'parallel_group' && question.type !== 'ParallelGroup' && question.type !== 'resolution') {
+      if ((question.type as QuestionType) !== QuestionType.ParallelGroup && (question.type as QuestionType) !== QuestionType.Resolution) {
         // Проверяем, не вложенный ли это вопрос
-        const isInParallel = questions.some(q => q.type === 'parallel_group' && q.parallelQuestions?.includes(question.id));
+        const isInParallel = questions.some(q => q.type === QuestionType.ParallelGroup && q.parallelQuestions?.includes(question.id));
         if (isInParallel) return;
         const savedPosition = nodesPositionsRef.current[question.id];
         const existingPosition = question.position;
@@ -305,13 +305,13 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
       if (!sourceQuestion || !targetQuestion) return;
 
       // --- Запрет входящих стрелок в параллельную ветку ---
-      if (targetQuestion.type === 'parallel_group' || targetQuestion.type === 'ParallelGroup') {
+      if (targetQuestion.type === QuestionType.ParallelGroup) {
         window.alert('Входящие переходы в параллельную ветку запрещены.');
         return;
       }
 
       // --- Разрешить только один выход наружу из параллельной ветки ---
-      if (sourceQuestion.type === 'parallel_group' || sourceQuestion.type === 'ParallelGroup') {
+      if (sourceQuestion.type === QuestionType.ParallelGroup) {
         // Считаем только переходы наружу (не на вложенные вопросы)
         const parallelIds = sourceQuestion.parallelQuestions || [];
         const outgoingRules = (sourceQuestion.transitionRules || []).filter(r => !parallelIds.includes(r.nextQuestionId));

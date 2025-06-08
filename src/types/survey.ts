@@ -18,8 +18,6 @@ export enum QuestionType {
   Checkbox = 'checkbox',
   Select = 'select',
   Date = 'date',
-  Time = 'time',
-  DateTime = 'datetime',
   Phone = 'phone',
   Email = 'email',
   ParallelGroup = 'parallel_group',
@@ -64,6 +62,7 @@ export type QuestionTypeSettings = {
   [QuestionType.Email]: Record<string, never>;
   [QuestionType.Number]: NumberSettings;
   [QuestionType.ParallelGroup]: ParallelBranchSettings;
+  [QuestionType.Resolution]: Record<string, never>;
 };
 
 // Тип для правил перехода
@@ -155,10 +154,10 @@ export interface SurveyVersion {
   description: string;
   pages: Page[];
   questions: Question[];
-  createdAt: Date;
-  updatedAt: Date;
-  publishedAt?: Date;
-  archivedAt?: Date;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt?: string;
+  archivedAt?: string;
 }
 
 /**
@@ -193,6 +192,7 @@ export interface Survey {
     createdAt: string;
     updatedAt: string;
     publishedAt?: string;
+    archivedAt?: string;
   }[];
   createdAt: string;
   updatedAt: string;
@@ -217,7 +217,7 @@ export type PageTransitionRule = {
 export interface SurveyPage {
   id: string;
   title: string;
-  questions: SurveyQuestion[];
+  questions: Question[];
   transitionRules?: PageTransitionRule[];
   // ... другие поля ...
 }

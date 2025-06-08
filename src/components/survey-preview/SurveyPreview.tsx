@@ -123,9 +123,9 @@ export function SurveyPreview({ questions, pages, onClose }: SurveyPreviewProps)
         questions={questions}
         answers={answers}
         onAnswerChange={handleAnswerChange}
-        pages={pages}
+        pages={pages.map(p => ({ id: p.id, description: p.title }))}
         pageId={currentPage.id}
-        page={currentPage}
+        page={{ description: currentPage.title }}
       />
 
       <div className="flex items-center justify-between mt-4 relative">
