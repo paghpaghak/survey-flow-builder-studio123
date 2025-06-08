@@ -1,4 +1,4 @@
-import { getSurveyById } from '@/lib/api';
+import { fetchSurveyById } from '@/lib/api';
 import { getSurveyResponses } from '@/lib/api/survey-results';
 import { AnswerStats } from '@/components/survey-results/answer-stats';
 import { SimpleResultsTable } from '@/components/survey-results/simple-results-table';
@@ -11,7 +11,7 @@ interface PageProps {
 }
 
 export default async function SurveyResultsPage({ params }: PageProps) {
-  const survey = await getSurveyById(params.surveyId);
+  const survey = await fetchSurveyById(params.surveyId);
   
   if (!survey || !survey.publishedVersion) {
     notFound();

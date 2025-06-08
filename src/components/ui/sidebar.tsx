@@ -76,6 +76,7 @@ const SidebarProvider = React.forwardRef<
     const setOpen = React.useCallback(
       (value: boolean | ((value: boolean) => boolean)) => {
         const openState = typeof value === "function" ? value(open) : value
+        console.log('[SIDEBAR] setOpen:', openState)
         if (setOpenProp) {
           setOpenProp(openState)
         } else {
@@ -84,15 +85,23 @@ const SidebarProvider = React.forwardRef<
 
         // This sets the cookie to keep the sidebar state.
         document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+        console.log('[SIDEBAR] cookie set:', `${SIDEBAR_COOKIE_NAME}=${openState}`)
       },
       [setOpenProp, open]
     )
 
     // Helper to toggle the sidebar.
     const toggleSidebar = React.useCallback(() => {
+      console.log('[SIDEBAR] toggleSidebar, isMobile:', isMobile)
       return isMobile
-        ? setOpenMobile((open) => !open)
-        : setOpen((open) => !open)
+        ? setOpenMobile((open) => {
+            console.log('[SIDEBAR] setOpenMobile:', !open)
+            return !open
+          })
+        : setOpen((open) => {
+            console.log('[SIDEBAR] setOpen (desktop):', !open)
+            return !open
+          })
     }, [isMobile, setOpen, setOpenMobile])
 
     // Adds a keyboard shortcut to toggle the sidebar.
@@ -103,6 +112,7 @@ const SidebarProvider = React.forwardRef<
           (event.metaKey || event.ctrlKey)
         ) {
           event.preventDefault()
+          console.log('[SIDEBAR] Keyboard shortcut pressed')
           toggleSidebar()
         }
       }
@@ -127,6 +137,10 @@ const SidebarProvider = React.forwardRef<
       }),
       [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
     )
+
+    React.useEffect(() => {
+      console.log('[SIDEBAR] state:', state, 'open:', open, 'openMobile:', openMobile, 'isMobile:', isMobile)
+    }, [state, open, openMobile, isMobile])
 
     return (
       <SidebarContext.Provider value={contextValue}>

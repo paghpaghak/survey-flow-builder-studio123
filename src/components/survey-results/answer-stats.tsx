@@ -1,7 +1,8 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Question, SurveyResponse } from '@/types/survey';
+import { Question } from '@/types/survey';
+import { SurveyResponse } from '@/types/survey-response';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface AnswerStatsProps {

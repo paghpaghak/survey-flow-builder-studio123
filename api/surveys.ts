@@ -1,7 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import clientPromise from './mongodb';
 import { ObjectId } from 'mongodb';
-import { Survey } from '@/types/survey';
 
 interface MongoDocument {
   _id: ObjectId;
@@ -11,7 +10,7 @@ interface MongoDocument {
 // Функция для преобразования _id в id
 const transformMongoDocument = <T extends { id?: string }>(doc: MongoDocument | null): T | null => {
   if (!doc) return null;
-  const transformed = { ...doc, id: doc._id.toString() };
+  const transformed = { ...doc, id: doc._id.toString() } as Partial<typeof doc> & { id: string };
   delete transformed._id;
   return transformed as T;
 };
@@ -71,7 +70,8 @@ export default async function handler(
           createdAt: new Date(),
           updatedAt: new Date()
         });
-        res.json(transformMongoDocument(result));
+        const insertedSurvey = await db.collection('surveys').findOne({ _id: result.insertedId });
+        res.json(transformMongoDocument(insertedSurvey));
         break;
 
       case 'PUT':

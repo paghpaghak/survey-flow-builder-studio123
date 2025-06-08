@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import clientPromise from '@/api/mongodb';
 import { ObjectId } from 'mongodb';
 
 export async function GET(
@@ -12,16 +12,12 @@ export async function GET(
     // Преобразуем строку surveyId в ObjectId
     const surveyObjectId = new ObjectId(params.surveyId);
     
-    const responses = await db.surveyResponse.findMany({
-      where: {
-        surveyId: surveyObjectId.toString(),
-      },
-      orderBy: {
-        metadata: {
-          completedAt: 'desc',
-        },
-      },
-    });
+    const client = await clientPromise;
+    const db = client.db('survey_db');
+    const responses = await db.collection('surveyResponses')
+      .find({ surveyId: surveyObjectId.toString() })
+      .sort({ 'metadata.completedAt': -1 })
+      .toArray();
 
     console.log('Found responses:', responses);
 

@@ -71,9 +71,8 @@ export function SurveyVersions({ survey, onPublish, onLoadVersion, isOpen, onClo
                     Версия {version.version} {getStatusBadge(version.status)}
                   </div>
                   <div className="text-sm text-gray-500">
-                    Обновлено: {formatDate(version.updatedAt)}
-                    {version.publishedAt && ` | Опубликовано: ${formatDate(version.publishedAt)}`}
-                    {version.archivedAt && ` | Архивировано: ${formatDate(version.archivedAt)}`}
+                    Обновлено: {formatDate(new Date(version.updatedAt))}
+                    {version.publishedAt && ` | Опубликовано: ${formatDate(new Date(version.publishedAt))}`}
                   </div>
                 </div>
               </div>

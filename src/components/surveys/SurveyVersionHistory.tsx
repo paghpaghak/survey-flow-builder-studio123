@@ -92,8 +92,7 @@ export function SurveyVersionHistory({ surveyId, children }: SurveyVersionHistor
         ? { 
             ...v, 
             status: newStatus,
-            publishedAt: newStatus === 'published' ? new Date() : v.publishedAt,
-            archivedAt: newStatus === 'archived' ? new Date() : v.archivedAt
+            publishedAt: newStatus === 'published' ? new Date() : v.publishedAt
           }
         : v
     );

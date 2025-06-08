@@ -175,7 +175,7 @@ export function SurveyResults() {
                         <TableCell>
                           {format(
                             new Date(
-                              response.metadata?.completedAt || response.createdAt || Date.now()
+                              response.metadata?.completedAt || Date.now()
                             ),
                             'PPP',
                             { locale: ru }

@@ -1,5 +1,5 @@
 import { SurveyResponseForm } from '@/components/survey-take/survey-response-form';
-import { getSurveyById } from '@/lib/api';
+import { fetchSurveyById } from '@/lib/api';
 import { notFound } from 'next/navigation';
 
 interface PageProps {
@@ -9,7 +9,7 @@ interface PageProps {
 }
 
 export default async function TakeSurveyPage({ params }: PageProps) {
-  const survey = await getSurveyById(params.surveyId);
+  const survey = await fetchSurveyById(params.surveyId);
   
   if (!survey || !survey.publishedVersion) {
     notFound();
@@ -25,7 +25,7 @@ export default async function TakeSurveyPage({ params }: PageProps) {
 
   return (
     <div className="container py-8">
-      <SurveyResponseForm survey={survey} version={publishedVersion} />
+      <SurveyResponseForm survey={survey} />
     </div>
   );
 } 

@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Survey, SurveyVersion, SurveyQuestion } from '@/types/survey';
+import { Survey, SurveyVersion, Question, SurveyStatus } from '@/types/survey';
 
 interface UseSurveyVersionsResult {
-  createNewVersion: (title: string, description: string, questions: SurveyQuestion[]) => void;
+  createNewVersion: (title: string, description: string, questions: Question[]) => void;
   publishVersion: (version: number) => void;
   loadVersion: (version: number) => SurveyVersion | null;
   getCurrentVersion: () => SurveyVersion | null;
@@ -18,71 +18,96 @@ interface UseSurveyVersionsResult {
  * <returns>API для управления версиями опроса</returns>
  */
 export function useSurveyVersions(survey: Survey): UseSurveyVersionsResult {
-  const [survey, setSurvey] = useState<Survey>(survey);
+  const [surveyState, setSurveyState] = useState<Survey>(survey);
 
-  const createNewVersion = (title: string, description: string, questions: SurveyQuestion[]) => {
-    const newVersion: SurveyVersion = {
+  const createNewVersion = (title: string, description: string, questions: Question[]) => {
+    const lastVersion = surveyState.versions[surveyState.versions.length - 1];
+    const newVersion = {
       id: crypto.randomUUID(),
-      surveyId: survey.id,
-      version: survey.currentVersion + 1,
-      status: 'draft',
+      version: surveyState.currentVersion + 1,
+      status: 'draft' as SurveyStatus,
       title,
       description,
       questions,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      pages: lastVersion ? lastVersion.pages : [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      surveyId: surveyState.id,
     };
 
-    setSurvey(prev => ({
+    setSurveyState(prev => ({
       ...prev,
       currentVersion: newVersion.version,
-      versions: [...prev.versions, newVersion]
+      versions: [
+        ...prev.versions,
+        newVersion,
+      ],
     }));
   };
 
   const publishVersion = (version: number) => {
-    setSurvey(prev => {
-      // Находим версию для публикации
-      const versionToPublish = prev.versions.find(v => v.version === version);
-      if (!versionToPublish) return prev;
-
-      // Если есть опубликованная версия, архивируем её
+    setSurveyState(prev => {
       const updatedVersions = prev.versions.map(v => {
         if (v.status === 'published') {
           return {
             ...v,
-            status: 'archived',
-            archivedAt: new Date()
+            status: 'archived' as SurveyStatus,
+            archivedAt: new Date().toISOString(),
+            surveyId: prev.id,
           };
         }
         if (v.version === version) {
           return {
             ...v,
-            status: 'published',
-            publishedAt: new Date()
+            status: 'published' as SurveyStatus,
+            publishedAt: new Date().toISOString(),
+            surveyId: prev.id,
           };
         }
-        return v;
+        return { ...v, surveyId: prev.id };
       });
-
       return {
         ...prev,
         publishedVersion: version,
-        versions: updatedVersions
+        versions: updatedVersions,
       };
     });
   };
 
   const loadVersion = (version: number): SurveyVersion | null => {
-    return survey.versions.find(v => v.version === version) || null;
+    const v = surveyState.versions.find(v => v.version === version);
+    return v ? {
+      ...v,
+      surveyId: surveyState.id,
+      createdAt: new Date(v.createdAt),
+      updatedAt: new Date(v.updatedAt),
+      publishedAt: v.publishedAt ? new Date(v.publishedAt) : undefined,
+      archivedAt: 'archivedAt' in v && v.archivedAt ? new Date(String(v.archivedAt)) : undefined,
+    } : null;
   };
 
   const getCurrentVersion = (): SurveyVersion | null => {
-    return survey.versions.find(v => v.version === survey.currentVersion) || null;
+    const v = surveyState.versions.find(v => v.version === surveyState.currentVersion);
+    return v ? {
+      ...v,
+      surveyId: surveyState.id,
+      createdAt: new Date(v.createdAt),
+      updatedAt: new Date(v.updatedAt),
+      publishedAt: v.publishedAt ? new Date(v.publishedAt) : undefined,
+      archivedAt: 'archivedAt' in v && v.archivedAt ? new Date(String(v.archivedAt)) : undefined,
+    } : null;
   };
 
   const getPublishedVersion = (): SurveyVersion | null => {
-    return survey.versions.find(v => v.status === 'published') || null;
+    const v = surveyState.versions.find(v => v.status === 'published');
+    return v ? {
+      ...v,
+      surveyId: surveyState.id,
+      createdAt: new Date(v.createdAt),
+      updatedAt: new Date(v.updatedAt),
+      publishedAt: v.publishedAt ? new Date(v.publishedAt) : undefined,
+      archivedAt: 'archivedAt' in v && v.archivedAt ? new Date(String(v.archivedAt)) : undefined,
+    } : null;
   };
 
   return {
@@ -91,6 +116,6 @@ export function useSurveyVersions(survey: Survey): UseSurveyVersionsResult {
     loadVersion,
     getCurrentVersion,
     getPublishedVersion,
-    survey
+    survey: surveyState
   };
 } 

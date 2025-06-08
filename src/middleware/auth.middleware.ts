@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken } from '@/lib/auth';
+import { verifyToken, hasRequiredRole } from '@/lib/auth';
 import { UserRole } from '@/types/auth';
 
 export async function requireAuth(
