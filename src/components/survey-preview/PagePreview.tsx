@@ -10,6 +10,7 @@ import { IMaskInput } from 'react-imask';
 import { format } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlaceholderText } from '@/components/ui/placeholder-text';
+import { ParallelGroupRenderer } from '@/components/survey-editor/ParallelGroupRenderer';
 
 interface PagePreviewProps {
   questions: Question[];
@@ -32,8 +33,20 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
   // Собираем вопросы всех предыдущих и текущей страницы
   const prevQuestions = pages.slice(0, pageIndex + 1).flatMap(p => questions.filter(q => q.pageId === p.id));
 
-  // Группируем вопросы по pageId (берём первую страницу)
-  const pageQuestions = questions.filter(q => q.pageId === pageId);
+  // ВАЖНОЕ ИСПРАВЛЕНИЕ: Фильтруем вопросы для страницы, исключая вложенные в параллельные группы
+  const allParallelQuestionIds = new Set<string>();
+  questions.forEach(q => {
+    if (q.type === QuestionType.ParallelGroup && q.parallelQuestions) {
+      q.parallelQuestions.forEach(subId => allParallelQuestionIds.add(subId));
+    }
+  });
+
+  const pageQuestions = questions.filter(q => 
+    q.pageId === pageId && !allParallelQuestionIds.has(q.id)
+  );
+
+  console.log('[PagePreview] pageQuestions after filtering:', pageQuestions);
+  console.log('[PagePreview] allParallelQuestionIds:', allParallelQuestionIds);
 
   // Проверяем, есть ли кастомные transitionRules (answer != '')
   const hasCustomRules = pageQuestions.some(q =>
@@ -47,6 +60,7 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
     const handleRepeatIndex = (questionId: string, idx: number) => {
       setRepeatIndexes(prev => ({ ...prev, [questionId]: idx }));
     };
+    
     return (
       <div className="space-y-6">
         {page?.description && (
@@ -68,87 +82,17 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
               )}
             </div>
             {question.type === QuestionType.ParallelGroup ? (
-              (() => {
-                const settings: ParallelBranchSettings = {
-                  sourceQuestionId: '',
-                  itemLabel: 'Элемент',
-                  displayMode: 'sequential',
-                  minItems: 1,
-                  ...((question.settings || {}) as Partial<ParallelBranchSettings>),
-                };
-                const countKey = question.id + '_count';
-                const count = Number(answers[countKey]) || 0;
-                const hasSubQuestions = Array.isArray(question.parallelQuestions) && question.parallelQuestions.length > 0;
-                const repeatIndex = repeatIndexes[question.id] || 0;
-                console.log('[PARALLEL] Рендер параллельной группы', { questionId: question.id, count, repeatIndex, hasSubQuestions });
-                if (hasSubQuestions) {
-                  (question.parallelQuestions || []).forEach((qId, idx) => {
-                    const subQ = questions.find(q => q.id === qId);
-                    if (subQ) {
-                      console.log('[PARALLEL] Ветка', idx, 'Вопрос:', subQ);
-                    }
-                  });
-                }
-                return (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>{settings.countLabel || 'Сколько повторений?'}</Label>
-                      {settings.countDescription && (
-                        <p className="text-sm text-gray-500">{settings.countDescription}</p>
-                      )}
-                      <Input
-                        type="number"
-                        value={answers[countKey] || ''}
-                        onChange={(e) => onAnswerChange(countKey, e.target.value)}
-                        required={!!settings.countRequired}
-                        placeholder="Введите число"
-                      />
-                    </div>
-                    {count > 0 && hasSubQuestions ? (
-                      <>
-                        <div className="flex gap-2 overflow-x-auto pb-2">
-                          {Array.from({ length: count }).map((_, index) => (
-                            <button
-                              key={index}
-                              onClick={() => handleRepeatIndex(question.id, index)}
-                              className={`px-4 py-2 rounded-lg min-w-[120px] transition-colors ${
-                                repeatIndex === index
-                                  ? 'bg-primary text-primary-foreground'
-                                  : 'bg-secondary hover:bg-secondary/80'
-                              }`}
-                            >
-                              {settings.itemLabel} {index + 1}
-                            </button>
-                          ))}
-                        </div>
-                        <div className="border rounded-lg p-4 bg-card">
-                          <h3 className="font-medium mb-4">
-                            {settings.itemLabel} {repeatIndex + 1}
-                          </h3>
-                          <div className="space-y-4">
-                            {(question.parallelQuestions || [])
-                              .map(qId => questions.find(q => q.id === qId))
-                              .filter((q): q is Question => q !== undefined)
-                              .map(subQuestion => (
-                                <div key={subQuestion.id} className="space-y-2">
-                                  <Label>
-                                    {subQuestion.title}
-                                    {subQuestion.required && <span className="text-red-500 ml-1">*</span>}
-                                  </Label>
-                                  {RenderParallelBranchPreview({ q: subQuestion, questions, answers, onAnswerChange })}
-                                </div>
-                              ))}
-                          </div>
-                        </div>
-                      </>
-                    ) : count > 0 && !hasSubQuestions ? (
-                      <div className="text-sm text-gray-500 italic">Нет вложенных вопросов для повторения</div>
-                    ) : null}
-                  </div>
-                );
-              })()
+              <ParallelGroupRenderer
+                question={question}
+                questions={questions}
+                answers={answers}
+                onAnswerChange={onAnswerChange}
+                repeatIndexes={repeatIndexes}
+                onRepeatIndexChange={handleRepeatIndex}
+                mode="preview"
+              />
             ) : (
-              RenderParallelBranchPreview({ q: question, questions, answers, onAnswerChange })
+              renderQuestion(question, questions, answers, onAnswerChange)
             )}
           </div>
         ))}
@@ -214,143 +158,43 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
             </p>
           )}
         </div>
-        {RenderParallelBranchPreview({ q: currentQuestion, questions, answers, onAnswerChange })}
-      </div>
-    </div>
-  );
-}
-
-function RenderParallelBranchPreview({ q, questions, answers, onAnswerChange }) {
-  const settings = {
-    sourceQuestionId: '',
-    itemLabel: 'Элемент',
-    displayMode: 'sequential',
-    minItems: 1,
-    ...((q.settings || {})),
-  };
-  const countKey = q.id + '_count';
-  const count = Number(answers[countKey]) || 0;
-  console.log('[PARALLEL] RenderParallelBranchPreview', { q, count, answers });
-  return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label>{settings.countLabel || 'Сколько повторений?'}</Label>
-        {settings.countDescription && (
-          <p className="text-sm text-gray-500">{settings.countDescription}</p>
+        {currentQuestion.type === QuestionType.ParallelGroup ? (
+          <ParallelGroupRenderer
+            question={currentQuestion}
+            questions={questions}
+            answers={answers}
+            onAnswerChange={onAnswerChange}
+            mode="preview"
+          />
+        ) : (
+          renderQuestion(currentQuestion, questions, answers, handleAnswer)
         )}
-        <Input
-          type="number"
-          value={answers[countKey] || ''}
-          onChange={(e) => onAnswerChange(countKey, e.target.value)}
-          required={!!settings.countRequired}
-          placeholder="Введите число"
-        />
       </div>
-      {count > 0 && (
-        <div className="border rounded-lg p-4 bg-card">
-          <h3 className="font-medium mb-4">{settings.itemLabel}</h3>
-          <div className="space-y-4">
-            {(q.parallelQuestions || []).map((subId, idx) => {
-              const subQ = questions.find(qq => qq.id === subId);
-              if (!subQ) return null;
-              console.log('[PARALLEL] Ветка', idx, 'Вопрос:', subQ);
-              if (subQ.type === 'parallel_group' || subQ.type === 'ParallelGroup') {
-                return <RenderParallelBranchPreview key={subQ.id} q={subQ} questions={questions} answers={answers} onAnswerChange={onAnswerChange} />;
-              }
-              return (
-                <div key={subQ.id} className="space-y-2">
-                  <Label>
-                    {subQ.title}
-                    {subQ.required && <span className="text-red-500 ml-1">*</span>}
-                  </Label>
-                  {renderQuestion(subQ, questions, answers, (id, value) => onAnswerChange(id, value))}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
+// Функция для рендеринга обычных вопросов (не параллельных групп)
 function renderQuestion(
   question: Question,
   questions: Question[],
   answers: Record<string, any>,
   answerHandler: (id: string, value: any) => void
 ) {
+  // Получаем ответ для текущего вопроса
+  const currentAnswer = answers[question.id];
+
   switch (question.type) {
     case QuestionType.ParallelGroup: {
-      const settings: ParallelBranchSettings = {
-        sourceQuestionId: '',
-        itemLabel: 'Элемент',
-        displayMode: 'sequential',
-        minItems: 1,
-        ...((question.settings || {}) as Partial<ParallelBranchSettings>),
-      };
-      const countKey = question.id + '_count';
-      const count = Number(answers[countKey]) || 0;
-      const hasSubQuestions = Array.isArray(question.parallelQuestions) && question.parallelQuestions.length > 0;
-
-      return (
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>{settings.countLabel || 'Сколько повторений?'}</Label>
-            {settings.countDescription && (
-              <p className="text-sm text-gray-500">{settings.countDescription}</p>
-            )}
-            <Input
-              type="number"
-              value={answers[countKey] || ''}
-              onChange={(e) => answerHandler(countKey, e.target.value)}
-              required={!!settings.countRequired}
-              placeholder="Введите число"
-            />
-          </div>
-          {count > 0 && hasSubQuestions ? (
-            <>
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {Array.from({ length: count }).map((_, index) => (
-                  <button
-                    key={index}
-                    className={`px-4 py-2 rounded-lg min-w-[120px] transition-colors bg-secondary hover:bg-secondary/80`}
-                  >
-                    {settings.itemLabel} {index + 1}
-                  </button>
-                ))}
-              </div>
-              <div className="border rounded-lg p-4 bg-card">
-                <h3 className="font-medium mb-4">
-                  {settings.itemLabel}
-                </h3>
-                <div className="space-y-4">
-                  {(question.parallelQuestions || [])
-                    .map(qId => questions.find(q => q.id === qId))
-                    .filter((q): q is Question => q !== undefined)
-                    .map(subQuestion => (
-                      <div key={subQuestion.id} className="space-y-2">
-                        <Label>
-                          {subQuestion.title}
-                          {subQuestion.required && <span className="text-red-500 ml-1">*</span>}
-                        </Label>
-                        {renderQuestion(subQuestion, questions, answers, answerHandler)}
-                      </div>
-                    ))}
-                </div>
-              </div>
-            </>
-          ) : count > 0 && !hasSubQuestions ? (
-            <div className="text-sm text-gray-500 italic">Нет вложенных вопросов для повторения</div>
-          ) : null}
-        </div>
-      );
+      // Этот случай не должен вызываться, так как ParallelGroup обрабатывается отдельно
+      console.warn('[renderQuestion] ParallelGroup должен обрабатываться в ParallelGroupRenderer');
+      return null;
     }
 
     case QuestionType.Text:
       return (
         <Input
-          value={answers[question.id] || ''}
+          value={currentAnswer || ''}
           onChange={(e) => answerHandler(question.id, e.target.value)}
           placeholder="Введите ваш ответ"
         />
@@ -360,7 +204,7 @@ function renderQuestion(
       return (
         <Input
           type="number"
-          value={answers[question.id] || ''}
+          value={currentAnswer || ''}
           onChange={(e) => answerHandler(question.id, e.target.value)}
           placeholder="Введите число"
         />
@@ -369,7 +213,7 @@ function renderQuestion(
     case QuestionType.Radio:
       return (
         <RadioGroup
-          value={answers[question.id] || ''}
+          value={currentAnswer || ''}
           onValueChange={(value) => answerHandler(question.id, value)}
         >
           {question.options?.map((option) => (
@@ -388,9 +232,9 @@ function renderQuestion(
             <div key={option.id} className="flex items-center space-x-2">
               <Checkbox
                 id={option.id}
-                checked={answers[question.id]?.includes(option.id) || false}
+                checked={currentAnswer?.includes(option.id) || false}
                 onCheckedChange={(checked) => {
-                  const currentAnswers = answers[question.id] || [];
+                  const currentAnswers = currentAnswer || [];
                   answerHandler(
                     question.id,
                     checked
@@ -408,7 +252,7 @@ function renderQuestion(
     case QuestionType.Select:
       return (
         <Select
-          value={answers[question.id] || ''}
+          value={currentAnswer || ''}
           onValueChange={(value) => answerHandler(question.id, value)}
         >
           <SelectTrigger>
@@ -430,13 +274,13 @@ function renderQuestion(
         <div className="space-y-2">
           <Calendar
             mode="single"
-            selected={answers[question.id]}
+            selected={currentAnswer}
             onSelect={(value) => answerHandler(question.id, value)}
             className="rounded-md border"
           />
-          {answers[question.id] && (
+          {currentAnswer && (
             <p className="text-sm text-gray-500">
-              Выбрано: {format(answers[question.id], dateSettings.format || 'dd.MM.yyyy')}
+              Выбрано: {format(currentAnswer, dateSettings?.format || 'dd.MM.yyyy')}
             </p>
           )}
         </div>
@@ -446,7 +290,7 @@ function renderQuestion(
       return (
         <Input
           type="email"
-          value={answers[question.id] || ''}
+          value={currentAnswer || ''}
           onChange={(e) => answerHandler(question.id, e.target.value)}
           placeholder="example@domain.com"
         />
@@ -458,13 +302,13 @@ function renderQuestion(
         <div className="flex gap-2">
           <Input
             className="w-20"
-            value={phoneSettings.countryCode || '+7'}
+            value={phoneSettings?.countryCode || '+7'}
             disabled
           />
           <IMaskInput
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            mask={phoneSettings.mask || '(000) 000-00-00'}
-            value={answers[question.id] || ''}
+            mask={phoneSettings?.mask || '(000) 000-00-00'}
+            value={currentAnswer || ''}
             onAccept={(value) => answerHandler(question.id, value)}
             placeholder="(999) 999-99-99"
           />
@@ -474,4 +318,4 @@ function renderQuestion(
     default:
       return null;
   }
-} 
+}

@@ -1,32 +1,14 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSurveyStore } from "../store/survey-store";
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Eye, Trash2 } from 'lucide-react';
+import { ArrowLeft, Eye } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { Question, QuestionType, Page } from '@/types/survey';
 import VisualEditor from '@/components/survey-editor/VisualEditor';
 import { toast } from 'sonner';
 import { SurveyPreview } from '@/components/survey-preview/SurveyPreview';
 import { ReactFlowProvider } from '@xyflow/react';
-import { PageManager } from '@/components/survey-editor/PageManager';
-import {
-  SidebarProvider,
-  Sidebar,
-  SidebarHeader,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarTabs,
-  SidebarTab,
-  SidebarTabsContent,
-  SidebarTabsList
-} from "@/components/ui/sidebar";
 import { SidebarTreeView } from '@/components/survey-editor/SidebarTreeView';
-import { Card } from '@/components/ui/card';
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import ResolutionEditDialog from '@/components/survey-editor/ResolutionEditDialog';
 
 /**
@@ -40,10 +22,12 @@ function normalizePage(p: any): Page {
   let descPos: 'before' | 'after' | undefined = undefined;
   if (p.descriptionPosition === 'before' || p.descriptionPosition === 'after') {
     descPos = p.descriptionPosition;
+  } else {
+    descPos = 'before'; // ← Добавить эту строку
   }
   return {
     ...p,
-    ...(descPos ? { descriptionPosition: descPos } : {}),
+    descriptionPosition: descPos,
   };
 }
 
@@ -127,20 +111,41 @@ export default function SurveyEditor() {
   /**
    * <summary>
    * Удаляет вопрос по id из текущей версии опроса.
+   * Включает удаление вложенных вопросов из параллельных групп.
    * </summary>
    * <param name="qid">ID вопроса для удаления</param>
    */
   function handleDeleteQuestion(qid: string) {
-    const updatedQuestions = questions.filter(q => q.id !== qid);
+    const questionToDelete = questions.find(q => q.id === qid);
+    let questionsToDelete = [qid];
+
+    // Если удаляется параллельная группа, добавляем все вложенные вопросы
+    if (questionToDelete?.type === QuestionType.ParallelGroup && questionToDelete.parallelQuestions) {
+      questionsToDelete = [...questionsToDelete, ...questionToDelete.parallelQuestions];
+    }
+
+    // Удаляем все связанные вопросы
+    const updatedQuestions = questions.filter(q => !questionsToDelete.includes(q.id));
+    
+    // Также удаляем все transitionRules, которые ссылаются на удаляемые вопросы
+    const cleanedQuestions = updatedQuestions.map(q => ({
+      ...q,
+      transitionRules: q.transitionRules?.filter(rule => !questionsToDelete.includes(rule.nextQuestionId))
+    }));
     
     updateSurvey({
       ...survey,
       versions: survey.versions.map(v => 
         v.version === survey.currentVersion 
-          ? { ...v, questions: updatedQuestions }
+          ? { ...v, questions: cleanedQuestions }
           : v
       )
     });
+
+    // Сбрасываем выделение если удаленный вопрос был выделен
+    if (questionsToDelete.includes(selectedQuestionId || '')) {
+      setSelectedQuestionId(undefined);
+    }
   }
 
   /**
@@ -153,7 +158,8 @@ export default function SurveyEditor() {
     // Оставляем вопросы других страниц без изменений
     const otherQuestions = questions.filter(q => !updatedQuestions.some(uq => uq.id === q.id));
     const allQuestions = [...otherQuestions, ...updatedQuestions];
-
+    console.log('[SurveyEditor] otherQuestions:', otherQuestions.length);
+    console.log('[SurveyEditor] allQuestions после объединения:', allQuestions.length);
     // Обновляем только нужные страницы
     const updatedPages = currentVersion.pages.map(page => normalizePage({
       ...page,
@@ -161,6 +167,7 @@ export default function SurveyEditor() {
     }));
 
     const uniqueQuestions = Array.from(new Map(allQuestions.map(q => [q.id, q])).values());
+    console.log('[SurveyEditor] uniqueQuestions финальные:', uniqueQuestions.length);
 
     const updatedVersion = {
       ...currentVersion,
@@ -216,6 +223,7 @@ export default function SurveyEditor() {
   /**
    * <summary>
    * Добавляет новый вопрос на выбранную страницу.
+   * Автоматически исключает вложенные вопросы параллельных групп из визуального редактора.
    * </summary>
    */
   function handleAddQuestion() {
@@ -225,7 +233,18 @@ export default function SurveyEditor() {
     }
 
     const targetPageId = selectedPageId || pages[0].id;
-    const pageQuestions = questions.filter(q => q.pageId === targetPageId);
+    
+    // Фильтруем вопросы, исключая вложенные в параллельные группы
+    const allParallelQuestionIds = new Set<string>();
+    questions.forEach(q => {
+      if (q.type === QuestionType.ParallelGroup && q.parallelQuestions) {
+        q.parallelQuestions.forEach(subId => allParallelQuestionIds.add(subId));
+      }
+    });
+    
+    const pageQuestions = questions.filter(q => 
+      q.pageId === targetPageId && !allParallelQuestionIds.has(q.id)
+    );
 
     // Определяем номер для нового вопроса на этой странице
     const nextNumber = pageQuestions.length + 1;
@@ -256,6 +275,9 @@ export default function SurveyEditor() {
 
     const updatedQuestions = [...questions, newQuestion];
     handleUpdateQuestions(updatedQuestions);
+    
+    // Выделяем новый вопрос
+    setSelectedQuestionId(newQuestion.id);
   }
 
   /**
@@ -264,37 +286,21 @@ export default function SurveyEditor() {
    * </summary>
    */
   function handlePreviewClick() {
-    if (questions.length === 0) {
+    // Проверяем количество основных вопросов (исключая вложенные в параллельные группы)
+    const allParallelQuestionIds = new Set<string>();
+    questions.forEach(q => {
+      if (q.type === QuestionType.ParallelGroup && q.parallelQuestions) {
+        q.parallelQuestions.forEach(subId => allParallelQuestionIds.add(subId));
+      }
+    });
+    
+    const mainQuestions = questions.filter(q => !allParallelQuestionIds.has(q.id));
+    
+    if (mainQuestions.length === 0) {
       toast.error('Добавьте хотя бы один вопрос для предпросмотра');
       return;
     }
     setPendingPreview(true);
-  }
-
-  const currentPageQuestions = questions.filter(q => q.pageId === selectedPageId);
-
-  function handleTreeMove(oldIndex: number, index: number, parent?: Page) {
-    console.log('handleTreeMove', { oldIndex, index, parent, selectedPageId, questions });
-    if (!selectedPageId) return;
-    const pageQuestions = questions.filter(q => q.pageId === selectedPageId);
-    if (oldIndex < 0 || oldIndex >= pageQuestions.length) return;
-    const removedQuestion = pageQuestions[oldIndex];
-    const newPageId = parent ? (parent as any).data?.id || parent.id : undefined;
-    const newQuestions = questions.filter(q => q.id !== removedQuestion.id);
-    const updatedQuestion: Question = { ...removedQuestion, pageId: newPageId };
-    const questionsInTargetPage = newQuestions.filter(q => q.pageId === newPageId);
-    const insertIndex = (() => {
-      if (index < 0 || index >= questionsInTargetPage.length) return -1;
-      const targetQuestion = questionsInTargetPage[index];
-      return newQuestions.findIndex(q => q.id === targetQuestion.id);
-    })();
-    if (insertIndex === -1) {
-      newQuestions.push(updatedQuestion);
-    } else {
-      newQuestions.splice(insertIndex, 0, updatedQuestion);
-    }
-    console.log('handleTreeMove result', { newQuestions });
-    handleUpdateQuestions(newQuestions);
   }
 
   // Функция для удаления страницы
@@ -303,205 +309,39 @@ export default function SurveyEditor() {
       // Не даём удалить последнюю страницу
       return;
     }
+    
+    // Удаляем все вопросы со страницы
+    const questionsToDelete = questions.filter(q => q.pageId === pageId).map(q => q.id);
+    const updatedQuestions = questions.filter(q => q.pageId !== pageId);
+    
     const updatedPages = pages.filter(p => p.id !== pageId);
-    handleUpdatePages(updatedPages);
+    
+    // Обновляем survey с удаленными вопросами и страницей
+    const updatedVersion = {
+      ...currentVersion,
+      questions: updatedQuestions,
+      pages: updatedPages.map(normalizePage),
+      updatedAt: new Date().toISOString()
+    };
+
+    const updatedSurvey = {
+      ...survey,
+      versions: survey.versions.map(v =>
+        v.version === survey.currentVersion ? updatedVersion : v
+      ),
+      updatedAt: new Date().toISOString()
+    };
+
+    updateSurvey(updatedSurvey);
+    
     if (selectedPageId === pageId) {
       setSelectedPageId(updatedPages[0]?.id);
     }
-  }
-
-  /**
-   * <summary>
-   * Дерево страниц и вопросов с drag-and-drop и редактированием названий.
-   * </summary>
-   */
-  function SimplePageTree({ pages, questions, selectedPageId, selectedQuestionId, onSelectPage, onSelectQuestion, onMovePage, handleDeletePage }) {
-    const sensors = useSensors(
-      useSensor(PointerSensor, {
-        activationConstraint: { distance: 8 },
-      })
-    );
-    const [activePageId, setActivePageId] = React.useState(null);
-    const [editingPageId, setEditingPageId] = React.useState(null);
-    const [editingTitle, setEditingTitle] = React.useState("");
     
-    const handleTitleClick = (e, page) => {
-      e.stopPropagation();
-      setEditingPageId(page.id);
-      setEditingTitle(page.title);
-    };
-
-    const handleTitleChange = (e) => {
-      setEditingTitle(e.target.value);
-    };
-
-    const handleTitleSave = (pageId) => {
-      if (editingTitle.trim()) {
-        const updatedPages = pages.map(p =>
-          p.id === pageId ? { ...p, title: editingTitle.trim() } : p
-        );
-        onMovePage(updatedPages);
-      }
-      setEditingPageId(null);
-    };
-
-    const handleKeyDown = (e, pageId) => {
-      if (e.key === 'Enter') {
-        handleTitleSave(pageId);
-      } else if (e.key === 'Escape') {
-        setEditingPageId(null);
-      }
-    };
-
-    return (
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={event => {
-          setActivePageId(event.active.id);
-        }}
-        onDragEnd={event => {
-          setActivePageId(null);
-          const { active, over } = event;
-          if (!over || active.id === over.id) return;
-          const oldIndex = pages.findIndex(p => p.id === active.id);
-          const newIndex = pages.findIndex(p => p.id === over.id);
-          if (oldIndex !== -1 && newIndex !== -1) {
-            const newPages = [...pages];
-            const [removed] = newPages.splice(oldIndex, 1);
-            newPages.splice(newIndex, 0, removed);
-            onMovePage(newPages);
-          }
-        }}
-        modifiers={[restrictToVerticalAxis]}
-      >
-        <SortableContext items={pages.map(p => p.id)} strategy={verticalListSortingStrategy}>
-          <div className="flex flex-col gap-3 px-4">
-            {pages.map(page => (
-              <div key={page.id} className="relative group">
-                <Card
-                  className={
-                    (page.id === selectedPageId
-                      ? 'border-primary '
-                      : 'hover:border-primary/50 ') +
-                    'transition-all cursor-pointer p-0'
-                  }
-                  onClick={() => onSelectPage(page.id)}
-                >
-                  <div className="px-4 py-2 font-bold text-base flex items-center gap-2 justify-between">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <span className="cursor-grab shrink-0">≡</span>
-                      {editingPageId === page.id ? (
-                        <input
-                          type="text"
-                          value={editingTitle}
-                          onChange={handleTitleChange}
-                          onBlur={() => handleTitleSave(page.id)}
-                          onKeyDown={(e) => handleKeyDown(e, page.id)}
-                          className="flex-1 px-1 border rounded focus:outline-none focus:ring-1 focus:ring-primary"
-                          autoFocus
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      ) : (
-                        <span 
-                          onClick={(e) => handleTitleClick(e, page)}
-                          className="flex-1 cursor-text hover:bg-gray-100 px-1 rounded truncate block overflow-hidden text-ellipsis"
-                          style={{ maxWidth: 'calc(100% - 24px)' }}
-                          title={page.title}
-                        >
-                          {page.title}
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      className="opacity-60 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-rose-600 shrink-0"
-                      onClick={e => {
-                        e.stopPropagation();
-                        if (window.confirm('Удалить страницу?')) {
-                          handleDeletePage(page.id);
-                        }
-                      }}
-                      title="Удалить страницу"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </div>
-                  <div className="pl-4 pr-2 pb-2 flex flex-col gap-1">
-                    {questions.filter(q => q.pageId === page.id).map(q => (
-                      <div
-                        key={q.id}
-                        className={
-                          (q.id === selectedQuestionId
-                            ? 'bg-blue-100 border border-blue-400 font-semibold '
-                            : 'hover:bg-gray-50 border border-transparent ') +
-                          'rounded px-3 py-1 text-sm text-gray-700 transition flex items-center relative'
-                        }
-                        style={{ marginLeft: '0' }}
-                        onClick={e => {
-                          e.stopPropagation();
-                          onSelectQuestion(q.id);
-                        }}
-                      >
-                        <span className="block w-1 h-5 bg-gray-300 rounded-full absolute left-4 top-1/2 -translate-y-1/2" />
-                        <span className="ml-4">{q.title || 'Без названия'}</span>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              </div>
-            ))}
-          </div>
-        </SortableContext>
-        <DragOverlay>
-          {activePageId ? (
-            <Card className="transition-all cursor-pointer p-0 w-full max-w-[95%]">
-              <div className="px-4 py-2 font-bold text-base flex items-center gap-2">
-                <span className="cursor-grab">≡</span>
-                {pages.find(p => p.id === activePageId)?.title}
-              </div>
-            </Card>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
-    );
-  }
-
-  /**
-   * <summary>
-   * Карточка страницы с drag-and-drop для сортировки.
-   * </summary>
-   */
-  function DraggablePageCard({ page, selected, onClick, children }) {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-      id: page.id,
-    });
-    const style = transform ? {
-      transform: CSS.Transform.toString(transform),
-      transition,
-      zIndex: 10,
-    } : undefined;
-    return (
-      <Card
-        ref={setNodeRef}
-        style={style}
-        className={
-          (selected
-            ? 'border-primary '
-            : 'hover:border-primary/50 ') +
-          (isDragging ? 'opacity-60 shadow-lg ' : '') +
-          'transition-all cursor-pointer p-0'
-        }
-        onClick={onClick}
-        {...attributes}
-        {...listeners}
-      >
-        <div className="px-4 py-2 font-bold text-base flex items-center gap-2">
-          <span className="cursor-grab">≡</span>
-          {page.title}
-        </div>
-        {children}
-      </Card>
-    );
+    // Сбрасываем выделение если удаленный вопрос был выделен
+    if (questionsToDelete.includes(selectedQuestionId || '')) {
+      setSelectedQuestionId(undefined);
+    }
   }
 
   const handleQuestionOrderChange = (newQuestions: Question[]) => {
@@ -568,6 +408,7 @@ export default function SurveyEditor() {
       defaultResolution: 'Результат по умолчанию',
     };
     handleUpdateQuestions([...questions, newResolution]);
+    setSelectedQuestionId(newResolution.id);
   }
 
   return (
@@ -655,7 +496,7 @@ export default function SurveyEditor() {
       <div className="flex-1 h-screen">
         <ReactFlowProvider>
           <VisualEditor
-            questions={currentPageQuestions}
+            questions={questions.filter(q => q.pageId === selectedPageId)}
             onUpdateQuestions={handleUpdateQuestions}
             pages={pages}
             selectedQuestionId={selectedQuestionId}
