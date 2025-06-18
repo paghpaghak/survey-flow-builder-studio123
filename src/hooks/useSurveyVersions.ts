@@ -79,10 +79,10 @@ export function useSurveyVersions(survey: Survey): UseSurveyVersionsResult {
     return v ? {
       ...v,
       surveyId: surveyState.id,
-      createdAt: new Date(v.createdAt),
-      updatedAt: new Date(v.updatedAt),
-      publishedAt: v.publishedAt ? new Date(v.publishedAt) : undefined,
-      archivedAt: 'archivedAt' in v && v.archivedAt ? new Date(String(v.archivedAt)) : undefined,
+      createdAt: v.createdAt, // Оставляем как string
+      updatedAt: v.updatedAt, // Оставляем как string
+      publishedAt: v.publishedAt, // Уже string или undefined
+      archivedAt: 'archivedAt' in v && v.archivedAt ? String(v.archivedAt) : undefined,
     } : null;
   };
 
@@ -91,10 +91,10 @@ export function useSurveyVersions(survey: Survey): UseSurveyVersionsResult {
     return v ? {
       ...v,
       surveyId: surveyState.id,
-      createdAt: new Date(v.createdAt),
-      updatedAt: new Date(v.updatedAt),
-      publishedAt: v.publishedAt ? new Date(v.publishedAt) : undefined,
-      archivedAt: 'archivedAt' in v && v.archivedAt ? new Date(String(v.archivedAt)) : undefined,
+      createdAt: v.createdAt, // Оставляем как string
+      updatedAt: v.updatedAt, // Оставляем как string
+      publishedAt: v.publishedAt, // Уже string или undefined
+      archivedAt: 'archivedAt' in v && v.archivedAt ? String(v.archivedAt) : undefined,
     } : null;
   };
 
@@ -103,10 +103,10 @@ export function useSurveyVersions(survey: Survey): UseSurveyVersionsResult {
     return v ? {
       ...v,
       surveyId: surveyState.id,
-      createdAt: new Date(v.createdAt),
-      updatedAt: new Date(v.updatedAt),
-      publishedAt: v.publishedAt ? new Date(v.publishedAt) : undefined,
-      archivedAt: 'archivedAt' in v && v.archivedAt ? new Date(String(v.archivedAt)) : undefined,
+      createdAt: v.createdAt, // Оставляем как string
+      updatedAt: v.updatedAt, // Оставляем как string
+      publishedAt: v.publishedAt, // Уже string или undefined
+      archivedAt: 'archivedAt' in v && v.archivedAt ? String(v.archivedAt) : undefined,
     } : null;
   };
 

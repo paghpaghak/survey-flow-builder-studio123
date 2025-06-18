@@ -1,20 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { Question, QuestionType } from '@/types/survey';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { Calendar } from '@/components/ui/calendar';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { IMaskInput } from 'react-imask';
-import { format } from 'date-fns';
 import { PagePreview } from './PagePreview';
 
 interface SurveyPreviewProps {
   questions: Question[];
-  pages: { id: string; title: string }[];
+  pages: { id: string; title: string; description?: string }[];
   onClose: () => void;
 }
 
@@ -50,11 +42,35 @@ export function SurveyPreview({ questions, pages, onClose }: SurveyPreviewProps)
     }));
   };
 
+  // Улучшенная валидация с поддержкой параллельных групп
   const isAnswerValid = (question: Question, answer: any): boolean => {
     if (!question.required) return true;
     if (!answer) return false;
 
     switch (question.type) {
+      case QuestionType.ParallelGroup:
+        // Для параллельной группы проверяем наличие ответа на количество
+        const countKey = question.id + '_count';
+        const count = Number(answers[countKey]) || 0;
+        if (count <= 0) return false;
+        
+        // Проверяем ответы на все вложенные обязательные вопросы
+        if (question.parallelQuestions) {
+          for (const subQuestionId of question.parallelQuestions) {
+            const subQuestion = questions.find(q => q.id === subQuestionId);
+            if (subQuestion?.required) {
+              // Проверяем ответы для всех повторений
+              for (let i = 0; i < count; i++) {
+                const subAnswerKey = `${subQuestionId}_${i}`;
+                const subAnswer = answers[subAnswerKey];
+                if (!isAnswerValid(subQuestion, subAnswer)) {
+                  return false;
+                }
+              }
+            }
+          }
+        }
+        return true;
       case QuestionType.Email:
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(answer);
       case QuestionType.Phone:
@@ -70,7 +86,17 @@ export function SurveyPreview({ questions, pages, onClose }: SurveyPreviewProps)
   };
 
   const validateCurrentPage = () => {
-    const invalidQuestions = currentQuestions.filter(
+    // Фильтруем вопросы так же, как в PagePreview
+    const allParallelQuestionIds = new Set<string>();
+    questions.forEach(q => {
+      if (q.type === QuestionType.ParallelGroup && q.parallelQuestions) {
+        q.parallelQuestions.forEach(subId => allParallelQuestionIds.add(subId));
+      }
+    });
+
+    const pageQuestions = currentQuestions.filter(q => !allParallelQuestionIds.has(q.id));
+
+    const invalidQuestions = pageQuestions.filter(
       question => question.required && !isAnswerValid(question, answers[question.id])
     );
 
@@ -110,6 +136,10 @@ export function SurveyPreview({ questions, pages, onClose }: SurveyPreviewProps)
 
   const handleSubmit = () => {
     if (!validateCurrentPage()) return;
+    
+    // В реальном приложении здесь бы отправляли данные на сервер
+    console.log('[SurveyPreview] Submitting answers:', answers);
+    toast.success('Опрос завершен!');
     onClose();
   };
 
@@ -123,9 +153,9 @@ export function SurveyPreview({ questions, pages, onClose }: SurveyPreviewProps)
         questions={questions}
         answers={answers}
         onAnswerChange={handleAnswerChange}
-        pages={pages.map(p => ({ id: p.id, description: p.title }))}
+        pages={pages.map(p => ({ id: p.id, description: p.description || p.title }))}
         pageId={currentPage.id}
-        page={{ description: currentPage.title }}
+        page={{ description: currentPage.description || currentPage.title }}
       />
 
       <div className="flex items-center justify-between mt-4 relative">
@@ -149,4 +179,4 @@ export function SurveyPreview({ questions, pages, onClose }: SurveyPreviewProps)
       </div>
     </div>
   );
-} 
+}

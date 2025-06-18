@@ -281,7 +281,7 @@ function SortableParallelGroupNode({ q, idx, isSelected, isExpanded, onSelect, o
           <GripVertical className="h-4 w-4 text-gray-400" />
         </div>
         <span className="text-sm font-medium text-muted-foreground mr-1 w-4 text-right select-none">{idx + 1}.</span>
-        <span className="truncate flex-1 font-medium" title={q.settings?.itemLabel || q.title}>{q.settings?.itemLabel || q.title}</span>
+        <span className="truncate flex-1 font-medium" title={q.title}>{q.title}</span>
         <button
           className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-rose-600 flex-shrink-0"
           title="Удалить ветку"
@@ -361,7 +361,7 @@ export const SidebarTreeView: React.FC<SidebarTreeViewProps> = ({
   const [confirmDeleteParallelId, setConfirmDeleteParallelId] = useState<string | null>(null);
   const [editPageId, setEditPageId] = useState<string | null>(null);
   const [editDescription, setEditDescription] = useState<string>('');
-  const [descriptionPosition, setDescriptionPosition] = useState('after');
+  const [descriptionPosition, setDescriptionPosition] = useState('before');
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {

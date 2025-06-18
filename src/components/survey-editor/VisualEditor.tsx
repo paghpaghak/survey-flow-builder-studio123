@@ -21,7 +21,7 @@ import './flow.css';
 import { Question, QuestionType } from '@/types/survey';
 import QuestionNode from './QuestionNode';
 import ResolutionNode from './ResolutionNode';
-import QuestionEditDialog from './QuestionEditDialog';
+import QuestionEditDialog from '../QuestionEditDialog';
 import { DndContext, useDraggable, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
 import { useSurveyStore } from '@/store/survey-store';
 import ResolutionEditDialog from './ResolutionEditDialog';
@@ -67,10 +67,12 @@ function DraggableQuestion({ question, children, readOnly, onPositionChange }: {
  * <summary>
  * Компонент визуального редактора вопросов для страницы опроса.
  * Позволяет перетаскивать, редактировать и группировать вопросы.
+ * Исключает отображение вложенных вопросов параллельных групп.
  * </summary>
  * <param name="questions">Вопросы для отображения</param>
  * <param name="onUpdateQuestions">Колбэк для обновления вопросов</param>
  * <param name="pages">Список страниц</param>
+ * <param name="allQuestions">Все вопросы опроса для контекста</param>
  */
 
 // Хелпер для генерации id правила
@@ -136,24 +138,49 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
   }, [onUpdateQuestions]);
 
   const handleDeleteQuestion = useCallback((id: string) => {
-    const updatedQuestions = questions.filter(q => q.id !== id);
-    callUpdateQuestionsWithDefaults(updatedQuestions);
-  }, [questions, callUpdateQuestionsWithDefaults]);
+    console.log('[VisualEditor] Удаление вопроса:', id);
+    console.log('[VisualEditor] allQuestions до удаления:', allQuestions.length);
+    
+    const questionToDelete = allQuestions.find(q => q.id === id);
+    let questionsToDelete = [id];
+  
+    // Если удаляется параллельная группа, добавляем все вложенные вопросы
+    if (questionToDelete?.type === QuestionType.ParallelGroup && questionToDelete.parallelQuestions) {
+      questionsToDelete = [...questionsToDelete, ...questionToDelete.parallelQuestions];
+    }
+  
+    console.log('[VisualEditor] Вопросы к удалению:', questionsToDelete);
+  
+    // Удаляем все связанные вопросы из allQuestions
+    const updatedAllQuestions = allQuestions.filter(q => !questionsToDelete.includes(q.id));
+    
+    // Также удаляем все transitionRules, которые ссылаются на удаляемые вопросы
+    const cleanedQuestions = updatedAllQuestions.map(q => ({
+      ...q,
+      transitionRules: q.transitionRules?.filter(rule => !questionsToDelete.includes(rule.nextQuestionId))
+    }));
+    
+    console.log('[VisualEditor] cleanedQuestions после удаления:', cleanedQuestions.length);
+    console.log('[VisualEditor] Вызываем onUpdateQuestions');
+    
+    onUpdateQuestions?.(cleanedQuestions);
+  }, [allQuestions, onUpdateQuestions]);
+
 
   const handleEditQuestion = useCallback((updatedQuestion: Question) => {
-    const exists = questions.some(q => q.id === updatedQuestion.id);
+    const exists = allQuestions.some(q => q.id === updatedQuestion.id);
     let updatedQuestions: Question[];
     if (exists) {
-      updatedQuestions = questions.map(q =>
+      updatedQuestions = allQuestions.map(q =>
         q.id === updatedQuestion.id
           ? { ...updatedQuestion, position: q.position || updatedQuestion.position }
           : q
       );
     } else {
-      updatedQuestions = [...questions, updatedQuestion];
+      updatedQuestions = [...allQuestions, updatedQuestion];
     }
-    callUpdateQuestionsWithDefaults(updatedQuestions);
-  }, [questions, callUpdateQuestionsWithDefaults]);
+    onUpdateQuestions?.(updatedQuestions);
+  }, [allQuestions, onUpdateQuestions]);
 
   const openEditDialog = useCallback((question: Question) => {
     setSelectedQuestion(question);
@@ -164,9 +191,9 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
     changes.forEach((change: any) => {
       if (change.type === 'position' && change.position) {
         nodesPositionsRef.current[change.id] = change.position;
-        const question = questions.find(q => q.id === change.id);
+        const question = allQuestions.find(q => q.id === change.id);
         if (!question) return;
-        const updatedQuestions = questions.map(q =>
+        const updatedQuestions = allQuestions.map(q =>
           q.id === change.id
             ? { ...q, position: change.position, pageId: question.pageId }
             : q
@@ -175,20 +202,20 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
       }
     });
     onNodesChange(changes);
-  }, [onNodesChange, questions, callUpdateQuestionsWithDefaults]);
+  }, [onNodesChange, allQuestions, callUpdateQuestionsWithDefaults]);
 
   const onNodeDragStop = useCallback((event: any, node: Node) => {
     if (!onUpdateQuestions) return;
-    const question = questions.find(q => q.id === node.id);
+    const question = allQuestions.find(q => q.id === node.id);
     if (!question) return;
-    const updatedQuestions = questions.map(q =>
+    const updatedQuestions = allQuestions.map(q =>
       q.id === node.id
         ? { ...q, position: node.position, pageId: question.pageId }
         : q
     );
     nodesPositionsRef.current[node.id] = node.position;
     callUpdateQuestionsWithDefaults(updatedQuestions);
-  }, [questions, callUpdateQuestionsWithDefaults, onUpdateQuestions]);
+  }, [allQuestions, callUpdateQuestionsWithDefaults, onUpdateQuestions]);
 
   const getQuestionsGroupedByPage = useCallback(() => {
     const groupedQuestions: Record<string, Question[]> = {};
@@ -202,45 +229,26 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
     return groupedQuestions;
   }, [questions]);
 
-  useEffect(() => {
-    const newNodes: Node[] = [];
-    questions.forEach((question, index) => {
-      // Если это параллельная ветка — отдельный тип ноды
-      if (question.type === QuestionType.ParallelGroup) {
-        const savedPosition = nodesPositionsRef.current[question.id];
-        const existingPosition = question.position;
-        const defaultPosition = {
-          x: (index % 3) * 300 + 50,
-          y: Math.floor(index / 3) * 200 + 50
-        };
-        const finalPosition = savedPosition || existingPosition || defaultPosition;
-        const page = pages.find(p => p.id === question.pageId);
-        newNodes.push({
-          id: question.id,
-          type: 'questionNode',
-          position: finalPosition,
-          data: {
-            question: {
-              ...question,
-              position: finalPosition,
-              pageId: question.pageId
-            },
-            onDelete: handleDeleteQuestion,
-            onEdit: handleEditQuestion,
-            onEditClick: (q: Question) => setEditingParallelGroup(q),
-            pages,
-            pageName: page?.title || 'Без страницы',
-          },
-          selected: selectedQuestionId === question.id,
-        });
-        // Не добавляем вложенные вопросы на основную схему
-        return;
+  // Фильтруем вопросы для отображения в визуальном редакторе
+  const getVisibleQuestions = useCallback(() => {
+    // Исключаем вложенные вопросы параллельных групп
+    const allParallelQuestionIds = new Set<string>();
+    allQuestions.forEach(q => {
+      if (q.type === QuestionType.ParallelGroup && q.parallelQuestions) {
+        q.parallelQuestions.forEach(subId => allParallelQuestionIds.add(subId));
       }
-      // Обычные вопросы (все, кроме параллельных и резолюции)
-      if ((question.type as QuestionType) !== QuestionType.ParallelGroup && (question.type as QuestionType) !== QuestionType.Resolution) {
-        // Проверяем, не вложенный ли это вопрос
-        const isInParallel = questions.some(q => q.type === QuestionType.ParallelGroup && q.parallelQuestions?.includes(question.id));
-        if (isInParallel) return;
+    });
+
+    return questions.filter(q => !allParallelQuestionIds.has(q.id));
+  }, [questions, allQuestions]);
+
+  useEffect(() => {
+    const visibleQuestions = getVisibleQuestions();
+    const newNodes: Node[] = [];
+    
+    visibleQuestions.forEach((question, index) => {
+      // Для параллельных групп и обычных вопросов
+      if (question.type !== QuestionType.Resolution) {
         const savedPosition = nodesPositionsRef.current[question.id];
         const existingPosition = question.position;
         const defaultPosition = {
@@ -249,6 +257,7 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
         };
         const finalPosition = savedPosition || existingPosition || defaultPosition;
         const page = pages.find(p => p.id === question.pageId);
+        
         newNodes.push({
           id: question.id,
           type: 'questionNode',
@@ -261,7 +270,9 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
             },
             onDelete: handleDeleteQuestion,
             onEdit: handleEditQuestion,
-            onEditClick: (q: Question) => setEditingParallelGroup(q),
+            onEditClick: question.type === QuestionType.ParallelGroup 
+              ? (q: Question) => setEditingParallelGroup(q)
+              : openEditDialog,
             pages,
             pageName: page?.title || 'Без страницы',
           },
@@ -269,16 +280,18 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
         });
       }
     });
+    
     setNodes(newNodes);
-  }, [questions, handleDeleteQuestion, handleEditQuestion, openEditDialog, pages, setEditingParallelGroup, selectedQuestionId]);
+  }, [questions, allQuestions, handleDeleteQuestion, handleEditQuestion, openEditDialog, pages, setEditingParallelGroup, selectedQuestionId, getVisibleQuestions]);
 
   useEffect(() => {
+    const visibleQuestions = getVisibleQuestions();
     const newEdges = [];
     
-    questions.forEach(question => {
+    visibleQuestions.forEach(question => {
       if (question.transitionRules) {
         question.transitionRules.forEach(rule => {
-          const targetQuestion = questions.find(q => q.id === rule.nextQuestionId);
+          const targetQuestion = visibleQuestions.find(q => q.id === rule.nextQuestionId);
           if (targetQuestion) {
             newEdges.push({
               id: `${question.id}-${rule.nextQuestionId}-${rule.id}`,
@@ -289,19 +302,19 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
               markerEnd: { type: MarkerType.ArrowClosed },
               style: { stroke: '#3b82f6' }
             });
-  }
+          }
         });
       }
     });
 
     setEdges(newEdges);
-  }, [questions]);
+  }, [questions, allQuestions, getVisibleQuestions]);
 
   const onConnect = useCallback(
     (params: Connection) => {
       if (!params.source || !params.target) return;
-      const sourceQuestion = questions.find(q => q.id === params.source);
-      const targetQuestion = questions.find(q => q.id === params.target);
+      const sourceQuestion = allQuestions.find(q => q.id === params.source);
+      const targetQuestion = allQuestions.find(q => q.id === params.target);
       if (!sourceQuestion || !targetQuestion) return;
 
       // --- Запрет входящих стрелок в параллельную ветку ---
@@ -328,25 +341,27 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
 
       const exists = sourceQuestion.transitionRules?.some(r => r.nextQuestionId === params.target);
       if (exists) return;
+      
       const newRule = {
         id: generateRuleId(),
         nextQuestionId: params.target,
         answer: '',
       };
-      const updatedQuestions = questions.map(q =>
+      
+      const updatedQuestions = allQuestions.map(q =>
         q.id === sourceQuestion.id
           ? { ...q, transitionRules: [...(q.transitionRules || []), newRule] }
           : q
       );
       callUpdateQuestionsWithDefaults(updatedQuestions);
     },
-    [questions, callUpdateQuestionsWithDefaults]
+    [allQuestions, callUpdateQuestionsWithDefaults]
   );
 
   const onEdgesChangeSync = useCallback(
     (changes: any[]) => {
       let updated = false;
-      let updatedQuestions = questions;
+      let updatedQuestions = allQuestions;
       changes.forEach(change => {
         if (change.type === 'remove') {
           const [source, target, ruleId] = (change.id || '').split('-');
@@ -361,7 +376,7 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
       if (updated) callUpdateQuestionsWithDefaults(updatedQuestions);
       onEdgesChange(changes);
     },
-    [questions, callUpdateQuestionsWithDefaults, onEdgesChange]
+    [allQuestions, callUpdateQuestionsWithDefaults, onEdgesChange]
   );
 
   // Центрируем и выделяем node при изменении selectedQuestionId
@@ -377,46 +392,46 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
   return (
     <DndContext sensors={sensors}>
       <div className="w-full h-full">
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChangeSync}
-        onConnect={onConnect}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        fitView
-        attributionPosition="bottom-left"
-        onNodeDragStop={onNodeDragStop}
-        onNodeClick={(_, node) => {
-          if (setSelectedQuestionId) setSelectedQuestionId(node.id);
-        }}
-        selectionKeyCode={null}
-      >
-        <Controls />
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChangeSync}
+          onConnect={onConnect}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          fitView
+          attributionPosition="bottom-left"
+          onNodeDragStop={onNodeDragStop}
+          onNodeClick={(_, node) => {
+            if (setSelectedQuestionId) setSelectedQuestionId(node.id);
+          }}
+          selectionKeyCode={null}
+        >
+          <Controls />
           <MiniMap />
-        <Background gap={12} size={1} />
-      </ReactFlow>
+          <Background gap={12} size={1} />
+        </ReactFlow>
 
         {isDialogOpen && selectedQuestion && (
-      <QuestionEditDialog
+          <QuestionEditDialog
             question={selectedQuestion}
-            availableQuestions={questions}
+            availableQuestions={allQuestions}
             onClose={() => setIsDialogOpen(false)}
-        onSave={handleEditQuestion}
+            onSave={handleEditQuestion}
             readOnly={readOnly}
-      />
+          />
         )}
 
         {editingParallelGroup && (
           <QuestionEditDialog
             question={editingParallelGroup}
-            availableQuestions={questions}
+            availableQuestions={allQuestions}
             onClose={() => setEditingParallelGroup(null)}
             onSave={handleEditQuestion}
           />
         )}
-    </div>
+      </div>
     </DndContext>
   );
 }
