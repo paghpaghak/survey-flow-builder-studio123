@@ -1,0 +1,32 @@
+﻿{
+    "startedAt":  "2025-06-19T08:43:56Z",
+    "currentStep":  "infrastructure",
+    "version":  "1.0.0",
+    "steps":  [
+                  {
+                      "status":  "completed",
+                      "description":  "Базовая настройка monorepo",
+                      "name":  "infrastructure"
+                  },
+                  {
+                      "status":  "pending",
+                      "description":  "Выделение общих типов",
+                      "name":  "shared-types"
+                  },
+                  {
+                      "status":  "pending",
+                      "description":  "Выделение UI компонентов",
+                      "name":  "ui-components"
+                  },
+                  {
+                      "status":  "pending",
+                      "description":  "Создание виджета",
+                      "name":  "survey-widget"
+                  },
+                  {
+                      "status":  "pending",
+                      "description":  "Миграция админки (опционально)",
+                      "name":  "admin-migration"
+                  }
+              ]
+}
