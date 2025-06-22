@@ -85,24 +85,33 @@
         "dev": "vite",
         "dev:server": "tsx watch server/index.ts",
         "dev:all": "concurrently \"pnpm:dev\" \"pnpm:dev:server\"",
+        "test:ui": "vitest --ui",
+        "test:e2e": "playwright test",
+        "test:e2e:ui": "playwright test --ui",
         "migrate:check": "node scripts/migration-check.js"
     },
     "private": true,
     "packageManager": "pnpm@8.15.0",
     "devDependencies": {
+        "@playwright/test": "^1.53.1",
+        "@testing-library/jest-dom": "^6.6.3",
+        "@testing-library/react": "^16.3.0",
         "@types/node": "^22.5.5",
         "@types/react": "^18.3.23",
         "@types/react-dom": "^18.3.7",
         "@vitejs/plugin-react-swc": "^3.5.0",
+        "@vitest/ui": "^3.2.4",
         "autoprefixer": "^10.4.20",
         "concurrently": "^9.2.0",
         "eslint": "^9.9.0",
+        "jsdom": "^26.1.0",
         "lovable-tagger": "^1.1.7",
         "postcss": "^8.4.47",
         "tailwindcss": "^3.4.11",
         "tsx": "^4.20.3",
         "turbo": "^1.12.4",
         "typescript": "latest",
-        "vite": "^5.4.1"
+        "vite": "^5.4.1",
+        "vitest": "^3.2.4"
     }
 }
