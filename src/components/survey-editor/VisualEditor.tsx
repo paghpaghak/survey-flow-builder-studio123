@@ -18,8 +18,8 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import './flow.css';
-import { Question, QUESTION_TYPES } from '@/types/survey';
-import type { QuestionType } from '@/types/survey';
+import { QUESTION_TYPES } from '@survey-platform/shared-types';
+import type { Question, QuestionType } from '@survey-platform/shared-types';
 import QuestionNode from './QuestionNode';
 import ResolutionNode from './ResolutionNode';
 import QuestionEditDialog from '../QuestionEditDialog';

@@ -1,7 +1,7 @@
 import { compare, hash } from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { User } from './models/user.model';
-import { LoginCredentials, UserRole } from '@/types/auth';
+import type { LoginCredentials, UserRole } from '@survey-platform/shared-types';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const SALT_ROUNDS = 10;

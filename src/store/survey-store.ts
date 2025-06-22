@@ -1,5 +1,5 @@
+import type { Survey, SurveyStatus, SurveyVersion } from '@survey-platform/shared-types';
 import { create } from 'zustand';
-import { Survey, SurveyStatus, SurveyVersion } from '@/types/survey';
 import { fetchSurveys, createSurvey, deleteSurvey as apiDeleteSurvey, updateSurvey as apiUpdateSurvey } from "../lib/api";
 
 /**

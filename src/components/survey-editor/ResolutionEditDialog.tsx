@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Question, ResolutionRule, QUESTION_TYPES } from '@/types/survey';
-import type { QuestionType } from '@/types/survey';
+import { QUESTION_TYPES } from '@survey-platform/shared-types';
+import type { Question, ResolutionRule, QuestionType } from '@survey-platform/shared-types';
 import { Trash, Plus } from 'lucide-react';
 
 interface ResolutionEditDialogProps {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Survey, SurveyVersion } from '@/types/survey';
+import type { Survey, SurveyVersion } from '@survey-platform/shared-types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

@@ -31,3 +31,9 @@ export type {
   PhoneQuestionSettings,
   DateQuestionSettings,
 } from './types/question.types';
+
+export * from './types/auth';
+export * from './types/requests';
+export * from './types/survey-response';
+
+export type { QuestionType } from './types/survey';

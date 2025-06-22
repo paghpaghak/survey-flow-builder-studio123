@@ -3,8 +3,8 @@ import { useSurveyStore } from '@/store/survey-store';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Eye } from 'lucide-react';
 import React, { useState } from 'react';
-import { Question, QUESTION_TYPES } from '@/types/survey';
-import type { QuestionType } from '@/types/survey';
+import { QUESTION_TYPES } from '@survey-platform/shared-types';
+import type { Question, QuestionType } from '@survey-platform/shared-types';
 import VisualEditor from '@/components/survey-editor/VisualEditor';
 import { SurveyPreview } from '@/components/survey-preview/SurveyPreview';
 import {

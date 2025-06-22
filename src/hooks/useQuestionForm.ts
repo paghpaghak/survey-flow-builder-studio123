@@ -1,6 +1,7 @@
+import { QUESTION_TYPES } from '@survey-platform/shared-types';
+import type { Question, QuestionType } from '@survey-platform/shared-types';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { useState, useCallback } from 'react';
-import { Question, QUESTION_TYPES } from '@/types/survey';
-import type { QuestionType } from '@/types/survey';
 import { QuestionFormData, UseQuestionFormResult } from '@/types/question.types';
 import { 
   getDefaultSettingsForType, 

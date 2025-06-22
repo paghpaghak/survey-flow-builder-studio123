@@ -1,4 +1,4 @@
-import { Survey } from '@/types/survey';
+import type { Survey } from '@survey-platform/shared-types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
@@ -26,4 +26,8 @@ export const apiUpdateSurvey = async (survey: Survey): Promise<Survey> => {
     console.error('Ошибка при обновлении опроса:', error);
     throw error;
   }
-}; 
+};
+
+export async function getSurveys(): Promise<Survey[]> {
+  // ... existing code ...
+} 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, hasRequiredRole } from '@/lib/auth';
-import { UserRole } from '@/types/auth';
+import type { UserRole } from '@survey-platform/shared-types';
 
 export async function requireAuth(
   request: NextRequest,

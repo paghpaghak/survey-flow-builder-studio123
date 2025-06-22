@@ -5,11 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { useFormContext, Controller, FieldValues } from 'react-hook-form';
-import { QUESTION_TYPES as QUESTION_TYPES_IMPORT } from '@/types/survey';
-import type { QuestionType } from '@/types/survey';
+import { QUESTION_TYPES as QUESTION_TYPES_IMPORT, type QuestionType } from '@survey-platform/shared-types';
 
 interface QuestionInputProps {
   question: Question;

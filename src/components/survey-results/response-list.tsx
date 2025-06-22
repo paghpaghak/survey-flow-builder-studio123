@@ -1,8 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Survey } from '@/types/survey';
-import { SurveyResponse } from '@/types/survey-response';
+import type { Survey, SurveyResponse } from '@survey-platform/shared-types';
 import {
   Table,
   TableBody,

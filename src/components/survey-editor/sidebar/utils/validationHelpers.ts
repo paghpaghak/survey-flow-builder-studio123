@@ -1,7 +1,7 @@
 // src/components/survey-editor/sidebar/utils/validationHelpers.ts
 
-import { Page, Question, QUESTION_TYPES } from '@/types/survey';
-import type { QuestionType } from '@/types/survey';
+import { QUESTION_TYPES } from '@survey-platform/shared-types';
+import type { Page, Question, QuestionType } from '@survey-platform/shared-types';
 import { DragValidationResult } from '../types/tree.types';
 import { isQuestionInParallelGroup, getParentParallelGroup } from './treeDataBuilder';
 

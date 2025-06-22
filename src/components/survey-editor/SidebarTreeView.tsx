@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Tree, TreeApi } from 'react-arborist';
-import { Page, Question, QUESTION_TYPES } from '@/types/survey';
-import type { QuestionType } from '@/types/survey';
+import { QUESTION_TYPES } from '@survey-platform/shared-types';
+import type { Page, Question, QuestionType } from '@survey-platform/shared-types';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay } from '@dnd-kit/core';

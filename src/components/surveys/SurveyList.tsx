@@ -3,7 +3,7 @@ import { useSurveyStore } from '@/store/survey-store';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Filter, Edit, Trash, ArrowUpDown, Settings, History, BarChart2, UserSquare2, MoreVertical } from 'lucide-react';
-import { Survey, SurveyStatus } from '@/types/survey';
+import type { Survey, SurveyStatus } from '@survey-platform/shared-types';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';

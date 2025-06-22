@@ -1,5 +1,4 @@
-import { ObjectId } from 'mongodb';
-import { Question, Page, SurveyVersion } from './survey';
+import type { Question, Page, SurveyVersion } from './survey';
 
 export interface UpdateSurveyRequest {
   questions: Question[];
@@ -9,12 +8,12 @@ export interface UpdateSurveyRequest {
       questions?: Question[];
     }>;
   }>;
-  [key: string]: any; // для других полей, которые могут быть в запросе
+  [key: string]: any; 
 }
 
 export interface SurveyResponse {
-  _id?: ObjectId;
-  surveyId: ObjectId;
+  _id?: string | { toHexString: () => string }; // Заменяем ObjectId на string или совместимый объект
+  surveyId: string | { toHexString: () => string };
   answers: Array<{
     questionId: string;
     value: string | string[] | number;

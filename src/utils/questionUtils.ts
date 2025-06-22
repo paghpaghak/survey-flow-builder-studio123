@@ -13,7 +13,7 @@ import {
   DEFAULT_DATE_SETTINGS,
   ERROR_MESSAGES 
 } from '@/constants/question.constants';
-import type { QuestionType as SurveyQuestionType } from '@/types/survey';
+import type { QuestionType as SurveyQuestionType } from '@survey-platform/shared-types';
 
 /**
  * Проверяет, нужны ли варианты ответов для данного типа вопроса

@@ -1,13 +1,7 @@
+import type { User, AuthState as AuthStateInterface } from '@survey-platform/shared-types';
 import { useState, useEffect } from 'react';
-import { User } from '@/types/auth';
 
-interface AuthState {
-  user: User | null;
-  isLoading: boolean;
-  error: string | null;
-}
-
-export function useAuth(): AuthState {
+export function useAuth(): AuthStateInterface {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Survey } from '@/types/survey';
+import type { Survey } from '@survey-platform/shared-types';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

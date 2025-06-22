@@ -7,7 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { LoginCredentials } from '@/types/auth';
+import { useForm } from 'react-hook-form';
+import type { LoginCredentials } from '@survey-platform/shared-types';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 export function LoginForm() {
   const navigate = useNavigate();

@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import { CreateSurveyResponseDto } from '@/types/survey-response';
+import type { CreateSurveyResponseDto } from '@survey-platform/shared-types';
+import { NextRequest, NextResponse } from 'next/server';
 import clientPromise from '@/api/mongodb';
 
 export async function POST(request: Request) {
