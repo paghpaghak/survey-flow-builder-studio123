@@ -11,6 +11,7 @@ import { GripVertical, Trash, ChevronDown, ChevronRight, Repeat2, Pencil, Scale 
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useTreeData } from './sidebar/hooks/useTreeData';
 
 interface SidebarTreeViewProps {
   pages: Page[];
@@ -35,29 +36,6 @@ type TreeNodeData = {
   title: string;
   parentId?: string;
 };
-
-function buildTreeData(pages: Page[], questions: Question[]): TreeNodeData[] {
-  const nodes: TreeNodeData[] = [];
-  for (const page of pages) {
-    nodes.push({ id: page.id, type: 'page', title: page.title });
-    const pageQuestions = questions.filter(q => q.pageId === page.id);
-    const usedIds = new Set<string>();
-    for (const q of pageQuestions) {
-      if (q.type === QUESTION_TYPES.ParallelGroup) {
-        nodes.push({ id: q.id, type: 'parallel_group', title: q.title, parentId: page.id });
-        (q.parallelQuestions || []).forEach((subId) => {
-          usedIds.add(subId);
-        });
-      }
-    }
-    for (const q of pageQuestions) {
-      if (q.type !== QUESTION_TYPES.ParallelGroup && !usedIds.has(q.id)) {
-        nodes.push({ id: q.id, type: 'question', title: q.title || 'Без названия', parentId: page.id });
-      }
-    }
-  }
-  return nodes;
-}
 
 function getTransformStyle(transform: any) {
   if (!transform) return undefined;
@@ -352,6 +330,7 @@ export const SidebarTreeView: React.FC<SidebarTreeViewProps> = ({
   onAddResolution,
   onEditResolution,
 }) => {
+  const { treeData } = useTreeData(pages, questions);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState<string>('');

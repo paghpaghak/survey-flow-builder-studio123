@@ -11,6 +11,7 @@ export interface TreeItemData {
   type: 'page' | 'question' | 'parallel_group';
   title: string;
   parentId?: string;
+  children?: TreeItemData[];
 }
 
 /**

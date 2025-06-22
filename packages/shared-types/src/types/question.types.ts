@@ -1,17 +1,10 @@
 ﻿// Импортируем из локального файла survey.ts (не через алиас @/)
-import { Question, QuestionType, ParallelBranchSettings } from './survey';
+import { Question, QuestionType, ParallelBranchSettings, TransitionRule } from './survey';
 
 // Интерфейсы для вариантов ответов
 export interface QuestionOption {
   id: string;
   text: string;
-}
-
-// Интерфейсы для правил перехода
-export interface TransitionRule {
-  id: string;
-  answer: string;
-  nextQuestionId: string;
 }
 
 // Главный интерфейс для данных формы

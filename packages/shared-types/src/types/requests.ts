@@ -8,15 +8,5 @@ export interface UpdateSurveyRequest {
       questions?: Question[];
     }>;
   }>;
-  [key: string]: any; 
+  [key: string]: any;
 }
-
-export interface SurveyResponse {
-  _id?: string | { toHexString: () => string }; // Заменяем ObjectId на string или совместимый объект
-  surveyId: string | { toHexString: () => string };
-  answers: Array<{
-    questionId: string;
-    value: string | string[] | number;
-  }>;
-  createdAt: Date;
-} 
