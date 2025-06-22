@@ -13,7 +13,6 @@ import {
   Node,
   SmoothStepEdge,
   MarkerType,
-  Panel,
   useReactFlow,
   Edge,
   ConnectionMode,
@@ -26,7 +25,6 @@ import type { Question, QuestionType, Page } from '@survey-platform/shared-types
 import QuestionNode from './QuestionNode';
 import ResolutionNode from './ResolutionNode';
 import QuestionEditDialog from '../QuestionEditDialog';
-import { DndContext, useDraggable, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
 import { useSurveyStore } from '@/store/survey-store';
 import ResolutionEditDialog from './ResolutionEditDialog';
 import { withDefaultTransitions, generateRuleId } from './utils/flow-helpers';
@@ -52,25 +50,6 @@ const edgeTypes: EdgeTypes = {
   smoothstep: SmoothStepEdge
 };
 
-function DraggableQuestion({ question, children, readOnly, onPositionChange }: { 
-  question: Question; 
-  children: React.ReactNode;
-  readOnly?: boolean;
-  onPositionChange?: (position: { x: number; y: number }) => void;
-}) {
-  const { attributes, listeners, setNodeRef } = useDraggable({
-    id: question.id,
-    data: question,
-    disabled: readOnly
-  });
-
-  return (
-    <div ref={setNodeRef} {...listeners} {...attributes}>
-      {children}
-    </div>
-  );
-}
-
 /**
  * <summary>
  * Компонент визуального редактора вопросов для страницы опроса.
@@ -84,13 +63,6 @@ function DraggableQuestion({ question, children, readOnly, onPositionChange }: {
  */
 
 export default function VisualEditor({ questions, onUpdateQuestions, readOnly = false, pages, selectedQuestionId, setSelectedQuestionId, allQuestions }: VisualEditorProps) {
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  );
   const {
     selectedQuestion,
     isDialogOpen,
@@ -110,10 +82,9 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
     onEditClick: openEditDialog,
   });
   
-  const { handleNodesChange, onNodeDragStop, onConnect } = useNodeEvents({
+  const { onNodeDragStop, onConnect } = useNodeEvents({
     allQuestions,
     onUpdateQuestions,
-    onNodesChange,
   });
   
   const store = useSurveyStore();
@@ -172,79 +143,65 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
     [allQuestions, callUpdateQuestionsWithDefaults, onEdgesChange]
   );
 
-  // Центрируем и выделяем node при изменении selectedQuestionId
-  useEffect(() => {
-    if (selectedQuestionId && reactFlow && nodes.length > 0) {
-      const node = nodes.find(n => n.id === selectedQuestionId);
-      if (node) {
-        reactFlow.setCenter(node.position.x + 125, node.position.y + 50, { zoom: 1.1, duration: 500 });
-      }
-    }
-  }, [selectedQuestionId, nodes, reactFlow]);
-
   return (
-    <DndContext sensors={sensors}>
-      <div className="w-full h-full">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={handleNodesChange}
-          onEdgesChange={onEdgesChangeSync}
-          onConnect={onConnect}
-          onNodeDragStop={onNodeDragStop}
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
-          fitView
-          attributionPosition="bottom-left"
-          onNodeClick={(_, node) => {
-            if (setSelectedQuestionId) setSelectedQuestionId(node.id);
-          }}
-          onNodesDelete={(nodesToDelete) => {
-            if (readOnly) return;
-            nodesToDelete.forEach(node => handleDeleteQuestion(node.id));
-          }}
-          connectionMode={ConnectionMode.Loose}
-          selectionKeyCode={null}
-          className="bg-gray-50"
-          deleteKeyCode={['Backspace', 'Delete']}
-        >
-          <Panel position="top-left">
-            <Button onClick={() => reactFlow.fitView()}>Fit View</Button>
-          </Panel>
-          <Controls />
-        </ReactFlow>
+    <div className="w-full h-full">
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChangeSync}
+        onConnect={onConnect}
+        onNodeDragStop={onNodeDragStop}
+        nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
+        fitView
+        attributionPosition="bottom-left"
+        onNodeClick={(_, node) => {
+          if (setSelectedQuestionId) setSelectedQuestionId(node.id);
+        }}
+        onNodesDelete={(nodesToDelete) => {
+          if (readOnly) return;
+          nodesToDelete.forEach(node => handleDeleteQuestion(node.id));
+        }}
+        connectionMode={ConnectionMode.Loose}
+        selectionKeyCode={null}
+        className="bg-gray-50"
+        deleteKeyCode={['Backspace', 'Delete']}
+      >
+        <Controls />
+        <Background />
+      </ReactFlow>
 
-        {selectedQuestion && (
-          <QuestionEditDialog
-            key={selectedQuestion.id}
-            onClose={() => closeEditDialog()}
-            question={selectedQuestion}
-            onSave={handleEditQuestion}
-            readOnly={readOnly}
-            availableQuestions={allQuestions}
-          />
-        )}
+      {selectedQuestion && (
+        <QuestionEditDialog
+          key={selectedQuestion.id}
+          onClose={() => closeEditDialog()}
+          question={selectedQuestion}
+          onSave={handleEditQuestion}
+          readOnly={readOnly}
+          availableQuestions={allQuestions}
+        />
+      )}
 
-        {editingParallelGroup && (
-          <QuestionEditDialog
-            key={editingParallelGroup.id}
-            onClose={() => setEditingParallelGroup(null)}
-            question={editingParallelGroup}
-            onSave={handleEditQuestion}
-            availableQuestions={allQuestions}
-          />
-        )}
+      {editingParallelGroup && (
+        <QuestionEditDialog
+          key={editingParallelGroup.id}
+          onClose={() => setEditingParallelGroup(null)}
+          question={editingParallelGroup}
+          onSave={handleEditQuestion}
+          availableQuestions={allQuestions}
+        />
+      )}
 
-        {editingResolution && (
-          <ResolutionEditDialog
-            resolutionQuestion={editingResolution}
-            questions={allQuestions}
-            open={!!editingResolution}
-            onClose={() => setEditingResolution(null)}
-            onSave={handleEditQuestion}
-          />
-        )}
-      </div>
-    </DndContext>
+      {editingResolution && (
+        <ResolutionEditDialog
+          resolutionQuestion={editingResolution}
+          questions={allQuestions}
+          open={!!editingResolution}
+          onClose={() => setEditingResolution(null)}
+          onSave={handleEditQuestion}
+        />
+      )}
+    </div>
   );
 }

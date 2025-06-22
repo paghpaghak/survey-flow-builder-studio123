@@ -1,105 +1,47 @@
-import { useCallback, useRef } from 'react';
-import { Node, OnNodesChange, OnConnect, Connection } from '@xyflow/react';
+import { useCallback } from 'react';
+import { Node, Connection } from '@xyflow/react';
 import { Question } from '@survey-platform/shared-types';
-import { withDefaultTransitions, generateRuleId } from '../utils/flow-helpers';
 
 interface UseNodeEventsProps {
   allQuestions: Question[];
   onUpdateQuestions?: (questions: Question[]) => void;
-  onNodesChange: OnNodesChange;
 }
 
-export function useNodeEvents({
-  allQuestions,
-  onUpdateQuestions,
-  onNodesChange,
-}: UseNodeEventsProps) {
-  const nodesPositionsRef = useRef<Record<string, { x: number; y: number }>>({});
-
-  const callUpdateQuestionsWithDefaults = useCallback(
-    (updatedQuestions: Question[]) => {
-      const withDefaults = withDefaultTransitions(updatedQuestions);
-      onUpdateQuestions?.(withDefaults);
-    },
-    [onUpdateQuestions]
-  );
-
-  const handleNodesChange: OnNodesChange = useCallback(
-    (changes) => {
-      changes.forEach((change: any) => {
-        if (change.type === 'position' && change.position) {
-          nodesPositionsRef.current[change.id] = change.position;
-          const question = allQuestions.find(q => q.id === change.id);
-          if (!question) return;
-          const updatedQuestions = allQuestions.map(q =>
-            q.id === change.id
-              ? { ...q, position: change.position, pageId: question.pageId }
-              : q
-          );
-          callUpdateQuestionsWithDefaults(updatedQuestions);
-        }
-      });
-      onNodesChange(changes);
-    },
-    [onNodesChange, allQuestions, callUpdateQuestionsWithDefaults]
-  );
-
+export function useNodeEvents({ allQuestions, onUpdateQuestions }: UseNodeEventsProps) {
   const onNodeDragStop = useCallback(
-    (event: any, node: Node) => {
+    (_: any, node: Node) => {
       if (!onUpdateQuestions) return;
-      const question = allQuestions.find(q => q.id === node.id);
-      if (!question) return;
-      const updatedQuestions = allQuestions.map(q =>
-        q.id === node.id
-          ? { ...q, position: node.position, pageId: question.pageId }
-          : q
+      const updatedQuestions = allQuestions.map(q => 
+        q.id === node.id ? { ...q, position: node.position } : q
       );
-      nodesPositionsRef.current[node.id] = node.position;
-      callUpdateQuestionsWithDefaults(updatedQuestions);
+      onUpdateQuestions(updatedQuestions);
     },
-    [allQuestions, callUpdateQuestionsWithDefaults, onUpdateQuestions]
+    [allQuestions, onUpdateQuestions]
   );
 
-  const onConnect: OnConnect = useCallback(
-    (params: Connection) => {
-      const { source, target } = params;
+  const onConnect: (connection: Connection) => void = useCallback(
+    (connection) => {
+      if (!onUpdateQuestions) return;
+      const { source, target } = connection;
       if (!source || !target) return;
-      const sourceQuestion = allQuestions.find(q => q.id === source);
-      const targetQuestion = allQuestions.find(q => q.id === target);
-      if (!sourceQuestion || !targetQuestion) return;
 
-      const parallelGroups = allQuestions.filter(q => q.type === 'parallel_group');
-      const parallelIds = parallelGroups.flatMap(g => g.parallelQuestions || []);
-      if (parallelIds.includes(target)) {
-        window.alert('Переходы на вложенные вопросы ветки не поддерживаются.');
-        return;
-      }
-
-      const exists = sourceQuestion.transitionRules?.some(r => r.nextQuestionId === target);
-      if (exists) return;
-
-      const newRule = {
-        id: generateRuleId(),
-        nextQuestionId: target,
-        answer: '',
-      };
-      
-      const updatedQuestion = {
-        ...sourceQuestion,
-        transitionRules: [...(sourceQuestion.transitionRules || []), newRule],
-      };
-
-      const updatedQuestions = allQuestions.map(q =>
-        q.id === source ? updatedQuestion : q
-      );
-      callUpdateQuestionsWithDefaults(updatedQuestions);
+      const updatedQuestions = allQuestions.map(q => {
+        if (q.id === source) {
+          const newRule = {
+            id: `${source}-${target}`,
+            targetQuestionId: target,
+          };
+          return {
+            ...q,
+            transitionRules: [...(q.transitionRules || []), newRule],
+          };
+        }
+        return q;
+      });
+      onUpdateQuestions(updatedQuestions);
     },
-    [allQuestions, callUpdateQuestionsWithDefaults]
+    [allQuestions, onUpdateQuestions]
   );
 
-  return {
-    handleNodesChange,
-    onNodeDragStop,
-    onConnect,
-  };
+  return { onNodeDragStop, onConnect };
 } 
