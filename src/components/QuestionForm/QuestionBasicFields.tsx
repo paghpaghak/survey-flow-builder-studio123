@@ -45,7 +45,7 @@ export function QuestionBasicFields({
             availableQuestions={availableQuestions.filter(
               q => q.id !== currentQuestionId
             )}
-            onInsert={(placeholder) => onChange('description', data.description + placeholder)}
+            onVariableSelect={(placeholder) => onChange('description', data.description + placeholder)}
             disabled={readOnly}
           />
         </div>

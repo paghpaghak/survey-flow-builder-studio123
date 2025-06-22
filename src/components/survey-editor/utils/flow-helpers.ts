@@ -1,3 +1,5 @@
+import type { Question } from '@survey-platform/shared-types';
+
 // Хелпер для генерации id правила
 export function generateRuleId() {
   return Math.random().toString(36).slice(2, 10);

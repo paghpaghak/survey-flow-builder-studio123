@@ -7,6 +7,7 @@ import { createVariablePlaceholder } from '@/utils/questionUtils';
 interface VariableDropdownProps {
   availableQuestions: Question[];
   onVariableSelect: (placeholder: string) => void;
+  disabled?: boolean;
 }
 
 /**
@@ -18,6 +19,7 @@ interface VariableDropdownProps {
 export const VariableDropdown = ({
   availableQuestions,
   onVariableSelect,
+  disabled = false,
 }: VariableDropdownProps) => {
   if (!availableQuestions || availableQuestions.length === 0) {
     return null;
@@ -43,7 +45,7 @@ export const VariableDropdown = ({
           size="sm" 
           variant="outline" 
           type="button" 
-          disabled={filteredQuestions.length === 0}
+          disabled={disabled || filteredQuestions.length === 0}
         >
           Вставить переменную
         </Button>
