@@ -24,6 +24,9 @@ export default defineConfig(async ({ mode }) => {
       },
     },
     plugins,
+    optimizeDeps: {
+      include: ['react-imask'],
+    },
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),

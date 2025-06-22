@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { Survey, SurveyStatus, SurveyVersion } from '@/types/survey';
-import { v4 as uuidv4 } from 'uuid';
 import { fetchSurveys, createSurvey, deleteSurvey as apiDeleteSurvey, updateSurvey as apiUpdateSurvey } from "../lib/api";
 
 /**
@@ -251,7 +250,7 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
 
     const now = new Date().toISOString();
     const newVersion = {
-      id: uuidv4(),
+      id: crypto.randomUUID(),
       version: survey.currentVersion + 1,
       status: 'draft',
       title: survey.title,
@@ -295,7 +294,7 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
 
     const now = new Date().toISOString();
     const newVersion: Survey['versions'][number] = {
-      id: uuidv4(),
+      id: crypto.randomUUID(),
       version: survey.currentVersion + 1,
       status: 'draft',
       title: targetVersion.title,

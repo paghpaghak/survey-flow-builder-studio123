@@ -17,7 +17,6 @@ export type {
   SurveyVersion,
   Page,
   Question,
-  QuestionType,
   SurveyStatus,
   TransitionRule
 } from './types/survey';

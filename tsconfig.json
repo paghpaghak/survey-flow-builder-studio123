@@ -1,15 +1,25 @@
-﻿{
-  "files": [],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
-  ],
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"]
-    },
-    "skipLibCheck": true,
-    "types": ["vitest/globals"]
-  }
+{
+    "files":  [
+
+              ],
+    "references":  [
+                       {
+                           "path":  "./tsconfig.app.json"
+                       },
+                       {
+                           "path":  "./tsconfig.node.json"
+                       }
+                   ],
+    "compilerOptions":  {
+                            "paths":  {
+                                          "@/*":  [
+                                                      "./src/*"
+                                                  ]
+                                      },
+                            "baseUrl":  ".",
+                            "types":  [
+                                          "vitest/globals"
+                                      ],
+                            "skipLibCheck":  true
+                        }
 }

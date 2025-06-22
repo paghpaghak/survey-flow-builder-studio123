@@ -1,5 +1,5 @@
 import { Handle, Position } from '@xyflow/react';
-import { Question, QuestionType } from '@/types/survey';
+import { Question, QuestionType } from '@survey-platform/shared-types';
 import { Button } from '@/components/ui/button';
 import { Trash, Pencil, Users, GripVertical, Repeat2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
