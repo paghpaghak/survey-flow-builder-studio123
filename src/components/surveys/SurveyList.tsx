@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useAuth } from '@/hooks/useAuth';
 import { createSurvey } from '@/lib/api';
+import { useSurveyFilters } from '@/hooks/useSurveyFilters';
 
 const STATUS_LABELS: Record<SurveyStatus, string> = {
   draft: "Черновик",
@@ -53,10 +54,6 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
   const navigate = useNavigate();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<'date' | 'title' | 'status'>('date');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all');
   const [showDeleteDialog, setShowDeleteDialog] = useState<string | null>(null);
   const [editingSurvey, setEditingSurvey] = useState<Survey | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -67,29 +64,20 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
   useEffect(() => {
     loadSurveys();
   }, [loadSurveys]);
-
+  
   const allSurveys = localSurveys.length > 0 ? [...localSurveys, ...surveys] : surveys;
-  const filteredSurveys = allSurveys.filter(survey => {
-    const matchesSearch = survey.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || survey.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-  const sortedSurveys = [...filteredSurveys].sort((a, b) => {
-    if (sortBy === 'date') {
-      return sortDirection === 'asc'
-        ? new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-        : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    } else if (sortBy === 'title') {
-      return sortDirection === 'asc'
-        ? a.title.localeCompare(b.title)
-        : b.title.localeCompare(a.title);
-    } else {
-      return sortDirection === 'asc'
-        ? (a.status || '').localeCompare(b.status || '')
-        : (b.status || '').localeCompare(a.status || '');
-    }
-  });
+  
+  const {
+    searchQuery,
+    setSearchQuery,
+    sortBy,
+    setSortBy,
+    sortDirection,
+    setSortDirection,
+    statusFilter,
+    setStatusFilter,
+    filteredAndSortedSurveys: sortedSurveys,
+  } = useSurveyFilters(allSurveys);
 
   const getStatusColor = (status: string) => {
     switch(status) {
