@@ -1,6 +1,7 @@
 import { Control } from "react-hook-form";
 import { QuestionFormData } from "@/types/question.types";
-import { QuestionType, QUESTION_TYPES } from "@survey-platform/shared-types";
+import { QUESTION_TYPES } from '@survey-platform/shared-types';
+import type { QuestionType } from '@survey-platform/shared-types';
 import { PhoneSettings } from "./PhoneSettings";
 import { DateSettings } from "./DateSettings";
 

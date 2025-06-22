@@ -3,7 +3,8 @@ import { useSurveyStore } from "../store/survey-store";
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Eye } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
-import { Question, QuestionType, Page } from '@/types/survey';
+import { Question, Page, QUESTION_TYPES } from '@/types/survey';
+import type { QuestionType } from '@/types/survey';
 import VisualEditor from '@/components/survey-editor/VisualEditor';
 import { toast } from 'sonner';
 import { SurveyPreview } from '@/components/survey-preview/SurveyPreview';
@@ -120,7 +121,7 @@ export default function SurveyEditor() {
     let questionsToDelete = [qid];
 
     // Если удаляется параллельная группа, добавляем все вложенные вопросы
-    if (questionToDelete?.type === QuestionType.ParallelGroup && questionToDelete.parallelQuestions) {
+    if (questionToDelete?.type === QUESTION_TYPES.ParallelGroup && questionToDelete.parallelQuestions) {
       questionsToDelete = [...questionsToDelete, ...questionToDelete.parallelQuestions];
     }
 
@@ -237,7 +238,7 @@ export default function SurveyEditor() {
     // Фильтруем вопросы, исключая вложенные в параллельные группы
     const allParallelQuestionIds = new Set<string>();
     questions.forEach(q => {
-      if (q.type === QuestionType.ParallelGroup && q.parallelQuestions) {
+      if (q.type === QUESTION_TYPES.ParallelGroup && q.parallelQuestions) {
         q.parallelQuestions.forEach(subId => allParallelQuestionIds.add(subId));
       }
     });
@@ -259,14 +260,14 @@ export default function SurveyEditor() {
       id: newId,
       pageId: targetPageId,
       title: `Новый вопрос ${nextNumber}`,
-      type: QuestionType.Text,
+      type: QUESTION_TYPES.Text,
       required: false,
       position: { x: 250, y: pageQuestions.length * 150 },
       options: undefined
     };
 
     // Если тип вопроса — Radio, Checkbox или Select, сразу добавляем два варианта
-    if ([QuestionType.Radio, QuestionType.Checkbox, QuestionType.Select].includes(newQuestion.type)) {
+    if ([QUESTION_TYPES.Radio, QUESTION_TYPES.Checkbox, QUESTION_TYPES.Select].includes(newQuestion.type)) {
       newQuestion.options = [
         { id: crypto.randomUUID(), text: 'Вариант 1' },
         { id: crypto.randomUUID(), text: 'Вариант 2' }
@@ -289,7 +290,7 @@ export default function SurveyEditor() {
     // Проверяем количество основных вопросов (исключая вложенные в параллельные группы)
     const allParallelQuestionIds = new Set<string>();
     questions.forEach(q => {
-      if (q.type === QuestionType.ParallelGroup && q.parallelQuestions) {
+      if (q.type === QUESTION_TYPES.ParallelGroup && q.parallelQuestions) {
         q.parallelQuestions.forEach(subId => allParallelQuestionIds.add(subId));
       }
     });
@@ -384,7 +385,7 @@ export default function SurveyEditor() {
   }
 
   function handleAddResolution() {
-    if (questions.some(q => q.type === QuestionType.Resolution)) {
+    if (questions.some(q => q.type === QUESTION_TYPES.Resolution)) {
       toast.error('В опросе может быть только одна резолюция');
       return;
     }
@@ -401,7 +402,7 @@ export default function SurveyEditor() {
       id: newId,
       pageId: lastPageId,
       title: 'Резолюция',
-      type: QuestionType.Resolution,
+      type: QUESTION_TYPES.Resolution,
       required: false,
       position: { x: 400, y: 100 },
       resolutionRules: [],
@@ -473,7 +474,7 @@ export default function SurveyEditor() {
                 }
                 // Если вопрос вложенный в параллельную ветку — выделяем ветку
                 const parentParallel = questions.find(
-                  pq => pq.type === QuestionType.ParallelGroup && Array.isArray(pq.parallelQuestions) && pq.parallelQuestions.includes(questionId)
+                  pq => pq.type === QUESTION_TYPES.ParallelGroup && Array.isArray(pq.parallelQuestions) && pq.parallelQuestions.includes(questionId)
                 );
                 if (parentParallel) {
                   setSelectedQuestionId(parentParallel.id);

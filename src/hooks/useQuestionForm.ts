@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
-import { Question, QuestionType } from '@/types/survey';
+import { Question, QUESTION_TYPES } from '@/types/survey';
+import type { QuestionType } from '@/types/survey';
 import { QuestionFormData, UseQuestionFormResult } from '@/types/question.types';
 import { 
   getDefaultSettingsForType, 

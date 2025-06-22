@@ -1,5 +1,6 @@
-﻿// Импортируем из локальных файлов (не через алиас @/)
-import { QuestionType, QUESTION_TYPES } from '../types/survey.ts';
+﻿// Внутренние импорты в пакете не должны содержать расширений .ts
+// Они разрешаются автоматически TypeScript
+import { QuestionType, QUESTION_TYPES } from '../types/survey';
 import { PhoneQuestionSettings, DateQuestionSettings } from '../types/question.types';
 
 // Опции типов вопросов для селекта

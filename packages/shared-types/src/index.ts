@@ -11,20 +11,23 @@ export * from './types/question.types';
 // Константы для вопросов
 export * from './constants/question.constants';
 
-// Re-export популярных типов для удобства
+// Re-export популярных типов и констант для удобства
 export type {
   Survey,
   SurveyVersion,
   Page,
   Question,
+  QuestionType,
   SurveyStatus,
-  TransitionRule
+  TransitionRule,
 } from './types/survey';
+
+export { QUESTION_TYPES } from './types/survey';
 
 export type {
   QuestionOption,
   QuestionFormData,
   QuestionEditDialogProps,
   PhoneQuestionSettings,
-  DateQuestionSettings
+  DateQuestionSettings,
 } from './types/question.types';

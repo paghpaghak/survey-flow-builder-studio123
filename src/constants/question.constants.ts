@@ -1,4 +1,5 @@
-import { QuestionType, QUESTION_TYPES } from '@survey-platform/shared-types';
+import { QUESTION_TYPES } from '@survey-platform/shared-types';
+import type { QuestionType } from '@survey-platform/shared-types';
 import { PhoneQuestionSettings, DateQuestionSettings } from '@/types/question.types';
 
 // Опции типов вопросов для селекта
@@ -76,3 +77,5 @@ export const PLACEHOLDERS = {
   COUNT_LABEL: 'Сколько повторений?',
   COUNT_DESCRIPTION: 'Описание (необязательно)'
 } as const;
+
+export { OPTION_BASED_QUESTION_TYPES as OPTION_BASED_TYPES };

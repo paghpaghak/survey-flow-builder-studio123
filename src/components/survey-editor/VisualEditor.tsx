@@ -18,7 +18,8 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import './flow.css';
-import { Question, QuestionType } from '@/types/survey';
+import { Question, QUESTION_TYPES } from '@/types/survey';
+import type { QuestionType } from '@/types/survey';
 import QuestionNode from './QuestionNode';
 import ResolutionNode from './ResolutionNode';
 import QuestionEditDialog from '../QuestionEditDialog';
@@ -145,7 +146,7 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
     let questionsToDelete = [id];
   
     // Если удаляется параллельная группа, добавляем все вложенные вопросы
-    if (questionToDelete?.type === QuestionType.ParallelGroup && questionToDelete.parallelQuestions) {
+    if (questionToDelete?.type === QUESTION_TYPES.ParallelGroup && questionToDelete.parallelQuestions) {
       questionsToDelete = [...questionsToDelete, ...questionToDelete.parallelQuestions];
     }
   
@@ -234,7 +235,7 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
     // Исключаем вложенные вопросы параллельных групп
     const allParallelQuestionIds = new Set<string>();
     allQuestions.forEach(q => {
-      if (q.type === QuestionType.ParallelGroup && q.parallelQuestions) {
+      if (q.type === QUESTION_TYPES.ParallelGroup && q.parallelQuestions) {
         q.parallelQuestions.forEach(subId => allParallelQuestionIds.add(subId));
       }
     });
@@ -248,7 +249,7 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
     
     visibleQuestions.forEach((question, index) => {
       // Для параллельных групп и обычных вопросов
-      if (question.type !== QuestionType.Resolution) {
+      if (question.type !== QUESTION_TYPES.Resolution) {
         const savedPosition = nodesPositionsRef.current[question.id];
         const existingPosition = question.position;
         const defaultPosition = {
@@ -270,7 +271,7 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
             },
             onDelete: handleDeleteQuestion,
             onEdit: handleEditQuestion,
-            onEditClick: question.type === QuestionType.ParallelGroup 
+            onEditClick: question.type === QUESTION_TYPES.ParallelGroup 
               ? (q: Question) => setEditingParallelGroup(q)
               : openEditDialog,
             pages,
@@ -318,13 +319,13 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
       if (!sourceQuestion || !targetQuestion) return;
 
       // --- Запрет входящих стрелок в параллельную ветку ---
-      if (targetQuestion.type === QuestionType.ParallelGroup) {
+      if (targetQuestion.type === QUESTION_TYPES.ParallelGroup) {
         window.alert('Входящие переходы в параллельную ветку запрещены.');
         return;
       }
 
       // --- Разрешить только один выход наружу из параллельной ветки ---
-      if (sourceQuestion.type === QuestionType.ParallelGroup) {
+      if (sourceQuestion.type === QUESTION_TYPES.ParallelGroup) {
         // Считаем только переходы наружу (не на вложенные вопросы)
         const parallelIds = sourceQuestion.parallelQuestions || [];
         const outgoingRules = (sourceQuestion.transitionRules || []).filter(r => !parallelIds.includes(r.nextQuestionId));

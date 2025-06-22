@@ -11,7 +11,8 @@ import {
   GitCommitVertical,
 } from 'lucide-react';
 import { Handle, Position } from '@xyflow/react';
-import { Question, QuestionType, QUESTION_TYPES } from '@survey-platform/shared-types';
+import { Question, QUESTION_TYPES } from '@survey-platform/shared-types';
+import type { QuestionType } from '@survey-platform/shared-types';
 import { Button } from '@/components/ui/button';
 import { Trash, Pencil, Users, GripVertical, Repeat2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

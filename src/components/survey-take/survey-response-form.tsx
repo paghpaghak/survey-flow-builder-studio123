@@ -7,7 +7,7 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { QuestionType, Survey, SurveyVersion } from '@/types/survey';
+import { QUESTION_TYPES, Survey, SurveyVersion } from '@/types/survey';
 import { QuestionInput } from './question-inputs';
 import { FormProvider } from 'react-hook-form';
 import { submitSurveyResponse } from '@/lib/api/survey-response';
@@ -26,6 +26,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { PlaceholderText } from '@/components/ui/placeholder-text';
+import type { QuestionType } from '@/types/survey';
 
 interface SurveyResponseFormProps {
   survey: Survey;

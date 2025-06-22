@@ -1,6 +1,7 @@
 // src/components/survey-editor/sidebar/utils/validationHelpers.ts
 
-import { Page, Question, QuestionType } from '@/types/survey';
+import { Page, Question, QUESTION_TYPES } from '@/types/survey';
+import type { QuestionType } from '@/types/survey';
 import { DragValidationResult } from '../types/tree.types';
 import { isQuestionInParallelGroup, getParentParallelGroup } from './treeDataBuilder';
 
@@ -60,7 +61,7 @@ export function canDeletePage(pages: Page[]): boolean {
  */
 export function canDeleteQuestion(question: Question, allQuestions: Question[]): boolean {
   // Всегда можно удалить обычный вопрос
-  if (question.type !== QuestionType.ParallelGroup) {
+  if (question.type !== QUESTION_TYPES.ParallelGroup) {
     return true;
   }
   

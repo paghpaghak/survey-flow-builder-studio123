@@ -8,6 +8,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { useFormContext, Controller, FieldValues } from 'react-hook-form';
+import { QUESTION_TYPES as QUESTION_TYPES_IMPORT } from '@/types/survey';
+import type { QuestionType } from '@/types/survey';
 
 interface QuestionInputProps {
   question: Question;

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Tree, TreeApi } from 'react-arborist';
-import { Page, Question, QuestionType } from '@/types/survey';
+import { Page, Question, QUESTION_TYPES } from '@/types/survey';
+import type { QuestionType } from '@/types/survey';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay } from '@dnd-kit/core';
@@ -42,7 +43,7 @@ function buildTreeData(pages: Page[], questions: Question[]): TreeNodeData[] {
     const pageQuestions = questions.filter(q => q.pageId === page.id);
     const usedIds = new Set<string>();
     for (const q of pageQuestions) {
-      if (q.type === QuestionType.ParallelGroup) {
+      if (q.type === QUESTION_TYPES.ParallelGroup) {
         nodes.push({ id: q.id, type: 'parallel_group', title: q.title, parentId: page.id });
         (q.parallelQuestions || []).forEach((subId) => {
           usedIds.add(subId);
@@ -50,7 +51,7 @@ function buildTreeData(pages: Page[], questions: Question[]): TreeNodeData[] {
       }
     }
     for (const q of pageQuestions) {
-      if (q.type !== QuestionType.ParallelGroup && !usedIds.has(q.id)) {
+      if (q.type !== QUESTION_TYPES.ParallelGroup && !usedIds.has(q.id)) {
         nodes.push({ id: q.id, type: 'question', title: q.title || 'Без названия', parentId: page.id });
       }
     }
@@ -183,7 +184,7 @@ function RenderParallelBranch({ q, questions, selectedQuestionId, onSelectQuesti
         {(q.parallelQuestions || []).map((subId, i) => {
           const subQ = questions.find(qq => qq.id === subId);
           if (!subQ) return null;
-          if (subQ.type === 'parallel_group' || subQ.type === 'ParallelGroup') {
+          if (subQ.type === 'parallel_group' || subQ.type === QUESTION_TYPES.ParallelGroup) {
             return (
               <RenderParallelBranch
                 key={subQ.id}
@@ -382,14 +383,14 @@ export const SidebarTreeView: React.FC<SidebarTreeViewProps> = ({
     
     // --- Ограничения для параллельных веток ---
     // 1. Запрет перемещения вопроса внутрь/вне ветки
-    const isActiveInParallel = questions.some(q => q.type === QuestionType.ParallelGroup && q.parallelQuestions?.includes(String(active.id)));
-    const isOverInParallel = questions.some(q => q.type === QuestionType.ParallelGroup && q.parallelQuestions?.includes(String(over.id)));
+    const isActiveInParallel = questions.some(q => q.type === QUESTION_TYPES.ParallelGroup && q.parallelQuestions?.includes(String(active.id)));
+    const isOverInParallel = questions.some(q => q.type === QUESTION_TYPES.ParallelGroup && q.parallelQuestions?.includes(String(over.id)));
     // 2. Запрет перемещения между разными ветками
     let activeParallelId = null;
     let overParallelId = null;
     for (const q of questions) {
-      if (q.type === QuestionType.ParallelGroup && q.parallelQuestions?.includes(String(active.id))) activeParallelId = q.id;
-      if (q.type === QuestionType.ParallelGroup && q.parallelQuestions?.includes(String(over.id))) overParallelId = q.id;
+      if (q.type === QUESTION_TYPES.ParallelGroup && q.parallelQuestions?.includes(String(active.id))) activeParallelId = q.id;
+      if (q.type === QUESTION_TYPES.ParallelGroup && q.parallelQuestions?.includes(String(over.id))) overParallelId = q.id;
     }
     if (isActiveInParallel !== isOverInParallel || (activeParallelId && overParallelId && activeParallelId !== overParallelId)) {
       window.alert('Перемещение вопросов внутрь/вне параллельной ветки или между ветками запрещено.');
@@ -438,7 +439,7 @@ export const SidebarTreeView: React.FC<SidebarTreeViewProps> = ({
             // Собираем id всех вопросов, входящих в параллельные ветки на этой странице
             const parallelIds = new Set<string>();
             questions.forEach(q => {
-              if (q.type === QuestionType.ParallelGroup && Array.isArray(q.parallelQuestions)) {
+              if (q.type === QUESTION_TYPES.ParallelGroup && Array.isArray(q.parallelQuestions)) {
                 q.parallelQuestions.forEach(id => parallelIds.add(id));
               }
             });
@@ -592,7 +593,7 @@ export const SidebarTreeView: React.FC<SidebarTreeViewProps> = ({
                       <SortableContext items={pageQuestions.map(q => q.id)} strategy={verticalListSortingStrategy}>
                         <div className="space-y-1">
                           {pageQuestions.map((q, idx) => {
-                            if (q.type === QuestionType.ParallelGroup) {
+                            if (q.type === QUESTION_TYPES.ParallelGroup) {
                               const isExpanded = expandedGroups[q.id] || false;
                               return (
                                 <SortableParallelGroupNode

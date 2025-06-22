@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Question, QUESTION_TYPES, ParallelBranchSettings, QuestionType } from '@survey-platform/shared-types';
+import { Question, QUESTION_TYPES, ParallelBranchSettings } from '@survey-platform/shared-types';
+import type { QuestionType } from '@survey-platform/shared-types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';

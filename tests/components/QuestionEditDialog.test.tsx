@@ -1,7 +1,8 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import QuestionEditDialog from '../../src/components/survey-editor/QuestionEditDialog';
 import { useSurveyStore } from '../../src/store/survey-store';
-import { QuestionType } from '../../src/types/survey';
+import { QUESTION_TYPES } from '../../src/types/survey';
+import type { QuestionType } from '../../src/types/survey';
 import '@testing-library/jest-dom';
 import React from 'react';
 
@@ -12,7 +13,7 @@ describe('QuestionEditDialog', () => {
   const mockQuestion = {
     id: '1',
     pageId: 'p1',
-    type: QuestionType.Select,
+    type: QUESTION_TYPES.Select,
     title: 'Test Question',
     options: [
       { id: 'opt1', text: 'Option 1' },
@@ -43,7 +44,7 @@ describe('QuestionEditDialog', () => {
   });
 
   it('should not render default option selector for non-dropdown questions', () => {
-    const textQuestion = { ...mockQuestion, type: QuestionType.Text };
+    const textQuestion = { ...mockQuestion, type: QUESTION_TYPES.Text };
     
     render(
       <QuestionEditDialog

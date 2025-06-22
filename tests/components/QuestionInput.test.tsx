@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { QuestionInput } from '../../src/components/survey-take/question-inputs';
-import { QuestionType } from '../../src/types/survey';
+import { QUESTION_TYPES } from '../../src/types/survey';
+import type { QuestionType } from '../../src/types/survey';
 import { FormProvider, useForm } from 'react-hook-form';
 import React from 'react';
 
@@ -17,7 +18,7 @@ describe('QuestionInput', () => {
   const mockQuestion = {
     id: '1',
     pageId: 'page-1',
-    type: QuestionType.Select,
+    type: QUESTION_TYPES.Select,
     title: 'Test Question',
     options: [
       { id: 'opt1', text: 'Option 1' },
@@ -44,7 +45,7 @@ describe('QuestionInput', () => {
   });
 
   it('should not show default option for non-dropdown questions', () => {
-    const textQuestion = { ...mockQuestion, type: QuestionType.Text };
+    const textQuestion = { ...mockQuestion, type: QUESTION_TYPES.Text };
     renderWithForm(textQuestion);
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
   });
