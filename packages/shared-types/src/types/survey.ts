@@ -73,6 +73,8 @@ export interface TransitionRule {
   id: string;
   answer: string;
   nextQuestionId: string;
+  condition?: 'equals' | 'not_equals' | 'greater_than' | 'less_than' | 'contains';
+  value?: string | number;
 }
 
 /**
