@@ -30,6 +30,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { createSurvey } from '@/lib/api';
 import { useSurveyFilters } from '@/hooks/useSurveyFilters';
+import { duplicateSurvey } from '@/utils/surveyUtils';
 
 const STATUS_LABELS: Record<SurveyStatus, string> = {
   draft: "Черновик",
@@ -100,67 +101,8 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
   };
 
   const handleDuplicateSurvey = async (survey: Survey) => {
-    // Копируем только структуру, без ответов
-    const newSurveyId = crypto.randomUUID();
-    const original = survey;
-    // Копируем все версии, страницы, вопросы, группы, настройки
-    const newVersions = original.versions.map(version => {
-      const pageIdMap: Record<string, string> = {};
-      const questionIdMap: Record<string, string> = {};
-      // Копируем вопросы с новыми id
-      const newQuestions = version.questions.map(q => {
-        const newQId = questionIdMap[q.id] || crypto.randomUUID();
-        questionIdMap[q.id] = newQId;
-        let parallelQuestions = undefined;
-        if (q.parallelQuestions) {
-          parallelQuestions = q.parallelQuestions.map(pid => questionIdMap[pid] || crypto.randomUUID());
-        }
-        return {
-          ...q,
-          id: newQId,
-          pageId: pageIdMap[q.pageId] || q.pageId,
-          parallelQuestions
-        };
-      });
-      // Копируем страницы с новыми id и массивом вопросов (Question[])
-      const newPages = version.pages.map(page => {
-        const newPageId = crypto.randomUUID();
-        pageIdMap[page.id] = newPageId;
-        return {
-          ...page,
-          id: newPageId,
-          questions: page.questions.map(q => {
-            // Находим объект вопроса по id
-            const questionObj = newQuestions.find(nq => nq.id === (questionIdMap[q.id] || q.id));
-            return questionObj || q;
-          })
-        };
-      });
-      return {
-        ...version,
-        id: crypto.randomUUID(),
-        version: 1,
-        title: `${version.title || original.title} (Копия)` ,
-        pages: newPages,
-        questions: newQuestions,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        publishedAt: undefined,
-        status: 'draft' as SurveyStatus,
-      };
-    });
-    const newSurvey = {
-      ...original,
-      id: newSurveyId,
-      title: `${original.title} (Копия)` ,
-      status: 'draft' as SurveyStatus,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      versions: newVersions,
-      currentVersion: 1,
-      publishedVersion: 1,
-    };
-    const created = await createSurvey(newSurvey);
+    const newSurveyData = duplicateSurvey(survey);
+    const created = await createSurvey(newSurveyData as Survey);
     if (reloadSurveys) {
       await reloadSurveys();
     } else {
