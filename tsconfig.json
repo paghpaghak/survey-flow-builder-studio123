@@ -1,4 +1,4 @@
-{
+﻿{
   "files": [],
   "references": [
     { "path": "./tsconfig.app.json" },
@@ -7,15 +7,9 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@/api/*": ["./api/*"]
+      "@/*": ["./src/*"]
     },
-    "noImplicitAny": false,
-    "noUnusedParameters": false,
     "skipLibCheck": true,
-    "allowJs": true,
-    "noUnusedLocals": false,
-    "strictNullChecks": false,
     "types": ["vitest/globals"]
   }
 }

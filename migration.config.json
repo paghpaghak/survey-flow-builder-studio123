@@ -1,6 +1,6 @@
-﻿{
+
     "startedAt":  "2025-06-19T08:43:56Z",
-    "currentStep":  "infrastructure",
+    "currentStep":  "shared-types",
     "version":  "1.0.0",
     "steps":  [
                   {
@@ -9,7 +9,7 @@
                       "name":  "infrastructure"
                   },
                   {
-                      "status":  "pending",
+                      "status":  "in-progress",
                       "description":  "Выделение общих типов",
                       "name":  "shared-types"
                   },

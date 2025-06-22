@@ -1,0 +1,20 @@
+﻿{
+    "include":  [
+                    "src/**/*"
+                ],
+    "exclude":  [
+                    "node_modules",
+                    "dist"
+                ],
+    "compilerOptions":  {
+                            "forceConsistentCasingInFileNames":  true,
+                            "outDir":  "./dist",
+                            "declaration":  true,
+                            "strict":  true,
+                            "target":  "ES2020",
+                            "esModuleInterop":  true,
+                            "skipLibCheck":  true,
+                            "module":  "commonjs",
+                            "rootDir":  "./src"
+                        }
+}
