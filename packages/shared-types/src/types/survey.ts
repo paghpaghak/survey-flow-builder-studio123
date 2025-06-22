@@ -185,20 +185,9 @@ export interface Survey {
   description: string;
   status: SurveyStatus;
   currentVersion: number;
-  publishedVersion: number;
-  versions: {
-    id: string;
-    version: number;
-    status: SurveyStatus;
-    title: string;
-    description: string;
-    pages: Page[];
-    questions: Question[];
-    createdAt: string;
-    updatedAt: string;
-    publishedAt?: string;
-    archivedAt?: string;
-  }[];
+  publishedVersion?: number;
+  versions: SurveyVersion[];
+  responsesCount?: number;
   createdAt: string;
   updatedAt: string;
 }

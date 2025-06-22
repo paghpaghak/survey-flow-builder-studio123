@@ -23,7 +23,7 @@ interface SurveyState {
    * <summary>Удаляет опрос по ID.</summary>
    * <param name="id">ID опроса</param>
    */
-  deleteSurvey: (id: string) => void;
+  deleteSurvey: (id: string) => Promise<void>;
   /**
    * <summary>Обновляет статус опроса.</summary>
    * <param name="id">ID опроса</param>
