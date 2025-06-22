@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useTreeData } from './sidebar/hooks/useTreeData';
 import { SortableQuestionNode } from './sidebar/nodes/SortableQuestionNode';
+import { RenderParallelBranch } from './sidebar/nodes/RenderParallelBranch';
 
 interface SidebarTreeViewProps {
   pages: Page[];
@@ -42,58 +43,6 @@ function getTransformStyle(transform: any) {
   if (!transform) return undefined;
   const { x = 0, y = 0, scaleX = 1, scaleY = 1 } = transform;
   return `translate3d(${x}px, ${y}px, 0) scaleX(${scaleX}) scaleY(${scaleY})`;
-}
-
-function RenderParallelBranch({ q, questions, selectedQuestionId, onSelectQuestion, onUpdateQuestionTitle, onDeleteQuestion, editingQuestionId, setEditingQuestionId, editingQuestionTitle, setEditingQuestionTitle, setConfirmDeleteParallelId, level = 1 }) {
-  return (
-    <div style={{ marginLeft: level * 16 }}>
-      <div className="mt-1 space-y-1">
-        {(q.parallelQuestions || []).map((subId, i) => {
-          const subQ = questions.find(qq => qq.id === subId);
-          if (!subQ) return null;
-          if (subQ.type === 'parallel_group' || subQ.type === QUESTION_TYPES.ParallelGroup) {
-            return (
-              <RenderParallelBranch
-                key={subQ.id}
-                q={subQ}
-                questions={questions}
-                selectedQuestionId={selectedQuestionId}
-                onSelectQuestion={onSelectQuestion}
-                onUpdateQuestionTitle={onUpdateQuestionTitle}
-                onDeleteQuestion={onDeleteQuestion}
-                editingQuestionId={editingQuestionId}
-                setEditingQuestionId={setEditingQuestionId}
-                editingQuestionTitle={editingQuestionTitle}
-                setEditingQuestionTitle={setEditingQuestionTitle}
-                setConfirmDeleteParallelId={setConfirmDeleteParallelId}
-                level={level + 1}
-              />
-            );
-          }
-          return (
-            <SortableQuestionNode
-              key={subQ.id}
-              node={{ data: { ...subQ, type: 'question', title: subQ.title || 'Без названия' } }}
-              style={{}}
-              isSelected={subQ.id === selectedQuestionId}
-              onSelect={() => onSelectQuestion && onSelectQuestion(subQ.id)}
-              onUpdateTitle={newTitle => onUpdateQuestionTitle?.(subQ.id, newTitle)}
-              onDelete={onDeleteQuestion ? () => onDeleteQuestion(subQ.id) : undefined}
-              editing={editingQuestionId === subQ.id}
-              setEditing={v => {
-                setEditingQuestionId && setEditingQuestionId(v ? subQ.id : null);
-                setEditingQuestionTitle && setEditingQuestionTitle(subQ.title || '');
-              }}
-              editingTitle={editingQuestionId === subQ.id ? editingQuestionTitle : undefined}
-              setEditingTitle={setEditingQuestionTitle}
-              number={i + 1}
-              nested
-            />
-          );
-        })}
-      </div>
-    </div>
-  );
 }
 
 function SortableParallelGroupNode({ q, idx, isSelected, isExpanded, onSelect, onToggleExpand, questions, selectedQuestionId, onSelectQuestion, onUpdateQuestionTitle, onDeleteQuestion, editingQuestionId, setEditingQuestionId, editingQuestionTitle, setEditingQuestionTitle, setConfirmDeleteParallelId }: {
