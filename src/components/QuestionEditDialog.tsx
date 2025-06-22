@@ -155,8 +155,9 @@ export default function QuestionEditDialog({
                   onTitleChange={(title) => updateField('title', title)}
                   onDescriptionChange={(description) => updateField('description', description)}
                   parallelBranch={parallelBranch}
-                  availableQuestions={availableQuestions}
+                  allQuestions={availableQuestions}
                   currentQuestionId={question.id}
+                  currentPageId={question.pageId}
                   onEditSubQuestion={setEditingSubQuestionId}
                   readOnly={readOnly}
                 />

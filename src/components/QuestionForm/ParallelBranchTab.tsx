@@ -1,7 +1,6 @@
 import React from 'react';
 import { useFieldArray, Control, useWatch } from 'react-hook-form';
 import { Question, QUESTION_TYPES } from '@survey-platform/shared-types';
-import { UseParallelBranchResult } from '@/types/question.types';
 import { TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,10 +16,11 @@ interface ParallelBranchTabProps {
   description: string;
   onTitleChange: (title: string) => void;
   onDescriptionChange: (description: string) => void;
-  parallelBranch: UseParallelBranchResult;
+  parallelBranch: ReturnType<typeof import('@/hooks/useParallelBranch').useParallelBranch>;
   allQuestions: Question[];
   control: Control<any>;
   currentQuestionId?: string;
+  currentPageId?: string;
   onEditSubQuestion?: (questionId: string) => void;
   readOnly?: boolean;
 }
@@ -40,6 +40,7 @@ export function ParallelBranchTab({
   allQuestions,
   control,
   currentQuestionId,
+  currentPageId,
   onEditSubQuestion,
   readOnly = false
 }: ParallelBranchTabProps) {
@@ -51,13 +52,14 @@ export function ParallelBranchTab({
 
   // Фильтруем вопросы, чтобы исключить текущий и другие параллельные группы
   const availableQuestions = React.useMemo(() => {
-    return allQuestions.filter(
+    return (allQuestions || []).filter(
       q =>
+        q.pageId === currentPageId &&
         q.id !== currentQuestionId &&
         q.type !== QUESTION_TYPES.ParallelGroup &&
         q.type !== 'resolution', // TODO: использовать QUESTION_TYPES.Resolution
     );
-  }, [allQuestions, currentQuestionId]);
+  }, [allQuestions, currentQuestionId, currentPageId]);
 
   // Фильтруем доступные вопросы
   const availableForSelection = availableQuestions.filter(q => 
