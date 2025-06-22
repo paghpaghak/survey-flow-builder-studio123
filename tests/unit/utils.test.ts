@@ -1,4 +1,5 @@
 import { cn, parsePlaceholders } from "../../src/lib/utils";
+import { describe, it, expect } from 'vitest';
 
 describe('cn', () => {
   it('объединяет простые классы', () => {

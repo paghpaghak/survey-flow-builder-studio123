@@ -1,7 +1,7 @@
 import React from 'react';
 import { parsePlaceholders } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip';
-import { Question, QUESTION_TYPES } from '@survey-platform/shared-types';
+import { Question, QUESTION_TYPES, QuestionType } from '@survey-platform/shared-types';
 
 interface PlaceholderTextProps {
   text: string;
@@ -9,6 +9,8 @@ interface PlaceholderTextProps {
   questions?: Question[];
   maxLength?: number;
 }
+
+const TYPES_WITH_OPTIONS: QuestionType[] = [QUESTION_TYPES.Radio, QUESTION_TYPES.Select, QUESTION_TYPES.Checkbox];
 
 export function PlaceholderText({ text = '', answers, questions = [], maxLength = 40 }: PlaceholderTextProps) {
   // Защита от undefined/null
@@ -26,7 +28,7 @@ export function PlaceholderText({ text = '', answers, questions = [], maxLength 
     const value = safeAnswers[key];
     const question = safeQuestions.find(q => q.id === key);
     console.log('[PlaceholderText] key:', key, 'value:', value, 'question:', question);
-    if (question && [QUESTION_TYPES.Radio, QUESTION_TYPES.Select].includes(question.type)) {
+    if (question && TYPES_WITH_OPTIONS.includes(question.type)) {
       console.log('[PlaceholderText] options:', question.options, 'value:', value, 'allQuestions:', safeQuestions, 'answers:', safeAnswers);
       const option = question.options?.find(opt => opt.id === value);
       if (option) return <span className="font-semibold text-blue-900">{option.text}</span>;

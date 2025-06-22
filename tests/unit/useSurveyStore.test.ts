@@ -1,9 +1,10 @@
 import { renderHook, act } from '@testing-library/react';
 import { useSurveyStore } from '../../src/store/survey-store';
 import React from 'react';
+import { describe, it, expect } from 'vitest';
 
 describe('useSurveyStore', () => {
-  it('инициализируется с пустым списком опросов', () => {
+  it('инициализируется пустым списком опросов', () => {
     const { result } = renderHook(() => useSurveyStore());
     expect(result.current.surveys).toEqual([]);
   });

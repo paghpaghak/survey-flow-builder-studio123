@@ -1,9 +1,13 @@
 import { ChevronsUpDown } from 'lucide-react';
-import { VariableDropdownProps } from '@/types/question.types';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Question, QUESTION_TYPES } from '@survey-platform/shared-types';
 import { createVariablePlaceholder } from '@/utils/questionUtils';
+
+interface VariableDropdownProps {
+  availableQuestions: Question[];
+  onVariableSelect: (placeholder: string) => void;
+}
 
 /**
  * <summary>

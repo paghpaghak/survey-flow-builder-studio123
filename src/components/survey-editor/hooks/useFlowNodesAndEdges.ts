@@ -93,6 +93,22 @@ export function useFlowNodesAndEdges({
       }
     });
 
+    // Добавляем рёбра по умолчанию для вопросов без transitionRules
+    visibleQuestions.forEach((question, index) => {
+      const nextQuestion = visibleQuestions[index + 1];
+      if (nextQuestion && (!question.transitionRules || question.transitionRules.length === 0)) {
+        newEdges.push({
+          id: `e-${question.id}-${nextQuestion.id}-default`,
+          source: question.id,
+          target: nextQuestion.id,
+          type: 'smoothstep',
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+          },
+        });
+      }
+    });
+
     setNodes(newNodes);
     setEdges(newEdges);
   }, [questions, allQuestions, selectedQuestionId, readOnly, pages, onDelete, onEditClick, setNodes, setEdges]);

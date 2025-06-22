@@ -1,4 +1,4 @@
-import { QuestionBasicFieldsProps } from '@/types/question.types';
+import { QuestionBasicFieldsProps } from '@survey-platform/shared-types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';

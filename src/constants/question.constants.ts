@@ -1,6 +1,6 @@
 import { QUESTION_TYPES } from '@survey-platform/shared-types';
 import type { QuestionType } from '@survey-platform/shared-types';
-import { PhoneQuestionSettings, DateQuestionSettings } from '@/types/question.types';
+import { PhoneQuestionSettings, DateQuestionSettings } from '@survey-platform/shared-types';
 
 // Опции типов вопросов для селекта
 export const QUESTION_TYPE_OPTIONS: { value: QuestionType; label: string }[] = [

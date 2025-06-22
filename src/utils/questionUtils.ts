@@ -5,8 +5,9 @@ import {
   Survey,
   SurveyVersion,
   QUESTION_TYPES,
+  QuestionFormData,
+  QuestionOption
 } from '@survey-platform/shared-types';
-import { QuestionFormData, QuestionOption } from '@/types/question.types';
 import { 
   OPTION_BASED_TYPES, 
   DEFAULT_PHONE_SETTINGS, 

@@ -1,13 +1,13 @@
-import { Control } from "react-hook-form";
-import { QuestionFormData } from "@/types/question.types";
+import { QuestionFormData, QuestionType } from '@survey-platform/shared-types';
 import { QUESTION_TYPES } from '@survey-platform/shared-types';
-import type { QuestionType } from '@survey-platform/shared-types';
 import { PhoneSettings } from "./PhoneSettings";
 import { DateSettings } from "./DateSettings";
 
 interface TypeSpecificSettingsProps {
-  control: Control<QuestionFormData>;
-  questionType: QuestionType;
+  type: QuestionType;
+  settings: any;
+  onChange: (settings: any) => void;
+  readOnly?: boolean;
 }
 
 /**
@@ -17,15 +17,15 @@ interface TypeSpecificSettingsProps {
  * </summary>
  */
 export function TypeSpecificSettings(props: TypeSpecificSettingsProps) {
-  const { control, questionType } = props;
+  const { type, settings, onChange, readOnly } = props;
 
-  switch (questionType) {
+  switch (type) {
     case QUESTION_TYPES.Phone:
-      return <PhoneSettings control={control} />;
+      return <PhoneSettings settings={settings} onChange={onChange} readOnly={readOnly} />;
     // case QuestionType.Number:
     // return <NumberSettings control={control} />;
     case QUESTION_TYPES.Date:
-      return <DateSettings control={control} />;
+      return <DateSettings settings={settings} onChange={onChange} readOnly={readOnly} />;
     default:
       return null;
   }

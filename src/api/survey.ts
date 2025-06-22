@@ -29,5 +29,15 @@ export const apiUpdateSurvey = async (survey: Survey): Promise<Survey> => {
 };
 
 export async function getSurveys(): Promise<Survey[]> {
-  // ... existing code ...
+  try {
+    const response = await fetch(`${API_URL}/surveys`);
+    if (!response.ok) {
+      throw new Error('Ошибка при загрузке опросов');
+    }
+    const surveys = await response.json();
+    return surveys;
+  } catch (error) {
+    console.error('Ошибка при загрузке опросов:', error);
+    throw error;
+  }
 } 

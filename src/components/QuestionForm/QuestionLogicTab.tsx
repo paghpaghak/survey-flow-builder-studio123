@@ -1,5 +1,4 @@
-import type { Question } from '@survey-platform/shared-types';
-import { QuestionOption, UseTransitionRulesResult } from '@/types/question.types';
+import type { Question, QuestionOption } from '@survey-platform/shared-types';
 import { TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,7 +7,7 @@ import { Plus, Trash } from 'lucide-react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 
 interface QuestionLogicTabProps {
-  transitionRules: UseTransitionRulesResult;
+  transitionRules: ReturnType<typeof import('@/hooks/useTransitionRules').useTransitionRules>;
   options: QuestionOption[];
   availableQuestions: Question[];
   currentQuestionId: string;
