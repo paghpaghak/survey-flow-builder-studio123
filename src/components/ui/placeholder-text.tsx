@@ -1,7 +1,7 @@
 import React from 'react';
 import { parsePlaceholders } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip';
-import { Question, QuestionType } from '@/types/survey';
+import { Question, QUESTION_TYPES } from '@survey-platform/shared-types';
 
 interface PlaceholderTextProps {
   text: string;
@@ -26,13 +26,13 @@ export function PlaceholderText({ text = '', answers, questions = [], maxLength 
     const value = safeAnswers[key];
     const question = safeQuestions.find(q => q.id === key);
     console.log('[PlaceholderText] key:', key, 'value:', value, 'question:', question);
-    if (question && [QuestionType.Radio, QuestionType.Select].includes(question.type)) {
+    if (question && [QUESTION_TYPES.Radio, QUESTION_TYPES.Select].includes(question.type)) {
       console.log('[PlaceholderText] options:', question.options, 'value:', value, 'allQuestions:', safeQuestions, 'answers:', safeAnswers);
       const option = question.options?.find(opt => opt.id === value);
       if (option) return <span className="font-semibold text-blue-900">{option.text}</span>;
       return <span className="text-red-500">{String(value)} (нет текста)</span>;
     }
-    if (question && question.type === QuestionType.Checkbox && Array.isArray(value)) {
+    if (question && question.type === QUESTION_TYPES.Checkbox && Array.isArray(value)) {
       const texts = value.map((id: string) => question.options?.find(opt => opt.id === id)?.text).filter(Boolean);
       if (texts.length > 0) {
         const displayValue = texts.join(', ');

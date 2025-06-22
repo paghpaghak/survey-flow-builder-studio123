@@ -9,20 +9,23 @@ export type SurveyStatus = 'draft' | 'published' | 'archived';
 /**
  * <summary>
  * Перечисление всех поддерживаемых типов вопросов.
+ * Используем объект с as const вместо enum для лучшей совместимости с JS.
  * </summary>
  */
-export enum QuestionType {
-  Text = 'text',
-  Number = 'number',
-  Radio = 'radio',
-  Checkbox = 'checkbox',
-  Select = 'select',
-  Date = 'date',
-  Phone = 'phone',
-  Email = 'email',
-  ParallelGroup = 'parallel_group',
-  Resolution = 'resolution',
-}
+export const QUESTION_TYPES = {
+  Text: 'text',
+  Number: 'number',
+  Radio: 'radio',
+  Checkbox: 'checkbox',
+  Select: 'select',
+  Date: 'date',
+  Phone: 'phone',
+  Email: 'email',
+  ParallelGroup: 'parallel_group',
+  Resolution: 'resolution',
+} as const;
+
+export type QuestionType = typeof QUESTION_TYPES[keyof typeof QUESTION_TYPES];
 
 // Метаданные для разных типов вопросов
 export interface DateSettings {
@@ -53,16 +56,16 @@ export interface ParallelBranchSettings {
 
 // Тип для настроек вопроса в зависимости от его типа
 export type QuestionTypeSettings = {
-  [QuestionType.Date]: DateSettings;
-  [QuestionType.Phone]: PhoneSettings;
-  [QuestionType.Text]: Record<string, never>;
-  [QuestionType.Radio]: Record<string, never>;
-  [QuestionType.Checkbox]: Record<string, never>;
-  [QuestionType.Select]: Record<string, never>;
-  [QuestionType.Email]: Record<string, never>;
-  [QuestionType.Number]: NumberSettings;
-  [QuestionType.ParallelGroup]: ParallelBranchSettings;
-  [QuestionType.Resolution]: Record<string, never>;
+  [QUESTION_TYPES.Date]: DateSettings;
+  [QUESTION_TYPES.Phone]: PhoneSettings;
+  [QUESTION_TYPES.Text]: Record<string, never>;
+  [QUESTION_TYPES.Radio]: Record<string, never>;
+  [QUESTION_TYPES.Checkbox]: Record<string, never>;
+  [QUESTION_TYPES.Select]: Record<string, never>;
+  [QUESTION_TYPES.Email]: Record<string, never>;
+  [QUESTION_TYPES.Number]: NumberSettings;
+  [QUESTION_TYPES.ParallelGroup]: ParallelBranchSettings;
+  [QUESTION_TYPES.Resolution]: Record<string, never>;
 };
 
 // Тип для правил перехода

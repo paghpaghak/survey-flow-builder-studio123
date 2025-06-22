@@ -1,5 +1,11 @@
 import React from 'react';
-import { Question, QuestionType } from "@/types/survey";
+import {
+  Question,
+  QuestionType,
+  TransitionRule,
+  ResolutionRule,
+  QUESTION_TYPES,
+} from '@survey-platform/shared-types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -45,7 +51,7 @@ export default function QuestionEditDialog({
   
   // Логика параллельной ветки
   const parallelBranch = useParallelBranch(
-    formData.type === QuestionType.ParallelGroup ? formData.settings : {},
+    formData.type === QUESTION_TYPES.ParallelGroup ? formData.settings : {},
     formData.parallelQuestions || []
   );
 
@@ -64,7 +70,7 @@ export default function QuestionEditDialog({
     const updatedQuestion = mapFormDataToQuestion(formData, question);
 
     // Для параллельной ветки добавляем специфичные данные
-    if (formData.type === QuestionType.ParallelGroup) {
+    if (formData.type === QUESTION_TYPES.ParallelGroup) {
       updatedQuestion.settings = parallelBranch.settings;
       updatedQuestion.parallelQuestions = parallelBranch.questions;
     }
@@ -98,8 +104,8 @@ export default function QuestionEditDialog({
             <Tabs defaultValue="settings">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="settings">Настройка</TabsTrigger>
-                <TabsTrigger value={formData.type === QuestionType.ParallelGroup ? "parallel" : "logic"}>
-                  {formData.type === QuestionType.ParallelGroup ? "Параллельная ветка" : "Логика"}
+                <TabsTrigger value={formData.type === QUESTION_TYPES.ParallelGroup ? "parallel" : "logic"}>
+                  {formData.type === QUESTION_TYPES.ParallelGroup ? "Параллельная ветка" : "Логика"}
                 </TabsTrigger>
               </TabsList>
 
@@ -142,7 +148,7 @@ export default function QuestionEditDialog({
               </TabsContent>
 
               {/* Вкладка параллельной ветки или логики */}
-              {formData.type === QuestionType.ParallelGroup ? (
+              {formData.type === QUESTION_TYPES.ParallelGroup ? (
                 <ParallelBranchTab
                   title={formData.title}
                   description={formData.description}

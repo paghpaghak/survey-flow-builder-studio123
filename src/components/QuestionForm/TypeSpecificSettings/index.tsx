@@ -1,12 +1,12 @@
-import { QuestionType } from '@/types/survey';
-import { PhoneSettings } from './PhoneSettings';
-import { DateSettings } from './DateSettings';
+import { Control } from "react-hook-form";
+import { QuestionFormData } from "@/types/question.types";
+import { QuestionType, QUESTION_TYPES } from "@survey-platform/shared-types";
+import { PhoneSettings } from "./PhoneSettings";
+import { DateSettings } from "./DateSettings";
 
 interface TypeSpecificSettingsProps {
-  type: QuestionType;
-  settings?: any;
-  onChange: (settings: any) => void;
-  readOnly?: boolean;
+  control: Control<QuestionFormData>;
+  questionType: QuestionType;
 }
 
 /**
@@ -15,32 +15,16 @@ interface TypeSpecificSettingsProps {
  * Автоматически выбирает подходящий компонент настроек на основе типа.
  * </summary>
  */
-export function TypeSpecificSettings({ 
-  type, 
-  settings, 
-  onChange, 
-  readOnly = false 
-}: TypeSpecificSettingsProps) {
-  
-  switch (type) {
-    case QuestionType.Phone:
-      return (
-        <PhoneSettings
-          settings={settings}
-          onChange={onChange}
-          readOnly={readOnly}
-        />
-      );
+export function TypeSpecificSettings(props: TypeSpecificSettingsProps) {
+  const { control, questionType } = props;
 
-    case QuestionType.Date:
-      return (
-        <DateSettings
-          settings={settings}
-          onChange={onChange}
-          readOnly={readOnly}
-        />
-      );
-
+  switch (questionType) {
+    case QUESTION_TYPES.Phone:
+      return <PhoneSettings control={control} />;
+    // case QuestionType.Number:
+    // return <NumberSettings control={control} />;
+    case QUESTION_TYPES.Date:
+      return <DateSettings control={control} />;
     default:
       return null;
   }

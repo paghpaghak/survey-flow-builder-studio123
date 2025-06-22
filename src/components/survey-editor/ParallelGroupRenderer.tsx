@@ -1,14 +1,18 @@
 import React from 'react';
-import { Question, QuestionType, ParallelBranchSettings } from '@/types/survey';
+import { Button } from '@/components/ui/button';
+import { Question, QUESTION_TYPES, ParallelBranchSettings, QuestionType } from '@survey-platform/shared-types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { IMaskInput } from 'react-imask';
 import { format } from 'date-fns';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ParallelGroupRendererProps {
   question: Question;
@@ -217,13 +221,13 @@ function renderQuestion(
   const currentAnswer = answers[answerKey];
 
   switch (question.type) {
-    case QuestionType.ParallelGroup: {
+    case QUESTION_TYPES.ParallelGroup: {
       // Этот случай не должен вызываться, так как ParallelGroup обрабатывается отдельно
       console.warn('[renderQuestion] ParallelGroup должен обрабатываться в ParallelGroupRenderer');
       return null;
     }
 
-    case QuestionType.Text:
+    case QUESTION_TYPES.Text:
       return (
         <Input
           value={currentAnswer || ''}
@@ -232,7 +236,7 @@ function renderQuestion(
         />
       );
 
-    case QuestionType.Number:
+    case QUESTION_TYPES.Number:
       return (
         <Input
           type="number"
@@ -242,56 +246,55 @@ function renderQuestion(
         />
       );
 
-    case QuestionType.Radio:
+    case QUESTION_TYPES.Radio:
       return (
         <RadioGroup
-          value={currentAnswer || ''}
+          value={currentAnswer}
           onValueChange={(value) => answerHandler(question.id, value)}
+          className="flex flex-col gap-2"
         >
-          {question.options?.map((option) => (
+          {question.options?.map(option => (
             <div key={option.id} className="flex items-center space-x-2">
-              <RadioGroupItem value={option.id} id={option.id} />
-              <Label htmlFor={option.id}>{option.text}</Label>
+              <RadioGroupItem value={option.id} id={`${question.id}-${option.id}-${repeatIndex}`} />
+              <Label htmlFor={`${question.id}-${option.id}-${repeatIndex}`}>{option.text}</Label>
             </div>
           ))}
         </RadioGroup>
       );
 
-    case QuestionType.Checkbox:
+    case QUESTION_TYPES.Checkbox:
       return (
-        <div className="space-y-2">
-          {question.options?.map((option) => (
+        <div className="flex flex-col gap-2">
+          {question.options?.map(option => (
             <div key={option.id} className="flex items-center space-x-2">
               <Checkbox
-                id={option.id}
-                checked={currentAnswer?.includes(option.id) || false}
+                id={`${question.id}-${option.id}-${repeatIndex}`}
+                checked={(currentAnswer as string[] | undefined)?.includes(option.id) || false}
                 onCheckedChange={(checked) => {
-                  const currentAnswers = currentAnswer || [];
-                  answerHandler(
-                    question.id,
-                    checked
-                      ? [...currentAnswers, option.id]
-                      : currentAnswers.filter((id: string) => id !== option.id)
-                  );
+                  const currentSelection = (currentAnswer as string[] | undefined) || [];
+                  const newSelection = checked
+                    ? [...currentSelection, option.id]
+                    : currentSelection.filter(id => id !== option.id);
+                  answerHandler(question.id, newSelection);
                 }}
               />
-              <Label htmlFor={option.id}>{option.text}</Label>
+              <Label htmlFor={`${question.id}-${option.id}-${repeatIndex}`}>{option.text}</Label>
             </div>
           ))}
         </div>
       );
 
-    case QuestionType.Select:
+    case QUESTION_TYPES.Select:
       return (
         <Select
-          value={currentAnswer || ''}
+          value={currentAnswer}
           onValueChange={(value) => answerHandler(question.id, value)}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Выберите вариант" />
+            <SelectValue placeholder="Выберите ответ" />
           </SelectTrigger>
           <SelectContent>
-            {question.options?.map((option) => (
+            {question.options?.map(option => (
               <SelectItem key={option.id} value={option.id}>
                 {option.text}
               </SelectItem>
@@ -300,54 +303,54 @@ function renderQuestion(
         </Select>
       );
 
-    case QuestionType.Date:
+    case QUESTION_TYPES.Date:
       const dateSettings = question.settings as { format?: string };
       return (
-        <div className="space-y-2">
-          <Calendar
-            mode="single"
-            selected={currentAnswer}
-            onSelect={(value) => answerHandler(question.id, value)}
-            className="rounded-md border"
-          />
-          {currentAnswer && (
-            <p className="text-sm text-gray-500">
-              Выбрано: {format(currentAnswer, dateSettings?.format || 'dd.MM.yyyy')}
-            </p>
-          )}
-        </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-full justify-start text-left font-normal",
+                !currentAnswer && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {currentAnswer ? format(new Date(currentAnswer), dateSettings?.format || 'PPP') : <span>Выберите дату</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <Calendar
+              mode="single"
+              selected={currentAnswer ? new Date(currentAnswer) : undefined}
+              onSelect={(date) => answerHandler(question.id, date?.toISOString())}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
       );
 
-    case QuestionType.Email:
+    case QUESTION_TYPES.Email:
       return (
         <Input
           type="email"
           value={currentAnswer || ''}
           onChange={(e) => answerHandler(question.id, e.target.value)}
-          placeholder="example@domain.com"
+          placeholder="example@example.com"
         />
       );
-
-    case QuestionType.Phone:
+    case QUESTION_TYPES.Phone:
       const phoneSettings = question.settings as { countryCode?: string; mask?: string };
       return (
-        <div className="flex gap-2">
-          <Input
-            className="w-20"
-            value={phoneSettings?.countryCode || '+7'}
-            disabled
-          />
-          <IMaskInput
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            mask={phoneSettings?.mask || '(000) 000-00-00'}
-            value={currentAnswer || ''}
-            onAccept={(value) => answerHandler(question.id, value)}
-            placeholder="(999) 999-99-99"
-          />
-        </div>
+        <IMaskInput
+          mask={phoneSettings?.mask || '+{7} (000) 000-00-00'}
+          value={currentAnswer || ''}
+          onAccept={(value) => answerHandler(question.id, value)}
+          placeholder="Введите номер телефона"
+          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+        />
       );
-
     default:
-      return null;
+      return <p>Неизвестный тип вопроса: {question.type}</p>;
   }
 }

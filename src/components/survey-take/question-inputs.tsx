@@ -1,13 +1,13 @@
 'use client';
 
-import { Question, QuestionType } from '@/types/survey';
+import { Question, QUESTION_TYPES } from '@survey-platform/shared-types';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { useFormContext } from 'react-hook-form';
+import { useFormContext, Controller, FieldValues } from 'react-hook-form';
 
 interface QuestionInputProps {
   question: Question;
@@ -19,7 +19,7 @@ export function QuestionInput({ question, name }: QuestionInputProps) {
   const value = watch(name);
 
   switch (question.type) {
-    case QuestionType.Text:
+    case QUESTION_TYPES.Text:
       return (
         <Input
           {...register(name)}
@@ -28,7 +28,7 @@ export function QuestionInput({ question, name }: QuestionInputProps) {
         />
       );
 
-    case QuestionType.Number:
+    case QUESTION_TYPES.Number:
       return (
         <Input
           type="number"
@@ -41,7 +41,7 @@ export function QuestionInput({ question, name }: QuestionInputProps) {
         />
       );
 
-    case QuestionType.Radio:
+    case QUESTION_TYPES.Radio:
       return (
         <RadioGroup
           value={value}
@@ -57,7 +57,7 @@ export function QuestionInput({ question, name }: QuestionInputProps) {
         </RadioGroup>
       );
 
-    case QuestionType.Checkbox:
+    case QUESTION_TYPES.Checkbox:
       return (
         <div className="space-y-2">
           {question.options?.map((option) => (
@@ -83,7 +83,7 @@ export function QuestionInput({ question, name }: QuestionInputProps) {
         </div>
       );
 
-    case QuestionType.Select:
+    case QUESTION_TYPES.Select:
       return (
         <Select
           value={value}
@@ -102,7 +102,7 @@ export function QuestionInput({ question, name }: QuestionInputProps) {
         </Select>
       );
 
-    case QuestionType.Date:
+    case QUESTION_TYPES.Date:
       return (
         <Input
           type="date"

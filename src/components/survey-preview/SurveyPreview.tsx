@@ -1,5 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { Question, QuestionType } from '@/types/survey';
+import {
+  Survey,
+  SurveyVersion,
+  Question,
+  Page,
+  QUESTION_TYPES,
+} from '@survey-platform/shared-types';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { PagePreview } from './PagePreview';
@@ -48,7 +54,7 @@ export function SurveyPreview({ questions, pages, onClose }: SurveyPreviewProps)
     if (!answer) return false;
 
     switch (question.type) {
-      case QuestionType.ParallelGroup:
+      case QUESTION_TYPES.ParallelGroup:
         // Для параллельной группы проверяем наличие ответа на количество
         const countKey = question.id + '_count';
         const count = Number(answers[countKey]) || 0;
@@ -71,14 +77,14 @@ export function SurveyPreview({ questions, pages, onClose }: SurveyPreviewProps)
           }
         }
         return true;
-      case QuestionType.Email:
+      case QUESTION_TYPES.Email:
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(answer);
-      case QuestionType.Phone:
+      case QUESTION_TYPES.Phone:
         return answer.replace(/\D/g, '').length >= 10;
-      case QuestionType.Checkbox:
+      case QUESTION_TYPES.Checkbox:
         return Array.isArray(answer) && answer.length > 0;
-      case QuestionType.Radio:
-      case QuestionType.Select:
+      case QUESTION_TYPES.Radio:
+      case QUESTION_TYPES.Select:
         return answer !== '';
       default:
         return !!answer;
@@ -89,7 +95,7 @@ export function SurveyPreview({ questions, pages, onClose }: SurveyPreviewProps)
     // Фильтруем вопросы так же, как в PagePreview
     const allParallelQuestionIds = new Set<string>();
     questions.forEach(q => {
-      if (q.type === QuestionType.ParallelGroup && q.parallelQuestions) {
+      if (q.type === QUESTION_TYPES.ParallelGroup && q.parallelQuestions) {
         q.parallelQuestions.forEach(subId => allParallelQuestionIds.add(subId));
       }
     });
