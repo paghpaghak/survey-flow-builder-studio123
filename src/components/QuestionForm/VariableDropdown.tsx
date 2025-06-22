@@ -1,7 +1,8 @@
+import { ChevronsUpDown } from 'lucide-react';
 import { VariableDropdownProps } from '@/types/question.types';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { QuestionType } from '@/types/survey';
+import { Question, QUESTION_TYPES } from '@survey-platform/shared-types';
 import { createVariablePlaceholder } from '@/utils/questionUtils';
 
 /**
@@ -10,15 +11,17 @@ import { createVariablePlaceholder } from '@/utils/questionUtils';
  * Фильтрует вопросы, исключая параллельные группы и текущий вопрос.
  * </summary>
  */
-export function VariableDropdown({ 
-  availableQuestions, 
-  onInsert, 
-  disabled = false 
-}: VariableDropdownProps) {
-  
+export const VariableDropdown = ({
+  availableQuestions,
+  onVariableSelect,
+}: VariableDropdownProps) => {
+  if (!availableQuestions || availableQuestions.length === 0) {
+    return null;
+  }
+
   // Фильтруем вопросы: исключаем параллельные группы
   const filteredQuestions = availableQuestions.filter(
-    q => q.type !== QuestionType.ParallelGroup
+    q => q.type !== QUESTION_TYPES.ParallelGroup
   );
 
   /**
@@ -26,7 +29,7 @@ export function VariableDropdown({
    */
   const handleInsertVariable = (questionId: string) => {
     const placeholder = createVariablePlaceholder(questionId);
-    onInsert(placeholder);
+    onVariableSelect(placeholder);
   };
 
   return (
@@ -36,7 +39,7 @@ export function VariableDropdown({
           size="sm" 
           variant="outline" 
           type="button" 
-          disabled={disabled || filteredQuestions.length === 0}
+          disabled={filteredQuestions.length === 0}
         >
           Вставить переменную
         </Button>

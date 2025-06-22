@@ -1,25 +1,26 @@
-import { QuestionType } from '@/types/survey';
+import { QUESTION_TYPES } from '@survey-platform/shared-types';
+import type { QuestionType } from '@survey-platform/shared-types';
 import { PhoneQuestionSettings, DateQuestionSettings } from '@/types/question.types';
 
 // Опции типов вопросов для селекта
-export const QUESTION_TYPE_OPTIONS = [
-  { value: QuestionType.Text, label: 'Текст' },
-  { value: QuestionType.Radio, label: 'Один из списка' },
-  { value: QuestionType.Checkbox, label: 'Несколько из списка' },
-  { value: QuestionType.Select, label: 'Выпадающий список' },
-  { value: QuestionType.Date, label: 'Дата' },
-  { value: QuestionType.Email, label: 'Email' },
-  { value: QuestionType.Phone, label: 'Телефон' },
-  { value: QuestionType.Number, label: 'Число' },
-  { value: QuestionType.ParallelGroup, label: 'Параллельная ветка' }
-] as const;
+export const QUESTION_TYPE_OPTIONS: { value: QuestionType; label: string }[] = [
+  { value: QUESTION_TYPES.Text, label: 'Текст' },
+  { value: QUESTION_TYPES.Radio, label: 'Один из списка' },
+  { value: QUESTION_TYPES.Checkbox, label: 'Несколько из списка' },
+  { value: QUESTION_TYPES.Select, label: 'Выпадающий список' },
+  { value: QUESTION_TYPES.Date, label: 'Дата' },
+  { value: QUESTION_TYPES.Email, label: 'Email' },
+  { value: QUESTION_TYPES.Phone, label: 'Телефон' },
+  { value: QUESTION_TYPES.Number, label: 'Число' },
+  { value: QUESTION_TYPES.ParallelGroup, label: 'Параллельная ветка' },
+];
 
 // Типы вопросов, которые требуют варианты ответов
-export const OPTION_BASED_TYPES = [
-  QuestionType.Radio,
-  QuestionType.Checkbox,
-  QuestionType.Select
-] as const;
+export const OPTION_BASED_QUESTION_TYPES: QuestionType[] = [
+  QUESTION_TYPES.Radio,
+  QUESTION_TYPES.Checkbox,
+  QUESTION_TYPES.Select,
+];
 
 // Варианты ответов по умолчанию
 export const DEFAULT_OPTIONS = [
@@ -76,3 +77,5 @@ export const PLACEHOLDERS = {
   COUNT_LABEL: 'Сколько повторений?',
   COUNT_DESCRIPTION: 'Описание (необязательно)'
 } as const;
+
+export { OPTION_BASED_QUESTION_TYPES as OPTION_BASED_TYPES };

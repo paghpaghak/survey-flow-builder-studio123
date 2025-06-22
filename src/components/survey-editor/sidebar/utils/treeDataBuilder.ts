@@ -1,6 +1,7 @@
 // src/components/survey-editor/sidebar/utils/treeDataBuilder.ts
 
-import { Page, Question, QuestionType } from '@/types/survey';
+import { QUESTION_TYPES } from '@survey-platform/shared-types';
+import type { Page, Question, QuestionType } from '@survey-platform/shared-types';
 import { TreeItemData } from '../types/tree.types';
 
 /**
@@ -21,7 +22,7 @@ export function buildTreeData(pages: Page[], questions: Question[]): TreeItemDat
     
     // Сначала добавляем параллельные группы
     for (const q of pageQuestions) {
-      if (q.type === QuestionType.ParallelGroup) {
+      if (q.type === QUESTION_TYPES.ParallelGroup) {
         nodes.push({ 
           id: q.id, 
           type: 'parallel_group', 
@@ -38,7 +39,7 @@ export function buildTreeData(pages: Page[], questions: Question[]): TreeItemDat
     
     // Затем добавляем обычные вопросы (исключая вложенные)
     for (const q of pageQuestions) {
-      if (q.type !== QuestionType.ParallelGroup && !usedIds.has(q.id)) {
+      if (q.type !== QUESTION_TYPES.ParallelGroup && !usedIds.has(q.id)) {
         nodes.push({ 
           id: q.id, 
           type: 'question', 
@@ -66,7 +67,7 @@ export function getParallelQuestionIds(questions: Question[]): Set<string> {
   const parallelIds = new Set<string>();
   
   questions.forEach(q => {
-    if (q.type === QuestionType.ParallelGroup && Array.isArray(q.parallelQuestions)) {
+    if (q.type === QUESTION_TYPES.ParallelGroup && Array.isArray(q.parallelQuestions)) {
       q.parallelQuestions.forEach(id => parallelIds.add(id));
     }
   });
@@ -124,7 +125,7 @@ export function getQuestionById(questionId: string | null, questions: Question[]
  */
 export function isQuestionInParallelGroup(questionId: string, questions: Question[]): boolean {
   return questions.some(q => 
-    q.type === QuestionType.ParallelGroup && 
+    q.type === QUESTION_TYPES.ParallelGroup && 
     q.parallelQuestions?.includes(questionId)
   );
 }
@@ -134,7 +135,7 @@ export function isQuestionInParallelGroup(questionId: string, questions: Questio
  */
 export function getParentParallelGroup(questionId: string, questions: Question[]): Question | null {
   return questions.find(q => 
-    q.type === QuestionType.ParallelGroup && 
+    q.type === QUESTION_TYPES.ParallelGroup && 
     q.parallelQuestions?.includes(questionId)
   ) || null;
 }

@@ -3,7 +3,7 @@ import { useSurveyStore } from '@/store/survey-store';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Filter, Edit, Trash, ArrowUpDown, Settings, History, BarChart2, UserSquare2, MoreVertical } from 'lucide-react';
-import { Survey, SurveyStatus } from '@/types/survey';
+import type { Survey, SurveyStatus } from '@survey-platform/shared-types';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -28,7 +28,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAuth } from '@/hooks/useAuth';
-import { v4 as uuidv4 } from 'uuid';
 import { createSurvey } from '@/lib/api';
 
 const STATUS_LABELS: Record<SurveyStatus, string> = {
@@ -114,7 +113,7 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
 
   const handleDuplicateSurvey = async (survey: Survey) => {
     // Копируем только структуру, без ответов
-    const newSurveyId = uuidv4();
+    const newSurveyId = crypto.randomUUID();
     const original = survey;
     // Копируем все версии, страницы, вопросы, группы, настройки
     const newVersions = original.versions.map(version => {
@@ -122,11 +121,11 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
       const questionIdMap: Record<string, string> = {};
       // Копируем вопросы с новыми id
       const newQuestions = version.questions.map(q => {
-        const newQId = questionIdMap[q.id] || uuidv4();
+        const newQId = questionIdMap[q.id] || crypto.randomUUID();
         questionIdMap[q.id] = newQId;
         let parallelQuestions = undefined;
         if (q.parallelQuestions) {
-          parallelQuestions = q.parallelQuestions.map(pid => questionIdMap[pid] || uuidv4());
+          parallelQuestions = q.parallelQuestions.map(pid => questionIdMap[pid] || crypto.randomUUID());
         }
         return {
           ...q,
@@ -137,7 +136,7 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
       });
       // Копируем страницы с новыми id и массивом вопросов (Question[])
       const newPages = version.pages.map(page => {
-        const newPageId = uuidv4();
+        const newPageId = crypto.randomUUID();
         pageIdMap[page.id] = newPageId;
         return {
           ...page,
@@ -151,7 +150,7 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
       });
       return {
         ...version,
-        id: uuidv4(),
+        id: crypto.randomUUID(),
         version: 1,
         title: `${version.title || original.title} (Копия)` ,
         pages: newPages,

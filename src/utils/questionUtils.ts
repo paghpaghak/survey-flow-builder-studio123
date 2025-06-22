@@ -1,4 +1,11 @@
-import { Question, QuestionType } from '@/types/survey';
+import {
+  Question,
+  QuestionType,
+  ParallelAnswer,
+  Survey,
+  SurveyVersion,
+  QUESTION_TYPES,
+} from '@survey-platform/shared-types';
 import { QuestionFormData, QuestionOption } from '@/types/question.types';
 import { 
   OPTION_BASED_TYPES, 
@@ -6,6 +13,7 @@ import {
   DEFAULT_DATE_SETTINGS,
   ERROR_MESSAGES 
 } from '@/constants/question.constants';
+import type { QuestionType as SurveyQuestionType } from '@survey-platform/shared-types';
 
 /**
  * Проверяет, нужны ли варианты ответов для данного типа вопроса
@@ -19,9 +27,9 @@ export const needsOptions = (type: QuestionType): boolean => {
  */
 export const getDefaultSettingsForType = (type: QuestionType) => {
   switch (type) {
-    case QuestionType.Phone:
+    case QUESTION_TYPES.Phone:
       return DEFAULT_PHONE_SETTINGS;
-    case QuestionType.Date:
+    case QUESTION_TYPES.Date:
       return DEFAULT_DATE_SETTINGS;
     default:
       return undefined;
@@ -31,20 +39,20 @@ export const getDefaultSettingsForType = (type: QuestionType) => {
 /**
  * Возвращает человекочитаемую метку для типа вопроса
  */
-export const getQuestionTypeLabel = (type: QuestionType): string => {
+export const getQuestionTypeName = (type: QuestionType): string => {
   const typeMap: Record<QuestionType, string> = {
-    [QuestionType.Text]: 'Текст',
-    [QuestionType.Radio]: 'Один из списка',
-    [QuestionType.Checkbox]: 'Несколько из списка',
-    [QuestionType.Select]: 'Выпадающий список',
-    [QuestionType.Date]: 'Дата',
-    [QuestionType.Email]: 'Email',
-    [QuestionType.Phone]: 'Телефон',
-    [QuestionType.Number]: 'Число',
-    [QuestionType.ParallelGroup]: 'Параллельная ветка',
-    [QuestionType.Resolution]: 'Резолюция'
+    [QUESTION_TYPES.Text]: 'Текст',
+    [QUESTION_TYPES.Radio]: 'Один из списка',
+    [QUESTION_TYPES.Checkbox]: 'Несколько из списка',
+    [QUESTION_TYPES.Select]: 'Выпадающий список',
+    [QUESTION_TYPES.Date]: 'Дата',
+    [QUESTION_TYPES.Email]: 'Email',
+    [QUESTION_TYPES.Phone]: 'Телефон',
+    [QUESTION_TYPES.Number]: 'Число',
+    [QUESTION_TYPES.ParallelGroup]: 'Параллельная ветка',
+    [QUESTION_TYPES.Resolution]: 'Резолюция',
   };
-  return typeMap[type] || type;
+  return typeMap[type] || 'Неизвестный тип';
 };
 
 /**
@@ -129,16 +137,16 @@ export const createNewOption = (text: string = 'Новый вариант'): Que
 /**
  * Проверяет, является ли вопрос параллельной группой
  */
-export const isParallelGroupQuestion = (question: Question): boolean => {
-  return question.type === QuestionType.ParallelGroup;
-};
+export function isParallelGroup(question: Question): boolean {
+  return question.type === QUESTION_TYPES.ParallelGroup;
+}
 
 /**
  * Проверяет, является ли вопрос резолюцией
  */
-export const isResolutionQuestion = (question: Question): boolean => {
-  return question.type === QuestionType.Resolution;
-};
+export function isResolution(question: Question): boolean {
+  return question.type === QUESTION_TYPES.Resolution;
+}
 
 /**
  * Фильтрует вопросы, исключая вложенные в параллельные группы
@@ -147,7 +155,7 @@ export const filterVisibleQuestions = (questions: Question[]): Question[] => {
   const allParallelQuestionIds = new Set<string>();
   
   questions.forEach(q => {
-    if (isParallelGroupQuestion(q) && q.parallelQuestions) {
+    if (isParallelGroup(q) && q.parallelQuestions) {
       q.parallelQuestions.forEach(subId => allParallelQuestionIds.add(subId));
     }
   });
@@ -162,7 +170,7 @@ export const getParallelQuestionIds = (questions: Question[]): Set<string> => {
   const parallelIds = new Set<string>();
   
   questions.forEach(q => {
-    if (isParallelGroupQuestion(q) && q.parallelQuestions) {
+    if (isParallelGroup(q) && q.parallelQuestions) {
       q.parallelQuestions.forEach(subId => parallelIds.add(subId));
     }
   });

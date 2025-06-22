@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Question, QuestionType, ParallelBranchSettings, TransitionRule } from '@/types/survey';
+import { Question, QUESTION_TYPES, ParallelBranchSettings, TransitionRule } from '@survey-platform/shared-types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -36,7 +36,7 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
   // ВАЖНОЕ ИСПРАВЛЕНИЕ: Фильтруем вопросы для страницы, исключая вложенные в параллельные группы
   const allParallelQuestionIds = new Set<string>();
   questions.forEach(q => {
-    if (q.type === QuestionType.ParallelGroup && q.parallelQuestions) {
+    if (q.type === QUESTION_TYPES.ParallelGroup && q.parallelQuestions) {
       q.parallelQuestions.forEach(subId => allParallelQuestionIds.add(subId));
     }
   });
@@ -81,7 +81,7 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
                 </p>
               )}
             </div>
-            {question.type === QuestionType.ParallelGroup ? (
+            {question.type === QUESTION_TYPES.ParallelGroup ? (
               <ParallelGroupRenderer
                 question={question}
                 questions={questions}
@@ -115,7 +115,7 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
   function handleAnswer(questionId: string, value: any) {
     const q = pageQuestions.find(q => q.id === questionId);
     let validValue = value;
-    if (q && (q.type === QuestionType.Radio || q.type === QuestionType.Select)) {
+    if (q && (q.type === QUESTION_TYPES.Radio || q.type === QUESTION_TYPES.Select)) {
       // Если value не найден среди options — не сохраняем
       if (!q.options?.some(opt => opt.id === value)) {
         console.warn('[handleAnswer] Некорректный value для Radio/Select:', value, 'Ожидались:', q.options?.map(o => o.id));
@@ -127,7 +127,7 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
     if (!q || !q.transitionRules || q.transitionRules.length === 0) return;
     let nextId: string | undefined;
     // Для Radio/Select ищем по значению ответа
-    if (q.type === QuestionType.Radio || q.type === QuestionType.Select) {
+    if (q.type === QUESTION_TYPES.Radio || q.type === QUESTION_TYPES.Select) {
       const rule = q.transitionRules.find(r => r.answer === value);
       nextId = rule?.nextQuestionId;
     } else {
@@ -158,7 +158,7 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
             </p>
           )}
         </div>
-        {currentQuestion.type === QuestionType.ParallelGroup ? (
+        {currentQuestion.type === QUESTION_TYPES.ParallelGroup ? (
           <ParallelGroupRenderer
             question={currentQuestion}
             questions={questions}
@@ -185,13 +185,13 @@ function renderQuestion(
   const currentAnswer = answers[question.id];
 
   switch (question.type) {
-    case QuestionType.ParallelGroup: {
+    case QUESTION_TYPES.ParallelGroup: {
       // Этот случай не должен вызываться, так как ParallelGroup обрабатывается отдельно
       console.warn('[renderQuestion] ParallelGroup должен обрабатываться в ParallelGroupRenderer');
       return null;
     }
 
-    case QuestionType.Text:
+    case QUESTION_TYPES.Text:
       return (
         <Input
           value={currentAnswer || ''}
@@ -200,7 +200,7 @@ function renderQuestion(
         />
       );
 
-    case QuestionType.Number:
+    case QUESTION_TYPES.Number:
       return (
         <Input
           type="number"
@@ -210,7 +210,7 @@ function renderQuestion(
         />
       );
 
-    case QuestionType.Radio:
+    case QUESTION_TYPES.Radio:
       return (
         <RadioGroup
           value={currentAnswer || ''}
@@ -225,7 +225,7 @@ function renderQuestion(
         </RadioGroup>
       );
 
-    case QuestionType.Checkbox:
+    case QUESTION_TYPES.Checkbox:
       return (
         <div className="space-y-2">
           {question.options?.map((option) => (
@@ -249,7 +249,7 @@ function renderQuestion(
         </div>
       );
 
-    case QuestionType.Select:
+    case QUESTION_TYPES.Select:
       return (
         <Select
           value={currentAnswer || ''}
@@ -268,7 +268,7 @@ function renderQuestion(
         </Select>
       );
 
-    case QuestionType.Date:
+    case QUESTION_TYPES.Date:
       const dateSettings = question.settings as { format?: string };
       return (
         <div className="space-y-2">
@@ -286,7 +286,7 @@ function renderQuestion(
         </div>
       );
 
-    case QuestionType.Email:
+    case QUESTION_TYPES.Email:
       return (
         <Input
           type="email"
@@ -296,7 +296,7 @@ function renderQuestion(
         />
       );
 
-    case QuestionType.Phone:
+    case QUESTION_TYPES.Phone:
       const phoneSettings = question.settings as { countryCode?: string; mask?: string };
       return (
         <div className="flex gap-2">

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { authenticateUser, generateToken } from '@/lib/auth';
-import { LoginCredentials } from '@/types/auth';
+import type { LoginCredentials } from '@survey-platform/shared-types';
 import { serialize } from 'cookie';
 
 export async function POST(request: NextRequest) {

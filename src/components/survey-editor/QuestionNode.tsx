@@ -1,8 +1,23 @@
+import {
+  Mail,
+  Type,
+  CheckSquare,
+  List,
+  ChevronDownSquare,
+  Calendar,
+  Phone,
+  Hash,
+  Combine,
+  GitCommitVertical,
+} from 'lucide-react';
 import { Handle, Position } from '@xyflow/react';
-import { Question, QuestionType } from '@/types/survey';
+import { Question, QUESTION_TYPES } from '@survey-platform/shared-types';
+import type { QuestionType } from '@survey-platform/shared-types';
 import { Button } from '@/components/ui/button';
 import { Trash, Pencil, Users, GripVertical, Repeat2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useSurveyStore } from '@/store/survey-store';
 import { cn } from '@/lib/utils';
 
 interface QuestionNodeProps {
@@ -17,35 +32,61 @@ interface QuestionNodeProps {
   selected?: boolean;
 }
 
+const getIcon = (type: QuestionType) => {
+  switch (type) {
+    case QUESTION_TYPES.Text:
+      return <Type size={16} />;
+    case QUESTION_TYPES.Radio:
+      return <List size={16} />;
+    case QUESTION_TYPES.Checkbox:
+      return <CheckSquare size={16} />;
+    case QUESTION_TYPES.Select:
+      return <ChevronDownSquare size={16} />;
+    case QUESTION_TYPES.Date:
+      return <Calendar size={16} />;
+    case QUESTION_TYPES.Email:
+      return <Mail size={16} />;
+    case QUESTION_TYPES.Phone:
+      return <Phone size={16} />;
+    case QUESTION_TYPES.Number:
+      return <Hash size={16} />;
+    case QUESTION_TYPES.ParallelGroup:
+      return <Combine size={16} />;
+    default:
+      return <Type size={16} />;
+  }
+};
+
 export default function QuestionNode({ data, selected = false }: QuestionNodeProps) {
   const { question, onDelete, onEditClick, pageName } = data;
 
   const getQuestionTypeLabel = (type: QuestionType): string => {
     switch (type) {
-      case QuestionType.Text:
+      case QUESTION_TYPES.Text:
         return 'Текст';
-      case QuestionType.Radio:
+      case QUESTION_TYPES.Radio:
         return 'Один из списка';
-      case QuestionType.Checkbox:
+      case QUESTION_TYPES.Checkbox:
         return 'Несколько из списка';
-      case QuestionType.Select:
+      case QUESTION_TYPES.Select:
         return 'Выпадающий список';
-      case QuestionType.Date:
+      case QUESTION_TYPES.Date:
         return 'Дата';
-      case QuestionType.Email:
+      case QUESTION_TYPES.Email:
         return 'Email';
-      case QuestionType.Phone:
+      case QUESTION_TYPES.Phone:
         return 'Телефон';
-      case QuestionType.Number:
+      case QUESTION_TYPES.Number:
         return 'Число';
-      case QuestionType.ParallelGroup:
+      case QUESTION_TYPES.ParallelGroup:
         return 'Параллельная ветка';
       default:
-        return type;
+        return 'Неизвестный тип';
     }
   };
 
-  const isParallelGroup = question.type === QuestionType.ParallelGroup;
+  const isParallelGroup = question.type === QUESTION_TYPES.ParallelGroup;
+  const isResolution = question.type === 'resolution';
 
   return (
     <div 

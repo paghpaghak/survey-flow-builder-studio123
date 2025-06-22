@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { SurveyResponseForm } from '@/components/survey-take/survey-response-form';
-import { Survey } from '@/types/survey';
+import { useParams, useNavigate } from 'react-router-dom';
+import type { Survey } from '@survey-platform/shared-types';
 import { fetchSurveyById } from '@/lib/api';
+import { SurveyResponseForm } from '@/components/survey-take/survey-response-form';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export const TakeSurvey = () => {
   const { surveyId } = useParams();

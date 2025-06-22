@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Question, ResolutionRule, QuestionType } from '@/types/survey';
+import { QUESTION_TYPES } from '@survey-platform/shared-types';
+import type { Question, ResolutionRule, QuestionType } from '@survey-platform/shared-types';
 import { Trash, Plus } from 'lucide-react';
 
 interface ResolutionEditDialogProps {
@@ -70,7 +71,7 @@ export default function ResolutionEditDialog({ resolutionQuestion, questions, op
                       <Select value={cond.questionId} onValueChange={qid => setRules(rules.map(r => r.id === rule.id ? { ...r, conditions: r.conditions.map((c, i) => i === cidx ? { ...c, questionId: qid } : c) } : r))}>
                         <SelectTrigger className="w-40"><SelectValue placeholder="Вопрос" /></SelectTrigger>
                         <SelectContent>
-                          {Array.from(new Map(questions.filter(q => q.type !== QuestionType.Resolution).map(q => [q.title, q])).values()).map(q => (
+                          {Array.from(new Map(questions.filter(q => q.type !== QUESTION_TYPES.Resolution).map(q => [q.title, q])).values()).map(q => (
                             <SelectItem key={q.id} value={q.id}>{q.title}</SelectItem>
                           ))}
                         </SelectContent>

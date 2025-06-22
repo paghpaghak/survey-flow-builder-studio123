@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Survey } from '@/types/survey';
-import { SurveyResponse } from '@/types/survey-response';
+import type { Survey } from '@survey-platform/shared-types';
+import type { SurveyResponse } from '@survey-platform/shared-types';
 import { fetchSurveyById } from '@/lib/api';
 import { getSurveyResponses } from '@/lib/api/survey-results';
 import { Button } from '@/components/ui/button';

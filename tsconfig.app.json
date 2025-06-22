@@ -1,34 +1,33 @@
 {
-  "compilerOptions": {
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
-    "skipLibCheck": true,
-
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "isolatedModules": true,
-    "moduleDetection": "force",
-    "noEmit": true,
-    "jsx": "react-jsx",
-
-    /* Linting */
-    "strict": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noImplicitAny": false,
-    "noFallthroughCasesInSwitch": false,
-
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"],
-      "@/api/*": ["./api/*"]  // Добавлен путь для api папки
-    }
-  },
-  "include": [
-    "src",
-    "api"  // Добавлена папка api в include
-  ]
+    "include":  [
+                    "src"
+                ],
+    "compilerOptions":  {
+                            "skipLibCheck":  true,
+                            "allowImportingTsExtensions":  true,
+                            "noUnusedLocals":  false,
+                            "jsx":  "react-jsx",
+                            "module":  "ESNext",
+                            "noUnusedParameters":  false,
+                            "isolatedModules":  true,
+                            "target":  "ES2020",
+                            "baseUrl":  ".",
+                            "moduleResolution":  "bundler",
+                            "useDefineForClassFields":  true,
+                            "moduleDetection":  "force",
+                            "paths":  {
+                                          "@/*":  [
+                                                      "./src/*"
+                                                  ]
+                                      },
+                            "strict":  false,
+                            "noImplicitAny":  false,
+                            "noEmit":  true,
+                            "noFallthroughCasesInSwitch":  false,
+                            "lib":  [
+                                        "ES2020",
+                                        "DOM",
+                                        "DOM.Iterable"
+                                    ]
+                        }
 }

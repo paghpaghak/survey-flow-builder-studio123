@@ -1,0 +1,28 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "pipeline": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".vite/**", ".next/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "dev:server": {
+      "cache": false,
+      "persistent": true
+    },
+    "dev:all": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "dependsOn": ["^lint"]
+    },
+    "migrate:check": {
+      "cache": false
+    }
+  },
+  "globalDependencies": ["**/.env.*local"]
+}

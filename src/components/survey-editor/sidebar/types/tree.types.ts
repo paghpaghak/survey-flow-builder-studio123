@@ -1,6 +1,7 @@
 // src/components/survey-editor/sidebar/types/tree.types.ts
 
-import { Page, Question } from '@/types/survey';
+import { NodeApi } from 'react-arborist';
+import type { Page, Question } from '@survey-platform/shared-types';
 
 /**
  * Данные элемента дерева для навигации
@@ -10,6 +11,7 @@ export interface TreeItemData {
   type: 'page' | 'question' | 'parallel_group';
   title: string;
   parentId?: string;
+  children?: TreeItemData[];
 }
 
 /**
@@ -117,3 +119,5 @@ export interface PageTreeItemProps extends BaseTreeItemProps {
   onUpdateQuestionTitle: (id: string, title: string) => void;
   onDeleteQuestion: (id: string) => void;
 }
+
+export type NodeType = 'page' | 'question' | 'parallel_group';

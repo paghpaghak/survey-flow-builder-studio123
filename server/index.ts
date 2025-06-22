@@ -5,7 +5,7 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './swagger.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { UpdateSurveyRequest, SurveyResponse } from '../src/types/requests';
+import type { UpdateSurveyRequest, SurveyResponse } from '@survey-platform/shared-types';
 import { serializeDates } from './utils/serializeDates.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';

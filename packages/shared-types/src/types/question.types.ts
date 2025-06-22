@@ -1,16 +1,10 @@
-import { Question, QuestionType, ParallelBranchSettings } from '@/types/survey';
+﻿// Импортируем из локального файла survey.ts (не через алиас @/)
+import { Question, QuestionType, ParallelBranchSettings, TransitionRule } from './survey';
 
 // Интерфейсы для вариантов ответов
 export interface QuestionOption {
   id: string;
   text: string;
-}
-
-// Интерфейсы для правил перехода
-export interface TransitionRule {
-  id: string;
-  answer: string;
-  nextQuestionId: string;
 }
 
 // Главный интерфейс для данных формы
@@ -74,41 +68,4 @@ export interface VariableDropdownProps {
   availableQuestions: Question[];
   onInsert: (placeholder: string) => void;
   disabled?: boolean;
-}
-
-// Результаты хуков
-export interface UseQuestionFormResult {
-  formData: QuestionFormData;
-  errors: Record<string, string>;
-  updateField: (field: keyof QuestionFormData, value: any) => void;
-  updateTypeAndSettings: (newType: QuestionType) => void;
-  validateForm: () => boolean;
-  resetForm: () => void;
-}
-
-export interface UseParallelBranchResult {
-  settings: ParallelBranchSettings;
-  questions: string[];
-  maxItemsError: string | null;
-  updateSettings: (updates: Partial<ParallelBranchSettings>) => void;
-  updateMaxItems: (value: number) => void;
-  reorderQuestions: (startIndex: number, endIndex: number) => void;
-  addQuestion: (questionId: string) => void;
-  removeQuestion: (questionId: string) => void;
-  clearError: () => void;
-}
-
-export interface UseTransitionRulesResult {
-  rules: TransitionRule[];
-  addRule: () => void;
-  removeRule: (ruleId: string) => void;
-  updateRule: (ruleId: string, field: keyof TransitionRule, value: string) => void;
-  getValidRules: () => TransitionRule[];
-  updateRuleAnswer: (ruleId: string, answer: string) => void;
-  updateRuleNextQuestion: (ruleId: string, nextQuestionId: string) => void;
-  hasRuleForAnswer: (answer: string) => boolean;
-  getRuleForAnswer: (answer: string) => TransitionRule | undefined;
-  clearAllRules: () => void;
-  setAllRules: (newRules: TransitionRule[]) => void;
-  getValidRulesCount: () => number;
 }

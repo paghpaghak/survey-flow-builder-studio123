@@ -1,0 +1,32 @@
+{
+    "startedAt":  "2025-06-22T15:44:16Z",
+    "currentStep":  "shared-types",
+    "version":  "1.0.0",
+    "steps":  [
+                  {
+                      "status":  "completed",
+                      "description":  "Basic monorepo setup",
+                      "name":  "infrastructure"
+                  },
+                  {
+                      "status":  "in-progress",
+                      "description":  "Extract shared types",
+                      "name":  "shared-types"
+                  },
+                  {
+                      "status":  "pending",
+                      "description":  "Extract UI components",
+                      "name":  "ui-components"
+                  },
+                  {
+                      "status":  "pending",
+                      "description":  "Create widget package",
+                      "name":  "survey-widget"
+                  },
+                  {
+                      "status":  "pending",
+                      "description":  "Admin panel migration (optional)",
+                      "name":  "admin-migration"
+                  }
+              ]
+}

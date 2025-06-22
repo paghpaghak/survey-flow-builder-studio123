@@ -1,5 +1,5 @@
+import type { UserRole } from '@survey-platform/shared-types';
 import mongoose from 'mongoose';
-import { UserRole } from '@/types/auth';
 
 const userSchema = new mongoose.Schema({
   email: {

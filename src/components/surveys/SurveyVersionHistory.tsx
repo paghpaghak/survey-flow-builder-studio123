@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { SurveyStatus } from '@/types/survey';
+import type { SurveyStatus } from '@survey-platform/shared-types';
 import { useNavigate } from 'react-router-dom';
 
 const STATUS_LABELS: Record<SurveyStatus, string> = {

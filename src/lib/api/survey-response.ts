@@ -1,4 +1,4 @@
-import { CreateSurveyResponseDto, SurveyResponse } from '@/types/survey-response';
+import type { CreateSurveyResponseDto, SurveyResponse } from '@survey-platform/shared-types';
 
 export async function submitSurveyResponse(
   data: CreateSurveyResponseDto

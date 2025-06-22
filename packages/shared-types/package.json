@@ -1,0 +1,21 @@
+{
+    "scripts":  {
+                    "clean":  "rm -rf dist",
+                    "build":  "tsc",
+                    "dev":  "tsc --watch"
+                },
+    "peerDependencies":  {
+
+                         },
+    "description":  "Shared types for Survey Platform",
+    "types":  "dist/index.d.ts",
+    "version":  "1.0.0",
+    "files":  [
+                  "dist/**/*"
+              ],
+    "name":  "@survey-platform/shared-types",
+    "main":  "dist/index.js",
+    "devDependencies":  {
+                            "typescript":  "^5.0.0"
+                        }
+}

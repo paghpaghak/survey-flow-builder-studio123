@@ -1,4 +1,4 @@
-import { SurveyResponse } from '@/types/survey-response';
+import type { SurveyResponse } from '@survey-platform/shared-types';
 
 export async function getSurveyResponses(surveyId: string): Promise<SurveyResponse[]> {
   try {

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Survey } from '@/types/survey';
+import type { Survey } from "@survey-platform/shared-types";
 import { fetchSurveys } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';

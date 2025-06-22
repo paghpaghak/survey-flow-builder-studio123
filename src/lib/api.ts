@@ -1,6 +1,6 @@
-import { Survey } from '@/types/survey';
+import type { Survey } from '@survey-platform/shared-types';
 
-const API_BASE_URL = '/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 // Функция для преобразования данных опроса
 export const transformSurveyData = (data: any): Survey => {
@@ -75,7 +75,7 @@ export const transformSurveyData = (data: any): Survey => {
 };
 
 export async function fetchSurveys(): Promise<Survey[]> {
-  const response = await fetch(`${API_BASE_URL}/surveys`);
+  const response = await fetch(`${API_URL}/surveys`);
   if (!response.ok) {
     throw new Error('Failed to fetch surveys');
   }
@@ -92,7 +92,7 @@ export async function fetchSurveys(): Promise<Survey[]> {
  * <returns>Данные опроса</returns>
  */
 export async function fetchSurveyById(id: string): Promise<Survey> {
-  const response = await fetch(`${API_BASE_URL}/surveys?id=${id}`);
+  const response = await fetch(`${API_URL}/surveys?id=${id}`);
   if (!response.ok) {
     throw new Error('Failed to fetch survey');
   }
@@ -118,7 +118,7 @@ export async function fetchSurveyById(id: string): Promise<Survey> {
  * <returns>Созданный опрос</returns>
  */
 export async function createSurvey(survey: Omit<Survey, 'id'>): Promise<Survey> {
-  const response = await fetch(`${API_BASE_URL}/surveys`, {
+  const response = await fetch(`${API_URL}/surveys`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -133,7 +133,7 @@ export async function createSurvey(survey: Omit<Survey, 'id'>): Promise<Survey> 
 }
 
 export async function deleteSurvey(id: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/surveys/${id}`, {
+  const response = await fetch(`${API_URL}/surveys/${id}`, {
     method: 'DELETE',
   });
   if (!response.ok) {
@@ -142,7 +142,7 @@ export async function deleteSurvey(id: string): Promise<void> {
 }
 
 export async function updateSurvey(survey: Survey): Promise<Survey> {
-  const response = await fetch(`${API_BASE_URL}/surveys/${survey.id}`, {
+  const response = await fetch(`${API_URL}/surveys/${survey.id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',

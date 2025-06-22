@@ -1,5 +1,7 @@
+import type { ParallelBranchSettings } from '@survey-platform/shared-types';
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
+import type { Question } from '@survey-platform/shared-types';
 import { useState, useCallback } from 'react';
-import { ParallelBranchSettings } from '@/types/survey';
 import { UseParallelBranchResult } from '@/types/question.types';
 import { PARALLEL_BRANCH_LIMITS, ERROR_MESSAGES } from '@/constants/question.constants';
 

@@ -3,7 +3,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Survey } from '@/types/survey';
 import { Question } from '@/types/survey';
-import { SurveyResponse } from '@/types/survey-response';
 import {
   Table,
   TableBody,
@@ -14,6 +13,7 @@ import {
 } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import type { Survey, Question, SurveyResponse } from '@survey-platform/shared-types';
 
 interface SimpleResultsTableProps {
   survey: Survey;

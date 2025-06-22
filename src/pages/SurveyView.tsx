@@ -3,7 +3,8 @@ import { useSurveyStore } from '@/store/survey-store';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Eye } from 'lucide-react';
 import React, { useState } from 'react';
-import { Question, QuestionType } from '@/types/survey';
+import { QUESTION_TYPES } from '@survey-platform/shared-types';
+import type { Question, QuestionType } from '@survey-platform/shared-types';
 import VisualEditor from '@/components/survey-editor/VisualEditor';
 import { SurveyPreview } from '@/components/survey-preview/SurveyPreview';
 import {
@@ -52,19 +53,19 @@ export default function SurveyView() {
 
   const getQuestionTypeLabel = (type: QuestionType): string => {
     switch (type) {
-      case QuestionType.Text:
+      case QUESTION_TYPES.Text:
         return "Текст";
-      case QuestionType.Radio:
+      case QUESTION_TYPES.Radio:
         return "Один из списка";
-      case QuestionType.Checkbox:
+      case QUESTION_TYPES.Checkbox:
         return "Несколько из списка";
-      case QuestionType.Select:
+      case QUESTION_TYPES.Select:
         return "Выпадающий список";
-      case QuestionType.Date:
+      case QUESTION_TYPES.Date:
         return "Дата";
-      case QuestionType.Email:
+      case QUESTION_TYPES.Email:
         return "Email";
-      case QuestionType.Phone:
+      case QUESTION_TYPES.Phone:
         return "Телефон";
     }
   };

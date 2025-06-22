@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
-import { Survey, SurveyVersion } from '@/types/survey';
+import type { Survey, SurveyVersion } from '@survey-platform/shared-types';
+import { useState, useEffect, useMemo } from 'react';
 
 interface SurveyProgress {
   currentPageIndex: number;
   answers: Record<string, any>;
 }
 
-export function useSurveyProgress(survey: Survey, version: SurveyVersion) {
+export const useSurveyProgress = (survey: Survey, versionId?: number) => {
   const [progress, setProgress] = useState<SurveyProgress>({
     currentPageIndex: 0,
     answers: {},
@@ -19,7 +19,7 @@ export function useSurveyProgress(survey: Survey, version: SurveyVersion) {
       try {
         const parsedProgress = JSON.parse(savedProgress);
         // Проверяем, что сохраненный прогресс соответствует текущей версии
-        if (parsedProgress.version === version.version) {
+        if (parsedProgress.version === versionId) {
           setProgress({
             currentPageIndex: parsedProgress.currentPageIndex,
             answers: parsedProgress.answers,
@@ -33,19 +33,19 @@ export function useSurveyProgress(survey: Survey, version: SurveyVersion) {
         localStorage.removeItem(`survey_${survey.id}_progress`);
       }
     }
-  }, [survey.id, version.version]);
+  }, [survey.id, versionId]);
 
   // Сохранение прогресса при изменении
   useEffect(() => {
     const progressToSave = {
-      version: version.version,
+      version: versionId,
       ...progress,
     };
     localStorage.setItem(
       `survey_${survey.id}_progress`,
       JSON.stringify(progressToSave)
     );
-  }, [progress, survey.id, version.version]);
+  }, [progress, survey.id, versionId]);
 
   const updateProgress = (newProgress: Partial<SurveyProgress>) => {
     setProgress((prev) => ({
@@ -67,4 +67,4 @@ export function useSurveyProgress(survey: Survey, version: SurveyVersion) {
     updateProgress,
     clearProgress,
   };
-} 
+}; 

@@ -7,14 +7,14 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { QuestionType, Survey, SurveyVersion } from '@/types/survey';
+import { QUESTION_TYPES, type Survey, type SurveyVersion, type QuestionType } from '@survey-platform/shared-types';
 import { QuestionInput } from './question-inputs';
 import { FormProvider } from 'react-hook-form';
 import { submitSurveyResponse } from '@/lib/api/survey-response';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { CreateSurveyResponseDto } from '@/types/survey-response';
 import { useSurveyProgress } from '@/hooks/use-survey-progress';
+import type { CreateSurveyResponseDto } from '@survey-platform/shared-types';
 import {
   AlertDialog,
   AlertDialogAction,

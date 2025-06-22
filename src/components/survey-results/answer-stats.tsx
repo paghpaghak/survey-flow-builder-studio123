@@ -1,9 +1,12 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Question } from '@/types/survey';
-import { SurveyResponse } from '@/types/survey-response';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from '@/components/ui/card';
+import type { SurveyResponse, Question } from '@survey-platform/shared-types';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { Bar, BarChart, XAxis, YAxis } from 'recharts';
+import { ResponsiveContainer } from 'recharts';
 
 interface AnswerStatsProps {
   question: Question;
