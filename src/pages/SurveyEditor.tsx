@@ -1,16 +1,19 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSurveyStore } from "../store/survey-store";
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, Eye } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
-import { QUESTION_TYPES } from '@survey-platform/shared-types';
-import type { Question, Page, QuestionType } from '@survey-platform/shared-types';
-import VisualEditor from '@/components/survey-editor/VisualEditor';
-import { toast } from 'sonner';
-import { SurveyPreview } from '@/components/survey-preview/SurveyPreview';
+import React from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
+import VisualEditor from '@/components/survey-editor/VisualEditor';
 import { SidebarTreeView } from '@/components/survey-editor/SidebarTreeView';
 import ResolutionEditDialog from '@/components/survey-editor/ResolutionEditDialog';
+// Новые импорты:
+import { useSurveyEditorState } from './survey-editor/hooks/useSurveyEditorState';
+import { useSurveyHandlers } from './survey-editor/hooks/useSurveyHandlers';
+import { SurveyNotFound } from './survey-editor/SurveyNotFound';
+import { SurveyEditorToolbar } from './survey-editor/SurveyEditorToolbar';
+import { SurveyEditorPreview } from './survey-editor/SurveyEditorPreview';
+import type { Page } from '@survey-platform/shared-types';
+import { ArrowLeft, Eye, Plus, FilePlus } from 'lucide-react';
+import { QUESTION_TYPES } from '@survey-platform/shared-types';
 
 /**
  * <summary>
@@ -32,507 +35,164 @@ function normalizePage(p: any): Page {
   };
 }
 
-function SurveyNotFound({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
-  console.log('SurveyNotFound rendered');
-  return (
-    <div className="container mx-auto py-6 px-4">
-      <div className="mb-4">
-        <Button variant="ghost" className="gap-1" onClick={() => navigate('/')}> 
-          <ArrowLeft className="h-4 w-4" /> Назад к опросам
-        </Button>
-      </div>
-      <div className="text-center py-12">
-        <h2 className="text-2xl font-bold mb-2">Опрос не найден</h2>
-        <p className="text-gray-500 mb-4">Опрос, который вы ищете, не существует или был удалён.</p>
-        <Button onClick={() => navigate('/')}>Вернуться к списку опросов</Button>
-      </div>
-    </div>
-  );
-}
-
 export default function SurveyEditor() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { surveys, updateSurvey, loadSurveys } = useSurveyStore();
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [selectedPageId, setSelectedPageId] = useState<string | undefined>();
-  const [selectedQuestionId, setSelectedQuestionId] = useState<string | undefined>();
-  const [editingResolution, setEditingResolution] = useState<Question | null>(null);
-  const [pendingPreview, setPendingPreview] = useState(false);
+  const { updateSurvey } = useSurveyStore();
 
-  // Всегда вычисляем survey и currentVersion, даже если их нет
-  const survey = surveys.find(s => s.id === id);
-  const currentVersion = survey?.versions.find(v => v.version === survey.currentVersion);
-  const questions = currentVersion?.questions || [];
-  const pages: Page[] = (currentVersion?.pages || []).map(normalizePage);
+  // 1. Состояния редактора
+  const state = useSurveyEditorState(id);
 
-  console.log('SurveyEditor render', {
-    survey,
-    currentVersion,
-    questions,
-    pages,
-    selectedPageId,
-    selectedQuestionId,
-    isPreviewOpen,
-    pendingPreview
+  // 2. Обработчики
+  const handlers = useSurveyHandlers({
+    survey: state.survey,
+    currentVersion: state.currentVersion,
+    questions: state.questions,
+    pages: state.pages,
+    updateSurvey,
+    setSelectedQuestionId: state.setSelectedQuestionId,
   });
 
-  useEffect(() => {
-    console.log('useEffect pages/selectedPageId', { pages, selectedPageId });
-    if (pages.length > 0 && !selectedPageId) {
-      setSelectedPageId(pages[0].id);
-    }
-  }, [pages, selectedPageId]);
-
-  useEffect(() => {
-    console.log('useEffect id/survey/loadSurveys', { id, survey });
-    if (id && !survey) {
-      loadSurveys();
-    }
-  }, [id, survey, loadSurveys]);
-
-  useEffect(() => {
-    console.log('useEffect preview', { pendingPreview, questions, pages });
-    if (pendingPreview) {
-      setIsPreviewOpen(true);
-      setPendingPreview(false);
-    }
-  }, [questions, pages, pendingPreview]);
-
-  useEffect(() => {
-    console.log('Переключение страницы:', { selectedPageId, questions, pages });
-  }, [selectedPageId]);
-
-  // Теперь return с условием после всех хуков
-  if (!survey || !currentVersion) {
-    console.log('SurveyEditor: survey or currentVersion not found, rendering SurveyNotFound');
+  // 3. Если опрос не найден
+  if (!state.survey || !state.currentVersion) {
     return <SurveyNotFound navigate={navigate} />;
   }
 
-  /**
-   * <summary>
-   * Удаляет вопрос по id из текущей версии опроса.
-   * Включает удаление вложенных вопросов из параллельных групп.
-   * </summary>
-   * <param name="qid">ID вопроса для удаления</param>
-   */
-  function handleDeleteQuestion(qid: string) {
-    const questionToDelete = questions.find(q => q.id === qid);
-    let questionsToDelete = [qid];
+  // 4. Основной рендер
+  const questionsOfSelectedPage = state.questions.filter(q => q.pageId === state.selectedPageId);
 
-    // Если удаляется параллельная группа, добавляем все вложенные вопросы
-    if (questionToDelete?.type === QUESTION_TYPES.ParallelGroup && questionToDelete.parallelQuestions) {
-      questionsToDelete = [...questionsToDelete, ...questionToDelete.parallelQuestions];
-    }
-
-    // Удаляем все связанные вопросы
-    const updatedQuestions = questions.filter(q => !questionsToDelete.includes(q.id));
-    
-    // Также удаляем все transitionRules, которые ссылаются на удаляемые вопросы
-    const cleanedQuestions = updatedQuestions.map(q => ({
-      ...q,
-      transitionRules: q.transitionRules?.filter(rule => !questionsToDelete.includes(rule.nextQuestionId))
-    }));
-    
-    updateSurvey({
-      ...survey,
-      versions: survey.versions.map(v => 
-        v.version === survey.currentVersion 
-          ? { ...v, questions: cleanedQuestions }
-          : v
-      )
-    });
-
-    // Сбрасываем выделение если удаленный вопрос был выделен
-    if (questionsToDelete.includes(selectedQuestionId || '')) {
-      setSelectedQuestionId(undefined);
-    }
-  }
-
-  /**
-   * <summary>
-   * Обновляет вопросы для выбранной страницы, исключая дубликаты по id.
-   * </summary>
-   * <param name="updatedQuestions">Массив вопросов для текущей страницы</param>
-   */
-  function handleUpdateQuestions(updatedQuestions: Question[]) {
-    // Оставляем вопросы других страниц без изменений
-    const otherQuestions = questions.filter(q => !updatedQuestions.some(uq => uq.id === q.id));
-    const allQuestions = [...otherQuestions, ...updatedQuestions];
-    console.log('[SurveyEditor] otherQuestions:', otherQuestions.length);
-    console.log('[SurveyEditor] allQuestions после объединения:', allQuestions.length);
-    // Обновляем только нужные страницы
-    const updatedPages = currentVersion.pages.map(page => normalizePage({
-      ...page,
-      questions: allQuestions.filter(q => q.pageId === page.id)
-    }));
-
-    const uniqueQuestions = Array.from(new Map(allQuestions.map(q => [q.id, q])).values());
-    console.log('[SurveyEditor] uniqueQuestions финальные:', uniqueQuestions.length);
-
-    const updatedVersion = {
-      ...currentVersion,
-      questions: uniqueQuestions,
-      pages: updatedPages,
-      updatedAt: new Date().toISOString()
-    };
-
-    const updatedSurvey = {
-      ...survey,
-      versions: survey.versions.map(v =>
-        v.version === survey.currentVersion ? updatedVersion : v
-      ),
-      updatedAt: new Date().toISOString()
-    };
-
-    updateSurvey(updatedSurvey);
-  }
-
-  /**
-   * <summary>
-   * Обновляет список страниц опроса.
-   * </summary>
-   * <param name="updatedPages">Новый массив страниц</param>
-   */
-  function handleUpdatePages(updatedPages: Page[]) {
-    if (updatedPages.length === 0) {
-      toast.error('Должна быть хотя бы одна страница');
-      return;
-    }
-
-    if (selectedPageId && !updatedPages.find(p => p.id === selectedPageId)) {
-      setSelectedPageId(updatedPages[0].id);
-    }
-
-    const updatedVersion = {
-      ...currentVersion,
-      pages: updatedPages.map(normalizePage),
-      updatedAt: new Date().toISOString()
-    };
-
-    const updatedSurvey = {
-      ...survey,
-      versions: survey.versions.map(v =>
-        v.version === survey.currentVersion ? updatedVersion : v
-      ),
-      updatedAt: new Date().toISOString()
-    };
-
-    updateSurvey(updatedSurvey);
-  }
-
-  /**
-   * <summary>
-   * Добавляет новый вопрос на выбранную страницу.
-   * Автоматически исключает вложенные вопросы параллельных групп из визуального редактора.
-   * </summary>
-   */
+  // Добавить вопрос на выбранную страницу
   function handleAddQuestion() {
-    if (pages.length === 0) {
-      toast.error('Создайте хотя бы одну страницу перед добавлением вопроса');
-      return;
-    }
-
-    const targetPageId = selectedPageId || pages[0].id;
-    
-    // Фильтруем вопросы, исключая вложенные в параллельные группы
-    const allParallelQuestionIds = new Set<string>();
-    questions.forEach(q => {
-      if (q.type === QUESTION_TYPES.ParallelGroup && q.parallelQuestions) {
-        q.parallelQuestions.forEach(subId => allParallelQuestionIds.add(subId));
-      }
-    });
-    
-    const pageQuestions = questions.filter(q => 
-      q.pageId === targetPageId && !allParallelQuestionIds.has(q.id)
-    );
-
-    // Определяем номер для нового вопроса на этой странице
+    if (!state.selectedPageId) return;
+    const pageQuestions = state.questions.filter(q => q.pageId === state.selectedPageId);
     const nextNumber = pageQuestions.length + 1;
-
-    // Проверяем, что id уникален
     let newId = crypto.randomUUID();
-    while (questions.some(q => q.id === newId)) {
+    while (state.questions.some(q => q.id === newId)) {
       newId = crypto.randomUUID();
     }
-
-    const newQuestion: Question = {
+    const newQuestion = {
       id: newId,
-      pageId: targetPageId,
+      pageId: state.selectedPageId,
       title: `Новый вопрос ${nextNumber}`,
       type: QUESTION_TYPES.Text,
       required: false,
       position: { x: 250, y: pageQuestions.length * 150 },
       options: undefined
     };
-
-    // Если тип вопроса — Radio, Checkbox или Select, сразу добавляем два варианта
-    if ([QUESTION_TYPES.Radio, QUESTION_TYPES.Checkbox, QUESTION_TYPES.Select].includes(newQuestion.type)) {
-      newQuestion.options = [
-        { id: crypto.randomUUID(), text: 'Вариант 1' },
-        { id: crypto.randomUUID(), text: 'Вариант 2' }
-      ];
-    }
-
-    const updatedQuestions = [...questions, newQuestion];
-    handleUpdateQuestions(updatedQuestions);
-    
-    // Выделяем новый вопрос
-    setSelectedQuestionId(newQuestion.id);
+    handlers.handleUpdateQuestions([...state.questions, newQuestion]);
+    state.setSelectedQuestionId(newId);
   }
 
-  /**
-   * <summary>
-   * Открывает предпросмотр опроса, если есть хотя бы один вопрос.
-   * </summary>
-   */
-  function handlePreviewClick() {
-    // Проверяем количество основных вопросов (исключая вложенные в параллельные группы)
-    const allParallelQuestionIds = new Set<string>();
-    questions.forEach(q => {
-      if (q.type === QUESTION_TYPES.ParallelGroup && q.parallelQuestions) {
-        q.parallelQuestions.forEach(subId => allParallelQuestionIds.add(subId));
-      }
-    });
-    
-    const mainQuestions = questions.filter(q => !allParallelQuestionIds.has(q.id));
-    
-    if (mainQuestions.length === 0) {
-      toast.error('Добавьте хотя бы один вопрос для предпросмотра');
-      return;
-    }
-    setPendingPreview(true);
-  }
-
-  // Функция для удаления страницы
-  function handleDeletePage(pageId: string) {
-    if (pages.length <= 1) {
-      // Не даём удалить последнюю страницу
-      return;
-    }
-    
-    // Удаляем все вопросы со страницы
-    const questionsToDelete = questions.filter(q => q.pageId === pageId).map(q => q.id);
-    const updatedQuestions = questions.filter(q => q.pageId !== pageId);
-    
-    const updatedPages = pages.filter(p => p.id !== pageId);
-    
-    // Обновляем survey с удаленными вопросами и страницей
-    const updatedVersion = {
-      ...currentVersion,
-      questions: updatedQuestions,
-      pages: updatedPages.map(normalizePage),
-      updatedAt: new Date().toISOString()
-    };
-
-    const updatedSurvey = {
-      ...survey,
-      versions: survey.versions.map(v =>
-        v.version === survey.currentVersion ? updatedVersion : v
-      ),
-      updatedAt: new Date().toISOString()
-    };
-
-    updateSurvey(updatedSurvey);
-    
-    if (selectedPageId === pageId) {
-      setSelectedPageId(updatedPages[0]?.id);
-    }
-    
-    // Сбрасываем выделение если удаленный вопрос был выделен
-    if (questionsToDelete.includes(selectedQuestionId || '')) {
-      setSelectedQuestionId(undefined);
-    }
-  }
-
-  const handleQuestionOrderChange = (newQuestions: Question[]) => {
-    handleUpdateQuestions(newQuestions);
-  };
-
-  // Функция для обновления названия страницы
-  function handleUpdatePageTitle(pageId: string, newTitle: string) {
-    const updatedPages = pages.map(page =>
-      page.id === pageId ? { ...page, title: newTitle } : page
-    );
-    handleUpdatePages(updatedPages);
-  }
-
-  // Функция для обновления названия вопроса
-  function handleUpdateQuestionTitle(questionId: string, newTitle: string) {
-    const updatedQuestions = questions.map(q =>
-      q.id === questionId ? { ...q, title: newTitle } : q
-    );
-    handleUpdateQuestions(updatedQuestions);
-  }
-
-  function handleUpdatePageDescription(pageId: string, newDescription: string, position: string) {
-    const updatedPages = pages.map(p =>
-      p.id === pageId ? normalizePage({ ...p, description: newDescription, descriptionPosition: position }) : normalizePage(p)
-    );
-    const updatedVersion = {
-      ...currentVersion,
-      pages: updatedPages,
-      updatedAt: new Date().toISOString()
-    };
-    const updatedSurvey = {
-      ...survey,
-      versions: survey.versions.map(v =>
-        v.version === survey.currentVersion ? updatedVersion : v
-      ),
-      updatedAt: new Date().toISOString()
-    };
-    updateSurvey(updatedSurvey);
-  }
-
-  function handleAddResolution() {
-    if (questions.some(q => q.type === QUESTION_TYPES.Resolution)) {
-      toast.error('В опросе может быть только одна резолюция');
-      return;
-    }
-    if (pages.length === 0) {
-      toast.error('Создайте хотя бы одну страницу перед добавлением резолюции');
-      return;
-    }
-    const lastPageId = pages[pages.length - 1].id;
+  // Добавить новую страницу
+  function handleAddPage() {
     let newId = crypto.randomUUID();
-    while (questions.some(q => q.id === newId)) {
+    while (state.pages.some(p => p.id === newId)) {
       newId = crypto.randomUUID();
     }
-    const newResolution = {
+    const newPage = {
       id: newId,
-      pageId: lastPageId,
-      title: 'Резолюция',
-      type: QUESTION_TYPES.Resolution,
-      required: false,
-      position: { x: 400, y: 100 },
-      resolutionRules: [],
-      defaultResolution: 'Результат по умолчанию',
+      title: `Страница ${state.pages.length + 1}`,
+      questions: []
     };
-    handleUpdateQuestions([...questions, newResolution]);
-    setSelectedQuestionId(newResolution.id);
+    handlers.handleUpdatePages([...state.pages, newPage]);
+    state.setSelectedPageId(newId);
   }
 
   return (
     <div className="flex h-screen w-full">
+      {/* Сайдбар */}
       <div className="w-[340px] h-screen flex flex-col bg-gray-50 border-r min-h-0">
         <div className="flex items-center gap-2 p-4 border-b">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => navigate('/')}
-            className="shrink-0"
+          <button
+            className="shrink-0 rounded border p-2 hover:bg-gray-100 flex items-center justify-center"
             tabIndex={0}
             aria-label="К опросам"
+            onClick={() => navigate('/')}
           >
             <ArrowLeft className="h-5 w-5" />
-          </Button>
+          </button>
           <span
             className="ml-2 text-2xl font-bold truncate whitespace-nowrap overflow-hidden text-ellipsis block"
             style={{ maxWidth: 'calc(100% - 64px)' }}
-            title={survey.title}
+            title={state.survey.title}
           >
-            {survey.title}
+            {state.survey.title}
           </span>
         </div>
-        <div className="text-gray-500 px-4">{survey.description}</div>
+        <div className="text-gray-500 px-4">{state.survey.description}</div>
+        {/* Кнопки управления */}
         <div className="flex justify-between gap-2 my-6 px-4" style={{ marginBottom: '12px', marginTop: '12px' }}>
-          <Button className="w-[90px] h-10 text-lg" variant="outline" size="icon" onClick={handlePreviewClick} data-testid="preview-btn">
+          <button
+            className="w-10 h-10 flex items-center justify-center border rounded hover:bg-gray-100"
+            onClick={() => state.setIsPreviewOpen(true)}
+            data-testid="preview-btn"
+            aria-label="Предпросмотр"
+          >
             <Eye className="h-5 w-5" />
-          </Button>
-          <Button className="w-[90px] h-10 text-lg" size="icon" onClick={handleAddQuestion} disabled={!selectedPageId} data-testid="add-question-btn">
-            <span title="Добавить вопрос">+</span>
-          </Button>
-          <Button className="w-[90px] h-10 text-lg" size="icon" onClick={() => {
-            const newPage = {
-              id: crypto.randomUUID(),
-              title: `Страница ${pages.length + 1}`,
-              questions: []
-            };
-            handleUpdatePages([...pages, newPage]);
-            setSelectedPageId(newPage.id);
-          }} data-testid="add-page-btn">
-            <span title="Добавить страницу">📄</span>
-          </Button>
+          </button>
+          <button
+            className="w-10 h-10 flex items-center justify-center border rounded hover:bg-gray-100"
+            onClick={handleAddQuestion}
+            disabled={!state.selectedPageId}
+            data-testid="add-question-btn"
+            aria-label="Добавить вопрос"
+          >
+            <Plus className="h-5 w-5" />
+          </button>
+          <button
+            className="w-10 h-10 flex items-center justify-center border rounded hover:bg-gray-100"
+            onClick={handleAddPage}
+            data-testid="add-page-btn"
+            aria-label="Добавить страницу"
+          >
+            <FilePlus className="h-5 w-5" />
+          </button>
         </div>
         <div className="flex-1 min-h-0 flex flex-col">
           <div className="flex-1 min-h-0 overflow-y-auto">
             <SidebarTreeView
-              pages={pages}
-              questions={questions}
-              selectedPageId={selectedPageId}
-              selectedQuestionId={selectedQuestionId}
-              onSelectPage={(id) => {
-                setSelectedPageId(id);
-                setSelectedQuestionId(undefined);
-              }}
-              onSelectQuestion={questionId => {
-                const q = questions.find(q => q.id === questionId);
-                if (!q) return;
-                // Если вопрос не на текущей странице — переключаем страницу
-                if (q.pageId !== selectedPageId) {
-                  setSelectedPageId(q.pageId);
-                }
-                // Если вопрос вложенный в параллельную ветку — выделяем ветку
-                const parentParallel = questions.find(
-                  pq => pq.type === QUESTION_TYPES.ParallelGroup && Array.isArray(pq.parallelQuestions) && pq.parallelQuestions.includes(questionId)
-                );
-                if (parentParallel) {
-                  setSelectedQuestionId(parentParallel.id);
-                } else {
-                  setSelectedQuestionId(questionId);
-                }
-              }}
-              onQuestionOrderChange={handleQuestionOrderChange}
-              onUpdatePageTitle={handleUpdatePageTitle}
-              onUpdateQuestionTitle={handleUpdateQuestionTitle}
-              onDeleteQuestion={handleDeleteQuestion}
-              onDeletePage={handleDeletePage}
-              onUpdatePageDescription={handleUpdatePageDescription}
-              onAddResolution={handleAddResolution}
-              onEditResolution={q => setEditingResolution(q)}
+              pages={state.pages}
+              questions={state.questions}
+              selectedPageId={state.selectedPageId}
+              selectedQuestionId={state.selectedQuestionId}
+              onSelectPage={state.setSelectedPageId}
+              onSelectQuestion={state.setSelectedQuestionId}
+              onQuestionOrderChange={handlers.handleUpdateQuestions}
             />
           </div>
         </div>
       </div>
+      {/* Визуальный редактор */}
       <div className="flex-1 h-screen">
         <ReactFlowProvider>
           <VisualEditor
-            questions={questions.filter(q => q.pageId === selectedPageId)}
-            onUpdateQuestions={handleUpdateQuestions}
-            pages={pages}
-            selectedQuestionId={selectedQuestionId}
-            setSelectedQuestionId={setSelectedQuestionId}
-            allQuestions={questions}
+            questions={questionsOfSelectedPage}
+            pages={state.pages}
+            allQuestions={state.questions}
+            selectedQuestionId={state.selectedQuestionId}
+            setSelectedQuestionId={state.setSelectedQuestionId}
+            onUpdateQuestions={handlers.handleUpdateQuestions}
           />
         </ReactFlowProvider>
       </div>
-
-      {isPreviewOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" data-testid="survey-preview-modal">
-          <div className="bg-white rounded-lg w-[800px] max-h-[90vh] overflow-auto">
-            <div className="p-4 border-b sticky top-0 bg-white flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Предпросмотр опроса</h2>
-              <Button variant="ghost" onClick={() => setIsPreviewOpen(false)}>✕</Button>
-            </div>
-            <SurveyPreview
-              questions={questions}
-              pages={pages}
-              onClose={() => setIsPreviewOpen(false)}
-            />
-          </div>
-        </div>
-      )}
-
-      {editingResolution && (
+      {/* Модалка предпросмотра */}
+      <SurveyEditorPreview
+        open={state.isPreviewOpen}
+        onClose={() => state.setIsPreviewOpen(false)}
+        questions={state.questions}
+        pages={state.pages}
+      />
+      {/* Диалоги, модалки и т.д. */}
+      {state.editingResolution && (
         <ResolutionEditDialog
-          resolutionQuestion={editingResolution}
-          questions={questions}
-          open={!!editingResolution}
+          resolutionQuestion={state.editingResolution}
+          questions={state.questions}
+          open={!!state.editingResolution}
           onSave={updated => {
-            const updatedQuestions = questions.map(q => q.id === updated.id ? updated : q);
-            handleUpdateQuestions(updatedQuestions);
+            const updatedQuestions = state.questions.map(q => q.id === updated.id ? updated : q);
+            handlers.handleUpdateQuestions(updatedQuestions);
           }}
-          onClose={() => setEditingResolution(null)}
+          onClose={() => state.setEditingResolution(null)}
         />
       )}
     </div>
