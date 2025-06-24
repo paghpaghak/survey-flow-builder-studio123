@@ -1,8 +1,7 @@
-import { useParams, useNavigate } from 'react-router-dom';
 import { useSurveyStore } from "../store/survey-store";
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Eye } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { QUESTION_TYPES } from '@survey-platform/shared-types';
 import type { Question, Page, QuestionType } from '@survey-platform/shared-types';
 import VisualEditor from '@/components/survey-editor/VisualEditor';
@@ -11,6 +10,7 @@ import { SurveyPreview } from '@/components/survey-preview/SurveyPreview';
 import { ReactFlowProvider } from '@xyflow/react';
 import { SidebarTreeView } from '@/components/survey-editor/SidebarTreeView';
 import ResolutionEditDialog from '@/components/survey-editor/ResolutionEditDialog';
+import { useSurveyEditor, normalizePage } from '@/hooks/useSurveyEditor';
 
 /**
  * <summary>
@@ -19,95 +19,35 @@ import ResolutionEditDialog from '@/components/survey-editor/ResolutionEditDialo
  * </summary>
  */
 
-function normalizePage(p: any): Page {
-  let descPos: 'before' | 'after' | undefined = undefined;
-  if (p.descriptionPosition === 'before' || p.descriptionPosition === 'after') {
-    descPos = p.descriptionPosition;
-  } else {
-    descPos = 'before'; // ← Добавить эту строку
-  }
-  return {
-    ...p,
-    descriptionPosition: descPos,
-  };
-}
-
-function SurveyNotFound({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
+function SurveyNotFound({ navigate }: { navigate: () => void }) {
   console.log('SurveyNotFound rendered');
   return (
     <div className="container mx-auto py-6 px-4">
       <div className="mb-4">
-        <Button variant="ghost" className="gap-1" onClick={() => navigate('/')}> 
+        <Button variant="ghost" className="gap-1" onClick={() => navigate()}> 
           <ArrowLeft className="h-4 w-4" /> Назад к опросам
         </Button>
       </div>
       <div className="text-center py-12">
         <h2 className="text-2xl font-bold mb-2">Опрос не найден</h2>
         <p className="text-gray-500 mb-4">Опрос, который вы ищете, не существует или был удалён.</p>
-        <Button onClick={() => navigate('/')}>Вернуться к списку опросов</Button>
+        <Button onClick={() => navigate()}>Вернуться к списку опросов</Button>
       </div>
     </div>
   );
 }
 
 export default function SurveyEditor() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const { surveys, updateSurvey, loadSurveys } = useSurveyStore();
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [selectedPageId, setSelectedPageId] = useState<string | undefined>();
-  const [selectedQuestionId, setSelectedQuestionId] = useState<string | undefined>();
-  const [editingResolution, setEditingResolution] = useState<Question | null>(null);
-  const [pendingPreview, setPendingPreview] = useState(false);
-
-  // Всегда вычисляем survey и currentVersion, даже если их нет
-  const survey = surveys.find(s => s.id === id);
-  const currentVersion = survey?.versions.find(v => v.version === survey.currentVersion);
-  const questions = currentVersion?.questions || [];
-  const pages: Page[] = (currentVersion?.pages || []).map(normalizePage);
-
-  console.log('SurveyEditor render', {
-    survey,
-    currentVersion,
-    questions,
-    pages,
-    selectedPageId,
-    selectedQuestionId,
-    isPreviewOpen,
-    pendingPreview
-  });
-
-  useEffect(() => {
-    console.log('useEffect pages/selectedPageId', { pages, selectedPageId });
-    if (pages.length > 0 && !selectedPageId) {
-      setSelectedPageId(pages[0].id);
-    }
-  }, [pages, selectedPageId]);
-
-  useEffect(() => {
-    console.log('useEffect id/survey/loadSurveys', { id, survey });
-    if (id && !survey) {
-      loadSurveys();
-    }
-  }, [id, survey, loadSurveys]);
-
-  useEffect(() => {
-    console.log('useEffect preview', { pendingPreview, questions, pages });
-    if (pendingPreview) {
-      setIsPreviewOpen(true);
-      setPendingPreview(false);
-    }
-  }, [questions, pages, pendingPreview]);
-
-  useEffect(() => {
-    console.log('Переключение страницы:', { selectedPageId, questions, pages });
-  }, [selectedPageId]);
+  const { updateSurvey } = useSurveyStore();
+  const editor = useSurveyEditor();
 
   // Теперь return с условием после всех хуков
-  if (!survey || !currentVersion) {
+  if (!editor.isReady) {
     console.log('SurveyEditor: survey or currentVersion not found, rendering SurveyNotFound');
-    return <SurveyNotFound navigate={navigate} />;
+    return <SurveyNotFound navigate={() => editor.navigate('/')} />;
   }
+
+  const { survey, currentVersion, questions, pages } = editor;
 
   /**
    * <summary>
@@ -144,8 +84,8 @@ export default function SurveyEditor() {
     });
 
     // Сбрасываем выделение если удаленный вопрос был выделен
-    if (questionsToDelete.includes(selectedQuestionId || '')) {
-      setSelectedQuestionId(undefined);
+    if (questionsToDelete.includes(editor.selectedQuestionId || '')) {
+      editor.setSelectedQuestionId(undefined);
     }
   }
 
@@ -200,8 +140,8 @@ export default function SurveyEditor() {
       return;
     }
 
-    if (selectedPageId && !updatedPages.find(p => p.id === selectedPageId)) {
-      setSelectedPageId(updatedPages[0].id);
+    if (editor.selectedPageId && !updatedPages.find(p => p.id === editor.selectedPageId)) {
+      editor.setSelectedPageId(updatedPages[0].id);
     }
 
     const updatedVersion = {
@@ -233,7 +173,7 @@ export default function SurveyEditor() {
       return;
     }
 
-    const targetPageId = selectedPageId || pages[0].id;
+    const targetPageId = editor.selectedPageId || pages[0].id;
     
     // Фильтруем вопросы, исключая вложенные в параллельные группы
     const allParallelQuestionIds = new Set<string>();
@@ -278,7 +218,7 @@ export default function SurveyEditor() {
     handleUpdateQuestions(updatedQuestions);
     
     // Выделяем новый вопрос
-    setSelectedQuestionId(newQuestion.id);
+    editor.setSelectedQuestionId(newQuestion.id);
   }
 
   /**
@@ -301,7 +241,7 @@ export default function SurveyEditor() {
       toast.error('Добавьте хотя бы один вопрос для предпросмотра');
       return;
     }
-    setPendingPreview(true);
+    editor.setPendingPreview(true);
   }
 
   // Функция для удаления страницы
@@ -335,13 +275,13 @@ export default function SurveyEditor() {
 
     updateSurvey(updatedSurvey);
     
-    if (selectedPageId === pageId) {
-      setSelectedPageId(updatedPages[0]?.id);
+    if (editor.selectedPageId === pageId) {
+      editor.setSelectedPageId(updatedPages[0]?.id);
     }
     
     // Сбрасываем выделение если удаленный вопрос был выделен
-    if (questionsToDelete.includes(selectedQuestionId || '')) {
-      setSelectedQuestionId(undefined);
+    if (questionsToDelete.includes(editor.selectedQuestionId || '')) {
+      editor.setSelectedQuestionId(undefined);
     }
   }
 
@@ -409,7 +349,7 @@ export default function SurveyEditor() {
       defaultResolution: 'Результат по умолчанию',
     };
     handleUpdateQuestions([...questions, newResolution]);
-    setSelectedQuestionId(newResolution.id);
+    editor.setSelectedQuestionId(newResolution.id);
   }
 
   return (
@@ -419,7 +359,7 @@ export default function SurveyEditor() {
           <Button
             variant="outline"
             size="icon"
-            onClick={() => navigate('/')}
+            onClick={() => editor.navigate('/')}
             className="shrink-0"
             tabIndex={0}
             aria-label="К опросам"
@@ -439,7 +379,7 @@ export default function SurveyEditor() {
           <Button className="w-[90px] h-10 text-lg" variant="outline" size="icon" onClick={handlePreviewClick} data-testid="preview-btn">
             <Eye className="h-5 w-5" />
           </Button>
-          <Button className="w-[90px] h-10 text-lg" size="icon" onClick={handleAddQuestion} disabled={!selectedPageId} data-testid="add-question-btn">
+          <Button className="w-[90px] h-10 text-lg" size="icon" onClick={handleAddQuestion} disabled={!editor.selectedPageId} data-testid="add-question-btn">
             <span title="Добавить вопрос">+</span>
           </Button>
           <Button className="w-[90px] h-10 text-lg" size="icon" onClick={() => {
@@ -449,7 +389,7 @@ export default function SurveyEditor() {
               questions: []
             };
             handleUpdatePages([...pages, newPage]);
-            setSelectedPageId(newPage.id);
+            editor.setSelectedPageId(newPage.id);
           }} data-testid="add-page-btn">
             <span title="Добавить страницу">📄</span>
           </Button>
@@ -459,27 +399,27 @@ export default function SurveyEditor() {
             <SidebarTreeView
               pages={pages}
               questions={questions}
-              selectedPageId={selectedPageId}
-              selectedQuestionId={selectedQuestionId}
+              selectedPageId={editor.selectedPageId}
+              selectedQuestionId={editor.selectedQuestionId}
               onSelectPage={(id) => {
-                setSelectedPageId(id);
-                setSelectedQuestionId(undefined);
+                editor.setSelectedPageId(id);
+                editor.setSelectedQuestionId(undefined);
               }}
               onSelectQuestion={questionId => {
                 const q = questions.find(q => q.id === questionId);
                 if (!q) return;
                 // Если вопрос не на текущей странице — переключаем страницу
-                if (q.pageId !== selectedPageId) {
-                  setSelectedPageId(q.pageId);
+                if (q.pageId !== editor.selectedPageId) {
+                  editor.setSelectedPageId(q.pageId);
                 }
                 // Если вопрос вложенный в параллельную ветку — выделяем ветку
                 const parentParallel = questions.find(
                   pq => pq.type === QUESTION_TYPES.ParallelGroup && Array.isArray(pq.parallelQuestions) && pq.parallelQuestions.includes(questionId)
                 );
                 if (parentParallel) {
-                  setSelectedQuestionId(parentParallel.id);
+                  editor.setSelectedQuestionId(parentParallel.id);
                 } else {
-                  setSelectedQuestionId(questionId);
+                  editor.setSelectedQuestionId(questionId);
                 }
               }}
               onQuestionOrderChange={handleQuestionOrderChange}
@@ -489,7 +429,7 @@ export default function SurveyEditor() {
               onDeletePage={handleDeletePage}
               onUpdatePageDescription={handleUpdatePageDescription}
               onAddResolution={handleAddResolution}
-              onEditResolution={q => setEditingResolution(q)}
+              onEditResolution={q => editor.setEditingResolution(q)}
             />
           </div>
         </div>
@@ -497,42 +437,42 @@ export default function SurveyEditor() {
       <div className="flex-1 h-screen">
         <ReactFlowProvider>
           <VisualEditor
-            questions={questions.filter(q => q.pageId === selectedPageId)}
+            questions={questions.filter(q => q.pageId === editor.selectedPageId)}
             onUpdateQuestions={handleUpdateQuestions}
             pages={pages}
-            selectedQuestionId={selectedQuestionId}
-            setSelectedQuestionId={setSelectedQuestionId}
+            selectedQuestionId={editor.selectedQuestionId}
+            setSelectedQuestionId={editor.setSelectedQuestionId}
             allQuestions={questions}
           />
         </ReactFlowProvider>
       </div>
 
-      {isPreviewOpen && (
+      {editor.isPreviewOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" data-testid="survey-preview-modal">
           <div className="bg-white rounded-lg w-[800px] max-h-[90vh] overflow-auto">
             <div className="p-4 border-b sticky top-0 bg-white flex justify-between items-center">
               <h2 className="text-xl font-semibold">Предпросмотр опроса</h2>
-              <Button variant="ghost" onClick={() => setIsPreviewOpen(false)}>✕</Button>
+              <Button variant="ghost" onClick={() => editor.setIsPreviewOpen(false)}>✕</Button>
             </div>
             <SurveyPreview
               questions={questions}
               pages={pages}
-              onClose={() => setIsPreviewOpen(false)}
+              onClose={() => editor.setIsPreviewOpen(false)}
             />
           </div>
         </div>
       )}
 
-      {editingResolution && (
+      {editor.editingResolution && (
         <ResolutionEditDialog
-          resolutionQuestion={editingResolution}
+          resolutionQuestion={editor.editingResolution}
           questions={questions}
-          open={!!editingResolution}
+          open={!!editor.editingResolution}
           onSave={updated => {
             const updatedQuestions = questions.map(q => q.id === updated.id ? updated : q);
             handleUpdateQuestions(updatedQuestions);
           }}
-          onClose={() => setEditingResolution(null)}
+          onClose={() => editor.setEditingResolution(null)}
         />
       )}
     </div>
