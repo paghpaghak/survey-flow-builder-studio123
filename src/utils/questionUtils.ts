@@ -9,11 +9,11 @@ import {
   QuestionOption
 } from '@survey-platform/shared-types';
 import { 
-  OPTION_BASED_TYPES, 
+  OPTION_BASED_QUESTION_TYPES as OPTION_BASED_TYPES, 
   DEFAULT_PHONE_SETTINGS, 
   DEFAULT_DATE_SETTINGS,
   ERROR_MESSAGES 
-} from '@/constants/question.constants';
+} from '@survey-platform/shared-types';
 import type { QuestionType as SurveyQuestionType } from '@survey-platform/shared-types';
 
 /**

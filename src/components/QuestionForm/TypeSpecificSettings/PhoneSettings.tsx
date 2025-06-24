@@ -1,7 +1,7 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PhoneQuestionSettings } from '@survey-platform/shared-types';
-import { DEFAULT_PHONE_SETTINGS } from '@/constants/question.constants';
+import { DEFAULT_PHONE_SETTINGS } from '@survey-platform/shared-types';
 
 interface PhoneSettingsProps {
   settings?: PhoneQuestionSettings;

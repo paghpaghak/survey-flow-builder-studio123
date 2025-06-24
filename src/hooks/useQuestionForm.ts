@@ -9,7 +9,7 @@ import {
   validateQuestionForm,
   mapQuestionToFormData 
 } from '@/utils/questionUtils';
-import { DEFAULT_OPTIONS } from '@/constants/question.constants';
+import { DEFAULT_OPTIONS } from '@survey-platform/shared-types';
 
 /**
  * <summary>

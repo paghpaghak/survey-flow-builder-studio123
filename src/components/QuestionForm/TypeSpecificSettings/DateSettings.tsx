@@ -1,7 +1,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import type { DateQuestionSettings } from '@survey-platform/shared-types';
-import { DATE_FORMAT_OPTIONS, DEFAULT_DATE_SETTINGS } from '@/constants/question.constants';
+import { DATE_FORMAT_OPTIONS, DEFAULT_DATE_SETTINGS } from '@survey-platform/shared-types';
 
 interface DateSettingsProps {
   settings?: DateQuestionSettings;

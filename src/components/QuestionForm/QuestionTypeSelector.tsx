@@ -1,7 +1,7 @@
 import { QuestionTypeSelectorProps } from '@survey-platform/shared-types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { QUESTION_TYPE_OPTIONS } from '@/constants/question.constants';
+import { QUESTION_TYPE_OPTIONS } from '@survey-platform/shared-types';
 
 /**
  * <summary>

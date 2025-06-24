@@ -3,7 +3,7 @@ import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import type { Question } from '@survey-platform/shared-types';
 import { useState, useCallback } from 'react';
 import { UseParallelBranchResult } from '@/types/question.types';
-import { PARALLEL_BRANCH_LIMITS, ERROR_MESSAGES } from '@/constants/question.constants';
+import { PARALLEL_BRANCH_LIMITS, ERROR_MESSAGES } from '@survey-platform/shared-types';
 
 /**
  * <summary>

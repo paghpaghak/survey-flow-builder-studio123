@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { VariableDropdown } from './VariableDropdown';
-import { PLACEHOLDERS } from '@/constants/question.constants';
+import { PLACEHOLDERS } from '@survey-platform/shared-types';
 
 /**
  * <summary>

@@ -2,7 +2,7 @@ import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PLACEHOLDERS, PARALLEL_DISPLAY_MODES } from '@/constants/question.constants';
+import { PLACEHOLDERS, PARALLEL_DISPLAY_MODES } from '@survey-platform/shared-types';
 import { useParallelBranch } from '@/hooks/useParallelBranch';
 
 interface BranchRepeatSettingsProps {
