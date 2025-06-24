@@ -11,7 +11,7 @@ import { TakeSurvey } from '@/pages/TakeSurvey';
 import { ThankYou } from '@/pages/ThankYou';
 import { SurveyResults } from '@/pages/SurveyResults';
 import { RequireAuth } from '@/components/auth/RequireAuth';
-import LoginPage from '@/app/login/page';
+import LoginPage from '@/pages/LoginPage';
 
 const queryClient = new QueryClient();
 

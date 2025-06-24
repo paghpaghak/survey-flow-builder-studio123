@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 // !!! Укажи путь к своей модели пользователя !!!
-const { User } = require('../lib/models/user.model');
+const { User } = require('../lib/models/user.model.ts');
 
 async function main() {
   await mongoose.connect('mongodb://localhost:27017/survey_db');
