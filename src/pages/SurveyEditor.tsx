@@ -11,6 +11,8 @@ import { ReactFlowProvider } from '@xyflow/react';
 import { SidebarTreeView } from '@/components/survey-editor/SidebarTreeView';
 import ResolutionEditDialog from '@/components/survey-editor/ResolutionEditDialog';
 import { useSurveyEditor, normalizePage } from '@/hooks/useSurveyEditor';
+import { useSurveyOperations } from '@/hooks/useSurveyOperations';
+import { useQuestionOperations } from '@/hooks/useQuestionOperations';
 
 /**
  * <summary>
@@ -38,319 +40,50 @@ function SurveyNotFound({ navigate }: { navigate: () => void }) {
 }
 
 export default function SurveyEditor() {
-  const { updateSurvey } = useSurveyStore();
   const editor = useSurveyEditor();
+  
+  const { survey, currentVersion, questions, pages } = editor;
+  
+  // ВСЕГДА инициализируем хуки (даже если данных нет)
+  // Инициализируем операции с опросами и страницами
+  const surveyOps = useSurveyOperations({
+    survey: survey || {} as any,
+    currentVersion: currentVersion || {} as any,
+    pages: pages || [],
+    selectedPageId: editor.selectedPageId,
+    setSelectedPageId: editor.setSelectedPageId,
+    setSelectedQuestionId: editor.setSelectedQuestionId,
+    selectedQuestionId: editor.selectedQuestionId
+  });
+  
+  // Инициализируем операции с вопросами
+  const questionOps = useQuestionOperations({
+    questions: questions || [],
+    pages: pages || [],
+    currentVersion: currentVersion || {} as any,
+    selectedPageId: editor.selectedPageId,
+    setSelectedQuestionId: editor.setSelectedQuestionId,
+    setPendingPreview: editor.setPendingPreview,
+    updateSurveyVersion: surveyOps.updateSurveyVersion
+  });
 
-  // Теперь return с условием после всех хуков
+  // УСЛОВНАЯ ЛОГИКА ТОЛЬКО ПОСЛЕ ВСЕХ ХУКОВ
   if (!editor.isReady) {
     console.log('SurveyEditor: survey or currentVersion not found, rendering SurveyNotFound');
     return <SurveyNotFound navigate={() => editor.navigate('/')} />;
   }
 
-  const { survey, currentVersion, questions, pages } = editor;
 
-  /**
-   * <summary>
-   * Удаляет вопрос по id из текущей версии опроса.
-   * Включает удаление вложенных вопросов из параллельных групп.
-   * </summary>
-   * <param name="qid">ID вопроса для удаления</param>
-   */
-  function handleDeleteQuestion(qid: string) {
-    const questionToDelete = questions.find(q => q.id === qid);
-    let questionsToDelete = [qid];
 
-    // Если удаляется параллельная группа, добавляем все вложенные вопросы
-    if (questionToDelete?.type === QUESTION_TYPES.ParallelGroup && questionToDelete.parallelQuestions) {
-      questionsToDelete = [...questionsToDelete, ...questionToDelete.parallelQuestions];
-    }
 
-    // Удаляем все связанные вопросы
-    const updatedQuestions = questions.filter(q => !questionsToDelete.includes(q.id));
-    
-    // Также удаляем все transitionRules, которые ссылаются на удаляемые вопросы
-    const cleanedQuestions = updatedQuestions.map(q => ({
-      ...q,
-      transitionRules: q.transitionRules?.filter(rule => !questionsToDelete.includes(rule.nextQuestionId))
-    }));
-    
-    updateSurvey({
-      ...survey,
-      versions: survey.versions.map(v => 
-        v.version === survey.currentVersion 
-          ? { ...v, questions: cleanedQuestions }
-          : v
-      )
-    });
 
-    // Сбрасываем выделение если удаленный вопрос был выделен
-    if (questionsToDelete.includes(editor.selectedQuestionId || '')) {
-      editor.setSelectedQuestionId(undefined);
-    }
-  }
 
-  /**
-   * <summary>
-   * Обновляет вопросы для выбранной страницы, исключая дубликаты по id.
-   * </summary>
-   * <param name="updatedQuestions">Массив вопросов для текущей страницы</param>
-   */
-  function handleUpdateQuestions(updatedQuestions: Question[]) {
-    // Оставляем вопросы других страниц без изменений
-    const otherQuestions = questions.filter(q => !updatedQuestions.some(uq => uq.id === q.id));
-    const allQuestions = [...otherQuestions, ...updatedQuestions];
-    console.log('[SurveyEditor] otherQuestions:', otherQuestions.length);
-    console.log('[SurveyEditor] allQuestions после объединения:', allQuestions.length);
-    // Обновляем только нужные страницы
-    const updatedPages = currentVersion.pages.map(page => normalizePage({
-      ...page,
-      questions: allQuestions.filter(q => q.pageId === page.id)
-    }));
 
-    const uniqueQuestions = Array.from(new Map(allQuestions.map(q => [q.id, q])).values());
-    console.log('[SurveyEditor] uniqueQuestions финальные:', uniqueQuestions.length);
 
-    const updatedVersion = {
-      ...currentVersion,
-      questions: uniqueQuestions,
-      pages: updatedPages,
-      updatedAt: new Date().toISOString()
-    };
 
-    const updatedSurvey = {
-      ...survey,
-      versions: survey.versions.map(v =>
-        v.version === survey.currentVersion ? updatedVersion : v
-      ),
-      updatedAt: new Date().toISOString()
-    };
 
-    updateSurvey(updatedSurvey);
-  }
 
-  /**
-   * <summary>
-   * Обновляет список страниц опроса.
-   * </summary>
-   * <param name="updatedPages">Новый массив страниц</param>
-   */
-  function handleUpdatePages(updatedPages: Page[]) {
-    if (updatedPages.length === 0) {
-      toast.error('Должна быть хотя бы одна страница');
-      return;
-    }
 
-    if (editor.selectedPageId && !updatedPages.find(p => p.id === editor.selectedPageId)) {
-      editor.setSelectedPageId(updatedPages[0].id);
-    }
-
-    const updatedVersion = {
-      ...currentVersion,
-      pages: updatedPages.map(normalizePage),
-      updatedAt: new Date().toISOString()
-    };
-
-    const updatedSurvey = {
-      ...survey,
-      versions: survey.versions.map(v =>
-        v.version === survey.currentVersion ? updatedVersion : v
-      ),
-      updatedAt: new Date().toISOString()
-    };
-
-    updateSurvey(updatedSurvey);
-  }
-
-  /**
-   * <summary>
-   * Добавляет новый вопрос на выбранную страницу.
-   * Автоматически исключает вложенные вопросы параллельных групп из визуального редактора.
-   * </summary>
-   */
-  function handleAddQuestion() {
-    if (pages.length === 0) {
-      toast.error('Создайте хотя бы одну страницу перед добавлением вопроса');
-      return;
-    }
-
-    const targetPageId = editor.selectedPageId || pages[0].id;
-    
-    // Фильтруем вопросы, исключая вложенные в параллельные группы
-    const allParallelQuestionIds = new Set<string>();
-    questions.forEach(q => {
-      if (q.type === QUESTION_TYPES.ParallelGroup && q.parallelQuestions) {
-        q.parallelQuestions.forEach(subId => allParallelQuestionIds.add(subId));
-      }
-    });
-    
-    const pageQuestions = questions.filter(q => 
-      q.pageId === targetPageId && !allParallelQuestionIds.has(q.id)
-    );
-
-    // Определяем номер для нового вопроса на этой странице
-    const nextNumber = pageQuestions.length + 1;
-
-    // Проверяем, что id уникален
-    let newId = crypto.randomUUID();
-    while (questions.some(q => q.id === newId)) {
-      newId = crypto.randomUUID();
-    }
-
-    const newQuestion: Question = {
-      id: newId,
-      pageId: targetPageId,
-      title: `Новый вопрос ${nextNumber}`,
-      type: QUESTION_TYPES.Text,
-      required: false,
-      position: { x: 250, y: pageQuestions.length * 150 },
-      options: undefined
-    };
-
-    // Если тип вопроса — Radio, Checkbox или Select, сразу добавляем два варианта
-    if ([QUESTION_TYPES.Radio, QUESTION_TYPES.Checkbox, QUESTION_TYPES.Select].includes(newQuestion.type)) {
-      newQuestion.options = [
-        { id: crypto.randomUUID(), text: 'Вариант 1' },
-        { id: crypto.randomUUID(), text: 'Вариант 2' }
-      ];
-    }
-
-    const updatedQuestions = [...questions, newQuestion];
-    handleUpdateQuestions(updatedQuestions);
-    
-    // Выделяем новый вопрос
-    editor.setSelectedQuestionId(newQuestion.id);
-  }
-
-  /**
-   * <summary>
-   * Открывает предпросмотр опроса, если есть хотя бы один вопрос.
-   * </summary>
-   */
-  function handlePreviewClick() {
-    // Проверяем количество основных вопросов (исключая вложенные в параллельные группы)
-    const allParallelQuestionIds = new Set<string>();
-    questions.forEach(q => {
-      if (q.type === QUESTION_TYPES.ParallelGroup && q.parallelQuestions) {
-        q.parallelQuestions.forEach(subId => allParallelQuestionIds.add(subId));
-      }
-    });
-    
-    const mainQuestions = questions.filter(q => !allParallelQuestionIds.has(q.id));
-    
-    if (mainQuestions.length === 0) {
-      toast.error('Добавьте хотя бы один вопрос для предпросмотра');
-      return;
-    }
-    editor.setPendingPreview(true);
-  }
-
-  // Функция для удаления страницы
-  function handleDeletePage(pageId: string) {
-    if (pages.length <= 1) {
-      // Не даём удалить последнюю страницу
-      return;
-    }
-    
-    // Удаляем все вопросы со страницы
-    const questionsToDelete = questions.filter(q => q.pageId === pageId).map(q => q.id);
-    const updatedQuestions = questions.filter(q => q.pageId !== pageId);
-    
-    const updatedPages = pages.filter(p => p.id !== pageId);
-    
-    // Обновляем survey с удаленными вопросами и страницей
-    const updatedVersion = {
-      ...currentVersion,
-      questions: updatedQuestions,
-      pages: updatedPages.map(normalizePage),
-      updatedAt: new Date().toISOString()
-    };
-
-    const updatedSurvey = {
-      ...survey,
-      versions: survey.versions.map(v =>
-        v.version === survey.currentVersion ? updatedVersion : v
-      ),
-      updatedAt: new Date().toISOString()
-    };
-
-    updateSurvey(updatedSurvey);
-    
-    if (editor.selectedPageId === pageId) {
-      editor.setSelectedPageId(updatedPages[0]?.id);
-    }
-    
-    // Сбрасываем выделение если удаленный вопрос был выделен
-    if (questionsToDelete.includes(editor.selectedQuestionId || '')) {
-      editor.setSelectedQuestionId(undefined);
-    }
-  }
-
-  const handleQuestionOrderChange = (newQuestions: Question[]) => {
-    handleUpdateQuestions(newQuestions);
-  };
-
-  // Функция для обновления названия страницы
-  function handleUpdatePageTitle(pageId: string, newTitle: string) {
-    const updatedPages = pages.map(page =>
-      page.id === pageId ? { ...page, title: newTitle } : page
-    );
-    handleUpdatePages(updatedPages);
-  }
-
-  // Функция для обновления названия вопроса
-  function handleUpdateQuestionTitle(questionId: string, newTitle: string) {
-    const updatedQuestions = questions.map(q =>
-      q.id === questionId ? { ...q, title: newTitle } : q
-    );
-    handleUpdateQuestions(updatedQuestions);
-  }
-
-  function handleUpdatePageDescription(pageId: string, newDescription: string, position: string) {
-    const updatedPages = pages.map(p =>
-      p.id === pageId ? normalizePage({ ...p, description: newDescription, descriptionPosition: position }) : normalizePage(p)
-    );
-    const updatedVersion = {
-      ...currentVersion,
-      pages: updatedPages,
-      updatedAt: new Date().toISOString()
-    };
-    const updatedSurvey = {
-      ...survey,
-      versions: survey.versions.map(v =>
-        v.version === survey.currentVersion ? updatedVersion : v
-      ),
-      updatedAt: new Date().toISOString()
-    };
-    updateSurvey(updatedSurvey);
-  }
-
-  function handleAddResolution() {
-    if (questions.some(q => q.type === QUESTION_TYPES.Resolution)) {
-      toast.error('В опросе может быть только одна резолюция');
-      return;
-    }
-    if (pages.length === 0) {
-      toast.error('Создайте хотя бы одну страницу перед добавлением резолюции');
-      return;
-    }
-    const lastPageId = pages[pages.length - 1].id;
-    let newId = crypto.randomUUID();
-    while (questions.some(q => q.id === newId)) {
-      newId = crypto.randomUUID();
-    }
-    const newResolution = {
-      id: newId,
-      pageId: lastPageId,
-      title: 'Резолюция',
-      type: QUESTION_TYPES.Resolution,
-      required: false,
-      position: { x: 400, y: 100 },
-      resolutionRules: [],
-      defaultResolution: 'Результат по умолчанию',
-    };
-    handleUpdateQuestions([...questions, newResolution]);
-    editor.setSelectedQuestionId(newResolution.id);
-  }
 
   return (
     <div className="flex h-screen w-full">
@@ -376,10 +109,10 @@ export default function SurveyEditor() {
         </div>
         <div className="text-gray-500 px-4">{survey.description}</div>
         <div className="flex justify-between gap-2 my-6 px-4" style={{ marginBottom: '12px', marginTop: '12px' }}>
-          <Button className="w-[90px] h-10 text-lg" variant="outline" size="icon" onClick={handlePreviewClick} data-testid="preview-btn">
+          <Button className="w-[90px] h-10 text-lg" variant="outline" size="icon" onClick={questionOps.handlePreviewClick} data-testid="preview-btn">
             <Eye className="h-5 w-5" />
           </Button>
-          <Button className="w-[90px] h-10 text-lg" size="icon" onClick={handleAddQuestion} disabled={!editor.selectedPageId} data-testid="add-question-btn">
+          <Button className="w-[90px] h-10 text-lg" size="icon" onClick={questionOps.handleAddQuestion} disabled={!editor.selectedPageId} data-testid="add-question-btn">
             <span title="Добавить вопрос">+</span>
           </Button>
           <Button className="w-[90px] h-10 text-lg" size="icon" onClick={() => {
@@ -388,7 +121,7 @@ export default function SurveyEditor() {
               title: `Страница ${pages.length + 1}`,
               questions: []
             };
-            handleUpdatePages([...pages, newPage]);
+            surveyOps.handleUpdatePages([...pages, newPage]);
             editor.setSelectedPageId(newPage.id);
           }} data-testid="add-page-btn">
             <span title="Добавить страницу">📄</span>
@@ -422,13 +155,13 @@ export default function SurveyEditor() {
                   editor.setSelectedQuestionId(questionId);
                 }
               }}
-              onQuestionOrderChange={handleQuestionOrderChange}
-              onUpdatePageTitle={handleUpdatePageTitle}
-              onUpdateQuestionTitle={handleUpdateQuestionTitle}
-              onDeleteQuestion={handleDeleteQuestion}
-              onDeletePage={handleDeletePage}
-              onUpdatePageDescription={handleUpdatePageDescription}
-              onAddResolution={handleAddResolution}
+              onQuestionOrderChange={questionOps.handleQuestionOrderChange}
+              onUpdatePageTitle={surveyOps.handleUpdatePageTitle}
+              onUpdateQuestionTitle={questionOps.handleUpdateQuestionTitle}
+              onDeleteQuestion={questionOps.handleDeleteQuestion}
+              onDeletePage={(pageId) => surveyOps.handleDeletePage(pageId, questions)}
+              onUpdatePageDescription={surveyOps.handleUpdatePageDescription}
+              onAddResolution={questionOps.handleAddResolution}
               onEditResolution={q => editor.setEditingResolution(q)}
             />
           </div>
@@ -438,7 +171,7 @@ export default function SurveyEditor() {
         <ReactFlowProvider>
           <VisualEditor
             questions={questions.filter(q => q.pageId === editor.selectedPageId)}
-            onUpdateQuestions={handleUpdateQuestions}
+            onUpdateQuestions={questionOps.handleUpdateQuestions}
             pages={pages}
             selectedQuestionId={editor.selectedQuestionId}
             setSelectedQuestionId={editor.setSelectedQuestionId}
@@ -470,7 +203,7 @@ export default function SurveyEditor() {
           open={!!editor.editingResolution}
           onSave={updated => {
             const updatedQuestions = questions.map(q => q.id === updated.id ? updated : q);
-            handleUpdateQuestions(updatedQuestions);
+            questionOps.handleUpdateQuestions(updatedQuestions);
           }}
           onClose={() => editor.setEditingResolution(null)}
         />
