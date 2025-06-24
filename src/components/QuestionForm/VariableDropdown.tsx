@@ -1,9 +1,14 @@
 import { ChevronsUpDown } from 'lucide-react';
-import { VariableDropdownProps } from '@/types/question.types';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Question, QUESTION_TYPES } from '@survey-platform/shared-types';
 import { createVariablePlaceholder } from '@/utils/questionUtils';
+
+interface VariableDropdownProps {
+  availableQuestions: Question[];
+  onVariableSelect: (placeholder: string) => void;
+  disabled?: boolean;
+}
 
 /**
  * <summary>
@@ -14,6 +19,7 @@ import { createVariablePlaceholder } from '@/utils/questionUtils';
 export const VariableDropdown = ({
   availableQuestions,
   onVariableSelect,
+  disabled = false,
 }: VariableDropdownProps) => {
   if (!availableQuestions || availableQuestions.length === 0) {
     return null;
@@ -39,7 +45,7 @@ export const VariableDropdown = ({
           size="sm" 
           variant="outline" 
           type="button" 
-          disabled={filteredQuestions.length === 0}
+          disabled={disabled || filteredQuestions.length === 0}
         >
           Вставить переменную
         </Button>

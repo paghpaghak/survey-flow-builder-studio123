@@ -18,7 +18,6 @@ interface ParallelBranchTabProps {
   onDescriptionChange: (description: string) => void;
   parallelBranch: ReturnType<typeof import('@/hooks/useParallelBranch').useParallelBranch>;
   allQuestions: Question[];
-  control: Control<any>;
   currentQuestionId?: string;
   currentPageId?: string;
   onEditSubQuestion?: (questionId: string) => void;
@@ -38,7 +37,6 @@ export function ParallelBranchTab({
   onDescriptionChange,
   parallelBranch,
   allQuestions,
-  control,
   currentQuestionId,
   currentPageId,
   onEditSubQuestion,

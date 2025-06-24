@@ -5,8 +5,7 @@ import {
 } from '@/components/ui/card';
 import type { SurveyResponse, Question } from '@survey-platform/shared-types';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Bar, BarChart, XAxis, YAxis } from 'recharts';
-import { ResponsiveContainer } from 'recharts';
+import { Bar, BarChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface AnswerStatsProps {
   question: Question;

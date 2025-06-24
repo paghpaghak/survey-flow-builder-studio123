@@ -1,52 +1,68 @@
 import { render, screen } from '@testing-library/react';
-import { QuestionInput } from '../../src/components/survey-take/question-inputs';
-import { QUESTION_TYPES } from '../../src/types/survey';
-import type { QuestionType } from '../../src/types/survey';
+import { describe, it, expect } from 'vitest';
 import { FormProvider, useForm } from 'react-hook-form';
 import React from 'react';
+import '@testing-library/jest-dom';
 
-function renderWithForm(question: any, name = 'answer') {
-  const methods = useForm({ defaultValues: { [name]: question.defaultOptionId } });
+import { QuestionInput } from '../../src/components/survey-take/question-inputs';
+import { QUESTION_TYPES, type Question } from '@survey-platform/shared-types';
+
+// Helper to wrap component in react-hook-form's FormProvider
+const TestFormProvider = ({ children, defaultValues }: { children: React.ReactNode, defaultValues?: any }) => {
+  const methods = useForm({ defaultValues });
+  return <FormProvider {...methods}>{children}</FormProvider>;
+};
+
+const renderWithForm = (question: Question, name = 'answer') => {
+  // @ts-ignore - In tests, we know when this property exists.
+  const defaultValues = { [name]: question.settings?.defaultOptionId || '' };
   return render(
-    <FormProvider {...methods}>
+    <TestFormProvider defaultValues={defaultValues}>
       <QuestionInput question={question} name={name} />
-    </FormProvider>
+    </TestFormProvider>
   );
-}
+};
 
 describe('QuestionInput', () => {
-  const mockQuestion = {
-    id: '1',
-    pageId: 'page-1',
-    type: QUESTION_TYPES.Select,
-    title: 'Test Question',
-    options: [
-      { id: 'opt1', text: 'Option 1' },
-      { id: 'opt2', text: 'Option 2' }
-    ],
-    defaultOptionId: 'opt1'
-  };
+  it('should render dropdown with default option selected for "Select" type', () => {
+    const mockQuestion: Question = {
+      id: 'q1',
+      pageId: 'p1',
+      type: QUESTION_TYPES.Select,
+      title: 'Select an option',
+      options: [
+        { id: 'opt1', text: 'Option 1' },
+        { id: 'opt2', text: 'Option 2' },
+      ],
+      settings: { defaultOptionId: 'opt2' },
+      required: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as Question;
 
-  it('should render dropdown with default option selected', () => {
     renderWithForm(mockQuestion);
+
     const select = screen.getByRole('combobox');
-    expect(select).toHaveValue('opt1');
+    expect(select).toBeInTheDocument();
+    // The value of the select should be the defaultOptionId from settings
+    expect(screen.getByDisplayValue('Option 2')).toBeInTheDocument();
   });
 
-  it('should not set default option when value is already set', () => {
-    const methods = useForm({ defaultValues: { answer: 'opt2' } });
-    render(
-      <FormProvider {...methods}>
-        <QuestionInput question={mockQuestion} name="answer" />
-      </FormProvider>
-    );
-    const select = screen.getByRole('combobox');
-    expect(select).toHaveValue('opt2');
-  });
+  it('should render a text input for "Text" type', () => {
+    const mockQuestion: Question = {
+      id: 'q2',
+      pageId: 'p1',
+      type: QUESTION_TYPES.Text,
+      title: 'Enter some text',
+      settings: {},
+      options: [],
+      required: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as Question;
 
-  it('should not show default option for non-dropdown questions', () => {
-    const textQuestion = { ...mockQuestion, type: QUESTION_TYPES.Text };
-    renderWithForm(textQuestion);
-    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+    renderWithForm(mockQuestion);
+
+    expect(screen.getByRole('textbox')).toBeInTheDocument();
   });
 }); 

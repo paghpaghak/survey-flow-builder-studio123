@@ -1,4 +1,4 @@
-
+{
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "module": "ESNext",
@@ -10,12 +10,18 @@
     "strict": true,
     "skipLibCheck": true,
     "jsx": "react-jsx",
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   },
   "ts-node": {
     "esm": true,
     "experimentalSpecifierResolution": "node"
   },
-  "include": ["server/**/*"],
-  "exclude": ["node_modules"]
+  "include": [
+    "server/**/*"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 } 

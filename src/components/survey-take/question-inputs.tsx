@@ -10,7 +10,6 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { useFormContext, Controller, FieldValues } from 'react-hook-form';
-import { QUESTION_TYPES as QUESTION_TYPES_IMPORT, type QuestionType } from '@survey-platform/shared-types';
 
 interface QuestionInputProps {
   question: Question;
@@ -114,7 +113,7 @@ export function QuestionInput({ question, name }: QuestionInputProps) {
         />
       );
 
-    case QuestionType.Email:
+    case QUESTION_TYPES.Email:
       return (
         <Input
           type="email"
@@ -124,7 +123,7 @@ export function QuestionInput({ question, name }: QuestionInputProps) {
         />
       );
 
-    case QuestionType.Phone:
+    case QUESTION_TYPES.Phone:
       return (
         <Input
           type="tel"

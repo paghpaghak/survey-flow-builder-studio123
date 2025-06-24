@@ -87,21 +87,23 @@ export function SurveyVersionHistory({ surveyId, children }: SurveyVersionHistor
       }
     }
 
-    const updatedVersions = survey.versions.map(v => 
-      v.id === versionId 
-        ? { 
-            ...v, 
+    const updatedVersions = survey.versions.map(v =>
+      v.id === versionId
+        ? {
+            ...v,
             status: newStatus,
-            publishedAt: newStatus === 'published' ? new Date() : v.publishedAt
+            publishedAt: newStatus === 'published' ? new Date().toISOString() : v.publishedAt,
+            updatedAt: new Date().toISOString(),
           }
-        : v
+        : v,
     );
 
     const updatedSurvey = {
       ...survey,
       versions: updatedVersions,
       status: newStatus,
-      publishedVersion: newStatus === 'published' ? updatedVersions.find(v => v.id === versionId)?.version : survey.publishedVersion
+      publishedVersion: newStatus === 'published' ? updatedVersions.find(v => v.id === versionId)?.version : survey.publishedVersion,
+      updatedAt: new Date().toISOString(),
     };
 
     updateSurvey(updatedSurvey);
@@ -119,7 +121,7 @@ export function SurveyVersionHistory({ surveyId, children }: SurveyVersionHistor
     const updatedSurvey = {
       ...survey,
       currentVersion: version,
-      updatedAt: new Date()
+      updatedAt: new Date().toISOString(),
     };
     
     updateSurvey(updatedSurvey);
@@ -131,7 +133,7 @@ export function SurveyVersionHistory({ surveyId, children }: SurveyVersionHistor
     const updatedSurvey = {
       ...survey,
       currentVersion: version,
-      updatedAt: new Date()
+      updatedAt: new Date().toISOString(),
     };
     
     updateSurvey(updatedSurvey);

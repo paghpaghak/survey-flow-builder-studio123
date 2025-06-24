@@ -29,7 +29,8 @@ export function useNodeEvents({ allQuestions, onUpdateQuestions }: UseNodeEvents
         if (q.id === source) {
           const newRule = {
             id: `${source}-${target}`,
-            targetQuestionId: target,
+            nextQuestionId: target,
+            answer: '',
           };
           return {
             ...q,
