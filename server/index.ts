@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { MongoClient, ObjectId } from 'mongodb';
+import { MongoClient, ObjectId, GridFSBucket } from 'mongodb';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './swagger.js';
 import { fileURLToPath } from 'url';
@@ -10,6 +10,8 @@ import { serializeDates } from './utils/serializeDates.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import cookieParser from 'cookie-parser';
+import multer from 'multer';
+import { Readable } from 'stream';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -47,6 +49,14 @@ const client = new MongoClient(uri, {
   tls: true,
   tlsAllowInvalidCertificates: true,
   tlsAllowInvalidHostnames: true
+});
+
+// Multer configuration для загрузки файлов в память
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 100 * 1024 * 1024, // 100MB лимит
+  },
 });
 
 // Initialize collections
@@ -579,6 +589,225 @@ app.get('/api/auth/me', async (req, res) => {
   } catch (error) {
     console.error('Get user error:', error);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/files/upload:
+ *   post:
+ *     summary: Загрузить файл
+ *     tags: [Files]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *               surveyId:
+ *                 type: string
+ *               questionId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Файл успешно загружен
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 fileId:
+ *                   type: string
+ *                 filename:
+ *                   type: string
+ *                 size:
+ *                   type: number
+ *       400:
+ *         description: Ошибка валидации
+ */
+app.post('/api/files/upload', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Файл не предоставлен' });
+    }
+
+    const { surveyId, questionId } = req.body;
+    if (!surveyId || !questionId) {
+      return res.status(400).json({ error: 'surveyId и questionId обязательны' });
+    }
+
+    await client.connect();
+    const db = client.db('survey_db');
+    const bucket = new GridFSBucket(db, { bucketName: 'uploads' });
+
+    // Создаем readable stream из buffer
+    const uploadStream = bucket.openUploadStream(req.file.originalname, {
+      metadata: {
+        surveyId,
+        questionId,
+        originalName: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        uploadedAt: new Date(),
+      },
+    });
+
+    const readableStream = new Readable();
+    readableStream.push(req.file.buffer);
+    readableStream.push(null);
+
+    readableStream.pipe(uploadStream);
+
+    uploadStream.on('finish', () => {
+      res.json({
+        fileId: uploadStream.id.toString(),
+        filename: req.file.originalname,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+      });
+    });
+
+    uploadStream.on('error', (error) => {
+      console.error('Upload error:', error);
+      res.status(500).json({ error: 'Ошибка при загрузке файла' });
+    });
+
+  } catch (error) {
+    console.error('File upload error:', error);
+    res.status(500).json({ error: 'Ошибка сервера при загрузке файла' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/files/{fileId}:
+ *   get:
+ *     summary: Скачать файл
+ *     tags: [Files]
+ *     parameters:
+ *       - in: path
+ *         name: fileId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Файл найден
+ *         content:
+ *           application/octet-stream:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       404:
+ *         description: Файл не найден
+ */
+app.get('/api/files/:fileId', async (req, res) => {
+  try {
+    const { fileId } = req.params;
+    
+    await client.connect();
+    const db = client.db('survey_db');
+    const bucket = new GridFSBucket(db, { bucketName: 'uploads' });
+
+    // Получаем метаданные файла
+    const files = await bucket.find({ _id: new ObjectId(fileId) }).toArray();
+    if (files.length === 0) {
+      return res.status(404).json({ error: 'Файл не найден' });
+    }
+
+    const file = files[0];
+
+    // Устанавливаем заголовки для скачивания
+    res.set({
+      'Content-Type': file.metadata?.mimetype || 'application/octet-stream',
+      'Content-Disposition': `attachment; filename="${file.filename}"`,
+      'Content-Length': file.length,
+    });
+
+    // Создаем stream для скачивания
+    const downloadStream = bucket.openDownloadStream(new ObjectId(fileId));
+    
+    downloadStream.on('error', (error) => {
+      console.error('Download error:', error);
+      if (!res.headersSent) {
+        res.status(404).json({ error: 'Файл не найден' });
+      }
+    });
+
+    downloadStream.pipe(res);
+
+  } catch (error) {
+    console.error('File download error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Ошибка сервера при скачивании файла' });
+    }
+  }
+});
+
+/**
+ * @swagger
+ * /api/files/{fileId}/info:
+ *   get:
+ *     summary: Получить информацию о файле
+ *     tags: [Files]
+ *     parameters:
+ *       - in: path
+ *         name: fileId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Информация о файле
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 fileId:
+ *                   type: string
+ *                 filename:
+ *                   type: string
+ *                 size:
+ *                   type: number
+ *                 mimetype:
+ *                   type: string
+ *                 uploadedAt:
+ *                   type: string
+ *       404:
+ *         description: Файл не найден
+ */
+app.get('/api/files/:fileId/info', async (req, res) => {
+  try {
+    const { fileId } = req.params;
+    
+    await client.connect();
+    const db = client.db('survey_db');
+    const bucket = new GridFSBucket(db, { bucketName: 'uploads' });
+
+    const files = await bucket.find({ _id: new ObjectId(fileId) }).toArray();
+    if (files.length === 0) {
+      return res.status(404).json({ error: 'Файл не найден' });
+    }
+
+    const file = files[0];
+    res.json({
+      fileId: file._id.toString(),
+      filename: file.filename,
+      size: file.length,
+      mimetype: file.metadata?.mimetype,
+      uploadedAt: file.uploadDate,
+      surveyId: file.metadata?.surveyId,
+      questionId: file.metadata?.questionId,
+    });
+
+  } catch (error) {
+    console.error('File info error:', error);
+    res.status(500).json({ error: 'Ошибка сервера при получении информации о файле' });
   }
 });
 

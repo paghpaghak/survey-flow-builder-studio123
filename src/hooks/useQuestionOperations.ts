@@ -1,6 +1,7 @@
 import { toast } from 'sonner';
 import { QUESTION_TYPES } from '@survey-platform/shared-types';
 import type { Question, Page } from '@survey-platform/shared-types';
+import { getDefaultSettingsForType } from '@/utils/questionUtils';
 import { normalizePage } from './useSurveyEditor';
 
 interface UseQuestionOperationsProps {
@@ -140,7 +141,8 @@ export function useQuestionOperations({
       type: QUESTION_TYPES.Text,
       required: false,
       position: { x: 250, y: pageQuestions.length * 150 },
-      options: undefined
+      options: undefined,
+      settings: getDefaultSettingsForType(QUESTION_TYPES.Text)
     };
 
     // Если тип вопроса — Radio, Checkbox или Select, сразу добавляем два варианта
@@ -198,7 +200,6 @@ export function useQuestionOperations({
       return;
     }
     
-    const lastPageId = pages[pages.length - 1].id;
     let newId = crypto.randomUUID();
     while (questions.some(q => q.id === newId)) {
       newId = crypto.randomUUID();
@@ -206,7 +207,7 @@ export function useQuestionOperations({
     
     const newResolution: Question = {
       id: newId,
-      pageId: lastPageId,
+      pageId: '', // Резолюция не привязана к конкретной странице
       title: 'Резолюция',
       type: QUESTION_TYPES.Resolution,
       required: false,

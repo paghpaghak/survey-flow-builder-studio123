@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Page } from '@survey-platform/shared-types';
 import { cn } from '@/lib/utils';
 import { ChevronDown, ChevronRight, Trash, Pencil } from 'lucide-react';
+import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 
 interface PageHeaderProps {
   page: Page;
@@ -40,6 +41,7 @@ export function PageHeader({
   setEditDescription,
   setDescriptionPosition,
 }: PageHeaderProps) {
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   return (
     <div
       onClick={() => {
@@ -109,7 +111,7 @@ export function PageHeader({
             title="Удалить страницу"
             onClick={e => {
               e.stopPropagation();
-              if (window.confirm('Удалить страницу?')) onDeletePage(page.id);
+              setShowDeleteDialog(true);
             }}
           >
             <Trash className="w-4 h-4" />
@@ -132,6 +134,15 @@ export function PageHeader({
           <Pencil className="w-4 h-4" />
         </button>
       </div>
+
+      {/* Диалог подтверждения удаления */}
+      <ConfirmDeleteDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Удалить страницу"
+        description={`Вы действительно хотите удалить страницу "${page.title}"? Это действие нельзя отменить.`}
+        onConfirm={() => onDeletePage?.(page.id)}
+      />
     </div>
   );
 } 

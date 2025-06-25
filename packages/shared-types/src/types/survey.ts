@@ -21,6 +21,7 @@ export const QUESTION_TYPES = {
   Date: 'date',
   Phone: 'phone',
   Email: 'email',
+  FileUpload: 'file_upload',
   ParallelGroup: 'parallel_group',
   Resolution: 'resolution',
 } as const;
@@ -35,6 +36,18 @@ export interface DateSettings {
 export interface PhoneSettings {
   countryCode?: string;
   mask?: string;
+}
+
+export interface TextSettings {
+  inputMask?: string;        // Маска ввода (например, "+7 (999) 999-99-99")
+  placeholder?: string;      // Подсказка для пользователя
+  maxLength?: number;        // Максимальная длина ввода
+  showTitleInside?: boolean; // Показывать заголовок вопроса внутри поля ввода
+}
+
+export interface SelectSettings {
+  defaultOptionId?: string;  // ID варианта ответа, выбранного по умолчанию
+  placeholder?: string;      // Текст placeholder для выпадающего списка
 }
 
 export interface NumberSettings {
@@ -54,16 +67,25 @@ export interface ParallelBranchSettings {
   countRequired?: boolean; // Обязательность
 }
 
+export interface FileUploadSettings {
+  allowedTypes: string[];           // ['image/*', 'application/pdf']
+  maxFileSize: number;              // в байтах
+  maxFiles: number;                 // максимальное количество файлов
+  buttonText?: string;              // текст кнопки
+  helpText?: string;                // подсказка
+}
+
 // Тип для настроек вопроса в зависимости от его типа
 export type QuestionTypeSettings = {
   [QUESTION_TYPES.Date]: DateSettings;
   [QUESTION_TYPES.Phone]: PhoneSettings;
-  [QUESTION_TYPES.Text]: Record<string, never>;
+  [QUESTION_TYPES.Text]: TextSettings;
   [QUESTION_TYPES.Radio]: Record<string, never>;
   [QUESTION_TYPES.Checkbox]: Record<string, never>;
-  [QUESTION_TYPES.Select]: Record<string, never>;
+  [QUESTION_TYPES.Select]: SelectSettings;
   [QUESTION_TYPES.Email]: Record<string, never>;
   [QUESTION_TYPES.Number]: NumberSettings;
+  [QUESTION_TYPES.FileUpload]: FileUploadSettings;
   [QUESTION_TYPES.ParallelGroup]: ParallelBranchSettings;
   [QUESTION_TYPES.Resolution]: Record<string, never>;
 };
@@ -127,12 +149,26 @@ export interface Question {
 }
 
 // Тип для ответов на вопросы
-export type QuestionAnswer = string | number | Date | string[] | ParallelAnswer;
+export type QuestionAnswer = string | number | Date | string[] | ParallelAnswer | FileUploadAnswer;
 
 // Тип для ответов на параллельные вопросы
 export interface ParallelAnswer {
   count: number;  // Количество повторений
   answers: Record<string, QuestionAnswer[]>;  // Ответы для каждого повторения
+}
+
+// Тип для ответов на загрузку файлов
+export interface FileUploadAnswer {
+  files: UploadedFile[];
+}
+
+export interface UploadedFile {
+  id: string;                 // уникальный ID файла
+  name: string;               // оригинальное имя
+  size: number;               // размер в байтах
+  type: string;               // MIME type
+  uploadedAt: string;         // дата загрузки файла
+  serverFileId?: string;      // ID файла на сервере (GridFS)
 }
 
 /**

@@ -182,6 +182,7 @@ export default function SurveyView() {
               questions={questions}
               pages={pages}
               onClose={() => setIsPreviewOpen(false)}
+              surveyId={survey.id}
             />
           </div>
         </div>

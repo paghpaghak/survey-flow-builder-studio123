@@ -1,5 +1,5 @@
 import React from 'react';
-import { Question, QUESTION_TYPES } from '@survey-platform/shared-types';
+import { Question, QUESTION_TYPES, TextSettings } from '@survey-platform/shared-types';
 import { Label } from '@/components/ui/label';
 import { PlaceholderText } from '@/components/ui/placeholder-text';
 import { ParallelGroupRenderer } from '@/components/survey-editor/ParallelGroupRenderer';
@@ -12,14 +12,24 @@ interface PagePreviewProps {
   pages: { id: string; description: string }[];
   pageId: string;
   page?: { description: string };
+  surveyId?: string;
 }
 
-export function PagePreview({ questions, answers, onAnswerChange, pages, pageId, page }: PagePreviewProps) {
+export function PagePreview({ questions, answers, onAnswerChange, pages, pageId, page, surveyId }: PagePreviewProps) {
   // ЛОГИРУЮ входные пропсы
   console.log('[PagePreview] questions:', questions);
   console.log('[PagePreview] answers:', answers);
   console.log('[PagePreview] pages:', pages);
   console.log('[PagePreview] pageId:', pageId);
+
+  // Функция для проверки нужно ли скрывать заголовок вопроса
+  const shouldHideTitle = (question: Question) => {
+    if (question.type === QUESTION_TYPES.Text) {
+      const textSettings = question.settings as TextSettings | undefined;
+      return textSettings?.showTitleInside === true;
+    }
+    return false;
+  };
 
   // Получаем индекс текущей страницы
   const pageIndex = pages.findIndex(p => p.id === pageId);
@@ -56,7 +66,7 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
     
     return (
       <div className="space-y-6">
-        {page?.description && (
+        {page?.description && page.description.trim() && (
           <div className="mb-4 text-muted-foreground">
             <PlaceholderText text={page.description} answers={answers} questions={questions} />
           </div>
@@ -64,10 +74,12 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
         {pageQuestions.map((question) => (
           <div key={question.id} className="space-y-2">
             <div className="space-y-1">
-              <Label className="text-base">
-                {question.title}
-                {question.required && <span className="text-red-500 ml-1">*</span>}
-              </Label>
+              {!shouldHideTitle(question) && (
+                <Label className="text-base">
+                  {question.title}
+                  {question.required && <span className="text-red-500 ml-1">*</span>}
+                </Label>
+              )}
               {question.description && (
                 <p className="text-sm text-gray-500">
                   <PlaceholderText text={question.description} answers={answers} questions={questions} />
@@ -83,9 +95,10 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
                 repeatIndexes={repeatIndexes}
                 onRepeatIndexChange={handleRepeatIndex}
                 mode="preview"
+                surveyId={surveyId}
               />
             ) : (
-              renderQuestion(question, questions, answers, onAnswerChange)
+              renderQuestion(question, questions, answers, onAnswerChange, undefined, surveyId)
             )}
           </div>
         ))}
@@ -134,17 +147,19 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
 
   return (
     <div className="space-y-6">
-      {page?.description && (
+      {page?.description && page.description.trim() && (
         <div className="mb-4 text-muted-foreground">
           <PlaceholderText text={page.description} answers={answers} questions={questions} />
         </div>
       )}
       <div key={currentQuestion.id} className="space-y-2">
         <div className="space-y-1">
-          <Label className="text-base">
-            {currentQuestion.title}
-            {currentQuestion.required && <span className="text-red-500 ml-1">*</span>}
-          </Label>
+          {!shouldHideTitle(currentQuestion) && (
+            <Label className="text-base">
+              {currentQuestion.title}
+              {currentQuestion.required && <span className="text-red-500 ml-1">*</span>}
+            </Label>
+          )}
           {currentQuestion.description && (
             <p className="text-sm text-gray-500">
               <PlaceholderText text={currentQuestion.description} answers={answers} questions={questions} />
@@ -158,9 +173,10 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
             answers={answers}
             onAnswerChange={onAnswerChange}
             mode="preview"
+            surveyId={surveyId}
           />
         ) : (
-          renderQuestion(currentQuestion, questions, answers, handleAnswer)
+          renderQuestion(currentQuestion, questions, answers, handleAnswer, undefined, surveyId)
         )}
       </div>
     </div>

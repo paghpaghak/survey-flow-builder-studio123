@@ -7,13 +7,11 @@ interface SurveyTableProps {
   surveys: Survey[];
   isAdmin: boolean;
   showDeleteDialog: string | null;
-  showVersionHistory: string | null;
   getStatusColor: (status: string) => string;
   handleDuplicateSurvey: (survey: Survey) => Promise<void>;
   setShowDeleteDialog: (id: string | null) => void;
   deleteSurvey: (id: string) => Promise<void>;
   reloadSurveys?: () => void;
-  setShowVersionHistory: (id: string | null) => void;
   setEditingSurvey: (survey: Survey | null) => void;
 }
 
@@ -21,13 +19,11 @@ export function SurveyTable({
   surveys,
   isAdmin,
   showDeleteDialog,
-  showVersionHistory,
   getStatusColor,
   handleDuplicateSurvey,
   setShowDeleteDialog,
   deleteSurvey,
   reloadSurveys,
-  setShowVersionHistory,
   setEditingSurvey,
 }: SurveyTableProps) {
   return (
@@ -52,13 +48,11 @@ export function SurveyTable({
               index={idx}
               isAdmin={isAdmin}
               showDeleteDialog={showDeleteDialog}
-              showVersionHistory={showVersionHistory}
               getStatusColor={getStatusColor}
               handleDuplicateSurvey={handleDuplicateSurvey}
               setShowDeleteDialog={setShowDeleteDialog}
               deleteSurvey={deleteSurvey}
               reloadSurveys={reloadSurveys}
-              setShowVersionHistory={setShowVersionHistory}
               setEditingSurvey={setEditingSurvey}
             />
           ))}

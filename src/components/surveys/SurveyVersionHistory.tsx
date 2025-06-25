@@ -48,10 +48,14 @@ const STATUS_COLORS: Record<SurveyStatus, string> = {
 interface SurveyVersionHistoryProps {
   surveyId: string;
   children?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function SurveyVersionHistory({ surveyId, children }: SurveyVersionHistoryProps) {
-  const [open, setOpen] = useState(false);
+export function SurveyVersionHistory({ surveyId, children, open: externalOpen, onOpenChange }: SurveyVersionHistoryProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setOpen = onOpenChange || setInternalOpen;
   const [compareMode, setCompareMode] = useState(false);
   const [selectedVersions, setSelectedVersions] = useState<number[]>([]);
   const { surveys, revertToVersion, createNewVersion, updateSurvey } = useSurveyStore();
@@ -190,13 +194,15 @@ export function SurveyVersionHistory({ surveyId, children }: SurveyVersionHistor
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children || (
-          <Button variant="outline" size="icon" className="h-9 w-9">
-            <History className="h-4 w-4" />
-          </Button>
-        )}
-      </DialogTrigger>
+      {externalOpen === undefined && (
+        <DialogTrigger asChild>
+          {children || (
+            <Button variant="outline" size="icon" className="h-9 w-9">
+              <History className="h-4 w-4" />
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-[80vw] min-w-[800px]">
         <DialogHeader className="flex flex-row items-center justify-between">
           <DialogTitle>История версий опроса</DialogTitle>

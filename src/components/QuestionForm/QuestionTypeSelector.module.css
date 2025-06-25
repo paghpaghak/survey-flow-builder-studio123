@@ -1,0 +1,21 @@
+.questionTypeSelector {
+  position: relative;
+}
+
+.questionTypeSelector [data-radix-select-content] {
+  top: 100% !important;
+  bottom: auto !important;
+  transform: translateY(4px) !important;
+}
+
+/* Принудительное позиционирование вниз для Radix Select */
+:global([data-radix-select-content][data-side="top"]) {
+  top: 100% !important;
+  bottom: auto !important;
+  transform: translateY(4px) !important;
+}
+
+:global([data-radix-select-content]) {
+  max-height: 16rem !important;
+  overflow-y: auto !important;
+} 

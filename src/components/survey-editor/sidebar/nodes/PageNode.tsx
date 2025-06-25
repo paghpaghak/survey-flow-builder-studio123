@@ -2,7 +2,7 @@ import React from 'react';
 import { Page, Question } from '@survey-platform/shared-types';
 import { cn } from '@/lib/utils';
 import { usePageNodeLogic } from '../hooks/usePageNodeLogic';
-import { ResolutionDisplay, PageHeader, PageContent, PageEditDialog } from '../components';
+import { PageHeader, PageContent, PageEditDialog } from '../components';
 
 // We need to pass a lot of props from the main TreeView.
 // This is acceptable for now to avoid premature context creation.
@@ -89,7 +89,6 @@ export const PageNode: React.FC<PageNodeProps> = ({
     isSelected,
     isPageExpanded,
     availableQuestions,
-    resolution,
   } = usePageNodeLogic({
     page,
     pages,
@@ -98,18 +97,6 @@ export const PageNode: React.FC<PageNodeProps> = ({
     editingPageId,
     expandedPages,
   });
-
-  // Если есть резолюция, показываем только её
-  if (resolution) {
-    return (
-      <ResolutionDisplay
-        resolution={resolution}
-        selectedQuestionId={selectedQuestionId}
-        onSelectQuestion={onSelectQuestion}
-        onEditResolution={onEditResolution}
-      />
-    );
-  }
 
   return (
     <div

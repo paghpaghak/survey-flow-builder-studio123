@@ -94,9 +94,9 @@ export function BranchQuestionsList({
       {/* Селект для добавления вопросов */}
       {!readOnly && availableForSelection.length > 0 && (
         <Select
-          value=""
+          value="placeholder"
           onValueChange={(value) => {
-            if (value) {
+            if (value && value !== 'placeholder') {
               parallelBranch.addQuestion(value);
             }
           }}
@@ -105,6 +105,9 @@ export function BranchQuestionsList({
             <SelectValue placeholder="Добавить вопрос" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem key="placeholder" value="placeholder" disabled>
+              Добавить вопрос
+            </SelectItem>
             {availableForSelection.map((q) => (
               <SelectItem key={q.id} value={q.id}>
                 {q.title}

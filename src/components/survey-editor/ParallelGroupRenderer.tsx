@@ -13,6 +13,7 @@ interface ParallelGroupRendererProps {
   repeatIndexes?: Record<string, number>;
   onRepeatIndexChange?: (questionId: string, index: number) => void;
   mode?: 'preview' | 'taking'; // режим работы - предпросмотр или реальное прохождение
+  surveyId?: string;
 }
 
 /**
@@ -26,7 +27,8 @@ export function ParallelGroupRenderer({
   onAnswerChange,
   repeatIndexes,
   onRepeatIndexChange,
-  mode = 'preview'
+  mode = 'preview',
+  surveyId
 }: ParallelGroupRendererProps) {
   const {
     settings,
@@ -67,6 +69,7 @@ export function ParallelGroupRenderer({
             count={count}
             activeTab={activeTab}
             setActiveTab={setActiveTab}
+            surveyId={surveyId}
           />
         ) : (
           <ParallelGroupSequential
@@ -76,6 +79,7 @@ export function ParallelGroupRenderer({
             onAnswerChange={onAnswerChange}
             settings={settings}
             count={count}
+            surveyId={surveyId}
           />
         )
       ) : count > 0 && !hasSubQuestions ? (

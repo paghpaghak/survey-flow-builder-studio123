@@ -1,6 +1,8 @@
 'use client';
 
-import { Question, QUESTION_TYPES } from '@survey-platform/shared-types';
+import React from 'react';
+import { Question, QUESTION_TYPES, TextSettings, SelectSettings } from '@survey-platform/shared-types';
+import { migrateMask } from '@/utils/maskMigration';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -10,25 +12,99 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { useFormContext, Controller, FieldValues } from 'react-hook-form';
+import InputMask from 'react-input-mask';
 
 interface QuestionInputProps {
   question: Question;
   name: string;
 }
 
+interface SelectInputProps {
+  question: Question;
+  name: string;
+}
+
+function SelectInput({ question, name }: SelectInputProps) {
+  const { setValue, watch } = useFormContext();
+  const value = watch(name);
+  const selectSettings = question.settings as SelectSettings | undefined;
+  const placeholder = selectSettings?.placeholder || "Выберите вариант";
+
+  // Устанавливаем дефолтное значение если оно есть и значение еще не выбрано
+  React.useEffect(() => {
+    if (selectSettings?.defaultOptionId && !value) {
+      setValue(name, selectSettings.defaultOptionId);
+    }
+  }, [selectSettings?.defaultOptionId, value, setValue, name]);
+
+  return (
+    <Select
+      value={value}
+      onValueChange={(val) => setValue(name, val)}
+    >
+      <SelectTrigger>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {question.options?.map((option) => (
+          <SelectItem key={option.id} value={option.id}>
+            {option.text}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
 export function QuestionInput({ question, name }: QuestionInputProps) {
-  const { register, setValue, watch } = useFormContext();
+  const { register, setValue, watch, control } = useFormContext();
   const value = watch(name);
 
   switch (question.type) {
-    case QUESTION_TYPES.Text:
+    case QUESTION_TYPES.Text: {
+      const textSettings = question.settings as TextSettings | undefined;
+      // Если включена настройка showTitleInside, используем заголовок вопроса как placeholder
+      const placeholder = textSettings?.showTitleInside 
+        ? question.title 
+        : (textSettings?.placeholder || "Введите ответ");
+      const maxLength = textSettings?.maxLength;
+      const inputMask = migrateMask(textSettings?.inputMask);
+
+      if (inputMask) {
+        return (
+          <Controller
+            name={name}
+            control={control}
+            render={({ field }) => (
+              <InputMask
+                mask={inputMask}
+                value={field.value || ''}
+                onChange={field.onChange}
+                maskChar="_"
+              >
+                {(inputProps: any) => (
+                  <Input
+                    {...inputProps}
+                    placeholder={placeholder}
+                    required={question.required}
+                    maxLength={maxLength}
+                  />
+                )}
+              </InputMask>
+            )}
+          />
+        );
+      }
+
       return (
         <Input
           {...register(name)}
-          placeholder="Введите ответ"
+          placeholder={placeholder}
           required={question.required}
+          maxLength={maxLength}
         />
       );
+    }
 
     case QUESTION_TYPES.Number:
       return (
@@ -86,23 +162,7 @@ export function QuestionInput({ question, name }: QuestionInputProps) {
       );
 
     case QUESTION_TYPES.Select:
-      return (
-        <Select
-          value={value}
-          onValueChange={(val) => setValue(name, val)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Выберите вариант" />
-          </SelectTrigger>
-          <SelectContent>
-            {question.options?.map((option) => (
-              <SelectItem key={option.id} value={option.id}>
-                {option.text}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      );
+      return <SelectInput question={question} name={name} />;
 
     case QUESTION_TYPES.Date:
       return (

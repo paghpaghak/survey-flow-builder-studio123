@@ -144,6 +144,7 @@ export default function QuestionEditDialog({
                   settings={formData.settings}
                   onChange={(settings) => updateField('settings', settings)}
                   readOnly={readOnly}
+                  question={formData}
                 />
               </TabsContent>
 

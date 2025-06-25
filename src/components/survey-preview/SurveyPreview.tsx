@@ -5,6 +5,7 @@ import {
   Question,
   Page,
   QUESTION_TYPES,
+  FileUploadAnswer,
 } from '@survey-platform/shared-types';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -14,9 +15,10 @@ interface SurveyPreviewProps {
   questions: Question[];
   pages: { id: string; title: string; description?: string }[];
   onClose: () => void;
+  surveyId?: string;
 }
 
-export function SurveyPreview({ questions, pages, onClose }: SurveyPreviewProps) {
+export function SurveyPreview({ questions, pages, onClose, surveyId }: SurveyPreviewProps) {
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({});
 
@@ -86,6 +88,9 @@ export function SurveyPreview({ questions, pages, onClose }: SurveyPreviewProps)
       case QUESTION_TYPES.Radio:
       case QUESTION_TYPES.Select:
         return answer !== '';
+      case QUESTION_TYPES.FileUpload:
+        const fileAnswer = answer as FileUploadAnswer;
+        return fileAnswer && fileAnswer.files && fileAnswer.files.length > 0;
       default:
         return !!answer;
     }
@@ -145,7 +150,6 @@ export function SurveyPreview({ questions, pages, onClose }: SurveyPreviewProps)
     
     // В реальном приложении здесь бы отправляли данные на сервер
     console.log('[SurveyPreview] Submitting answers:', answers);
-    toast.success('Опрос завершен!');
     onClose();
   };
 
@@ -159,9 +163,10 @@ export function SurveyPreview({ questions, pages, onClose }: SurveyPreviewProps)
         questions={questions}
         answers={answers}
         onAnswerChange={handleAnswerChange}
-        pages={pages.map(p => ({ id: p.id, description: p.description || p.title }))}
+        pages={pages.map(p => ({ id: p.id, description: p.description || '' }))}
         pageId={currentPage.id}
-        page={{ description: currentPage.description || currentPage.title }}
+        page={{ description: currentPage.description }}
+        surveyId={surveyId}
       />
 
       <div className="flex items-center justify-between mt-4 relative">

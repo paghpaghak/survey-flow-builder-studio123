@@ -1,5 +1,6 @@
 import React from 'react';
-import { Question, QUESTION_TYPES } from '@survey-platform/shared-types';
+import { Question, QUESTION_TYPES, FileUploadSettings, FileUploadAnswer, TextSettings, SelectSettings } from '@survey-platform/shared-types';
+import { migrateMask } from '@/utils/maskMigration';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -12,6 +13,46 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { IMaskInput } from 'react-imask';
 import { format } from 'date-fns';
+import { FileUploadInput } from '@/components/survey-take/FileUploadInput';
+
+interface PreviewSelectInputProps {
+  question: Question;
+  currentAnswer: any;
+  answerHandler: (id: string, value: any) => void;
+}
+
+function PreviewSelectInput({ question, currentAnswer, answerHandler }: PreviewSelectInputProps) {
+  const selectSettings = question.settings as SelectSettings | undefined;
+  const placeholder = selectSettings?.placeholder || "Выберите ответ";
+  
+  // Определяем значение: используем current answer или дефолтное значение
+  const selectValue = currentAnswer || selectSettings?.defaultOptionId || '';
+
+  // Если есть дефолтное значение, но в ответах его нет - устанавливаем его
+  React.useEffect(() => {
+    if (selectSettings?.defaultOptionId && !currentAnswer) {
+      answerHandler(question.id, selectSettings.defaultOptionId);
+    }
+  }, [selectSettings?.defaultOptionId, currentAnswer, question.id, answerHandler]);
+
+  return (
+    <Select
+      value={selectValue}
+      onValueChange={(value) => answerHandler(question.id, value)}
+    >
+      <SelectTrigger>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {question.options?.map(option => (
+          <SelectItem key={option.id} value={option.id}>
+            {option.text}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
 
 /**
  * Переиспользуемая функция для рендеринга отдельного вопроса
@@ -22,7 +63,8 @@ export function renderQuestion(
   questions: Question[],
   answers: Record<string, any>,
   answerHandler: (id: string, value: any) => void,
-  repeatIndex?: number // Добавляем параметр для индекса повторения
+  repeatIndex?: number, // Добавляем параметр для индекса повторения
+  surveyId?: string // Добавляем surveyId для загрузки файлов
 ) {
   // Получаем ответ для текущего вопроса с учетом индекса повторения
   const answerKey = repeatIndex !== undefined ? `${question.id}_${repeatIndex}` : question.id;
@@ -35,14 +77,35 @@ export function renderQuestion(
       return null;
     }
 
-    case QUESTION_TYPES.Text:
+    case QUESTION_TYPES.Text: {
+      const textSettings = question.settings as TextSettings | undefined;
+      // Если включена настройка showTitleInside, используем заголовок вопроса как placeholder
+      const placeholder = textSettings?.showTitleInside 
+        ? question.title 
+        : (textSettings?.placeholder || "Введите ваш ответ");
+      const inputMask = migrateMask(textSettings?.inputMask);
+
+      if (inputMask) {
+        return (
+          <IMaskInput
+            mask={inputMask}
+            value={currentAnswer || ''}
+            onAccept={(value) => answerHandler(question.id, value)}
+            placeholder={placeholder}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          />
+        );
+      }
+      
       return (
         <Input
           value={currentAnswer || ''}
           onChange={(e) => answerHandler(question.id, e.target.value)}
-          placeholder="Введите ваш ответ"
+          placeholder={placeholder}
+          maxLength={textSettings?.maxLength}
         />
       );
+    }
 
     case QUESTION_TYPES.Number:
       return (
@@ -94,21 +157,11 @@ export function renderQuestion(
 
     case QUESTION_TYPES.Select:
       return (
-        <Select
-          value={currentAnswer}
-          onValueChange={(value) => answerHandler(question.id, value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Выберите ответ" />
-          </SelectTrigger>
-          <SelectContent>
-            {question.options?.map(option => (
-              <SelectItem key={option.id} value={option.id}>
-                {option.text}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <PreviewSelectInput
+          question={question}
+          currentAnswer={currentAnswer}
+          answerHandler={answerHandler}
+        />
       );
 
     case QUESTION_TYPES.Date:
@@ -158,6 +211,19 @@ export function renderQuestion(
           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         />
       );
+
+    case QUESTION_TYPES.FileUpload:
+      const fileSettings = question.settings as FileUploadSettings;
+      return (
+        <FileUploadInput
+          settings={fileSettings}
+          value={currentAnswer as FileUploadAnswer}
+          onChange={(value) => answerHandler(question.id, value)}
+          surveyId={surveyId}
+          questionId={question.id}
+        />
+      );
+
     default:
       return <p>Неизвестный тип вопроса: {question.type}</p>;
   }

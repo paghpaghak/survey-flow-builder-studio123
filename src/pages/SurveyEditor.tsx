@@ -107,7 +107,6 @@ export default function SurveyEditor() {
             {survey.title}
           </span>
         </div>
-        <div className="text-gray-500 px-4">{survey.description}</div>
         <div className="flex justify-between gap-2 my-6 px-4" style={{ marginBottom: '12px', marginTop: '12px' }}>
           <Button className="w-[90px] h-10 text-lg" variant="outline" size="icon" onClick={questionOps.handlePreviewClick} data-testid="preview-btn">
             <Eye className="h-5 w-5" />
@@ -191,6 +190,7 @@ export default function SurveyEditor() {
               questions={questions}
               pages={pages}
               onClose={() => editor.setIsPreviewOpen(false)}
+              surveyId={survey.id}
             />
           </div>
         </div>

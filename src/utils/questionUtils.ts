@@ -6,12 +6,16 @@ import {
   SurveyVersion,
   QUESTION_TYPES,
   QuestionFormData,
-  QuestionOption
+  QuestionOption,
+  ParallelBranchSettings
 } from '@survey-platform/shared-types';
 import { 
   OPTION_BASED_QUESTION_TYPES as OPTION_BASED_TYPES, 
+  DEFAULT_TEXT_SETTINGS,
+  DEFAULT_SELECT_SETTINGS,
   DEFAULT_PHONE_SETTINGS, 
   DEFAULT_DATE_SETTINGS,
+  DEFAULT_FILE_UPLOAD_SETTINGS,
   ERROR_MESSAGES 
 } from '@survey-platform/shared-types';
 import type { QuestionType as SurveyQuestionType } from '@survey-platform/shared-types';
@@ -28,10 +32,25 @@ export const needsOptions = (type: QuestionType): boolean => {
  */
 export const getDefaultSettingsForType = (type: QuestionType) => {
   switch (type) {
+    case QUESTION_TYPES.Text:
+      return DEFAULT_TEXT_SETTINGS;
+    case QUESTION_TYPES.Select:
+      return DEFAULT_SELECT_SETTINGS;
     case QUESTION_TYPES.Phone:
       return DEFAULT_PHONE_SETTINGS;
     case QUESTION_TYPES.Date:
       return DEFAULT_DATE_SETTINGS;
+    case QUESTION_TYPES.FileUpload:
+      return DEFAULT_FILE_UPLOAD_SETTINGS;
+    case QUESTION_TYPES.ParallelGroup:
+      return {
+        sourceQuestionId: '',
+        itemLabel: 'Элемент',
+        displayMode: 'tabs' as const,
+        minItems: 1,
+        maxItems: 5,
+        countRequired: false
+      } as ParallelBranchSettings;
     default:
       return undefined;
   }
@@ -50,6 +69,7 @@ export const getQuestionTypeName = (type: QuestionType): string => {
     [QUESTION_TYPES.Email]: 'Email',
     [QUESTION_TYPES.Phone]: 'Телефон',
     [QUESTION_TYPES.Number]: 'Число',
+    [QUESTION_TYPES.FileUpload]: 'Загрузка документов',
     [QUESTION_TYPES.ParallelGroup]: 'Параллельная ветка',
     [QUESTION_TYPES.Resolution]: 'Резолюция',
   };

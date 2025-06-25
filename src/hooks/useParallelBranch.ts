@@ -23,7 +23,7 @@ export function useParallelBranch(
   const [settings, setSettings] = useState<ParallelBranchSettings>(() => ({
     sourceQuestionId: initialSettings.sourceQuestionId || '',
     itemLabel: initialSettings.itemLabel || '',
-    displayMode: initialSettings.displayMode || 'sequential',
+    displayMode: initialSettings.displayMode || 'tabs',
     minItems: initialSettings.minItems || PARALLEL_BRANCH_LIMITS.DEFAULT_MIN,
     maxItems: Math.min(initialSettings.maxItems || PARALLEL_BRANCH_LIMITS.DEFAULT_MAX, PARALLEL_BRANCH_LIMITS.MAX_ITEMS),
     countLabel: initialSettings.countLabel,

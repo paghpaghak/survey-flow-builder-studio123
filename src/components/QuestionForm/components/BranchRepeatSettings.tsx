@@ -1,8 +1,8 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PLACEHOLDERS, PARALLEL_DISPLAY_MODES } from '@survey-platform/shared-types';
+
+import { PLACEHOLDERS } from '@survey-platform/shared-types';
 import { useParallelBranch } from '@/hooks/useParallelBranch';
 
 interface BranchRepeatSettingsProps {
@@ -61,27 +61,7 @@ export function BranchRepeatSettings({
       </div>
 
       {/* Режим отображения */}
-      <div className="space-y-2">
-        <Label htmlFor="display-mode">Режим отображения</Label>
-        <Select
-          value={parallelBranch.settings.displayMode}
-          onValueChange={(value: 'sequential' | 'tabs') => 
-            parallelBranch.updateSettings({ displayMode: value })
-          }
-          disabled={readOnly}
-        >
-          <SelectTrigger id="display-mode">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {PARALLEL_DISPLAY_MODES.map(mode => (
-              <SelectItem key={mode.value} value={mode.value}>
-                {mode.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+
     </>
   );
 } 
