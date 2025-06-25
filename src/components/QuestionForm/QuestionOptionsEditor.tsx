@@ -98,12 +98,6 @@ export function QuestionOptionsEditor({
       {errors.options && (
         <p className="text-sm text-red-500 mt-1">{errors.options}</p>
       )}
-      
-      {!readOnly && (
-        <div className="text-sm text-gray-500 mt-2">
-          💡 Используйте кнопку "+" для добавления вариантов между существующими
-        </div>
-      )}
     </div>
   );
 }
