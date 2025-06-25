@@ -28,8 +28,7 @@ function SelectInput({ question, name }: SelectInputProps) {
   const { setValue, watch } = useFormContext();
   const value = watch(name);
   const selectSettings = question.settings as SelectSettings | undefined;
-  const placeholder = selectSettings?.placeholder || "Выберите вариант";
-
+  
   // Устанавливаем дефолтное значение если оно есть и значение еще не выбрано
   React.useEffect(() => {
     if (selectSettings?.defaultOptionId && !value) {
@@ -43,7 +42,7 @@ function SelectInput({ question, name }: SelectInputProps) {
       onValueChange={(val) => setValue(name, val)}
     >
       <SelectTrigger>
-        <SelectValue placeholder={placeholder} />
+        <SelectValue placeholder="Выберите вариант" />
       </SelectTrigger>
       <SelectContent>
         {question.options?.map((option) => (

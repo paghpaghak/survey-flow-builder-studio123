@@ -40,7 +40,6 @@ export interface TextSettings {
 
 export interface SelectSettings {
   defaultOptionId?: string;  // ID варианта ответа, выбранного по умолчанию
-  placeholder?: string;      // Текст placeholder для выпадающего списка
 }
 
 export interface NumberSettings {
