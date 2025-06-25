@@ -66,8 +66,7 @@ export function QuestionInput({ question, name }: QuestionInputProps) {
       // Если включена настройка showTitleInside, используем заголовок вопроса как placeholder
       const placeholder = textSettings?.showTitleInside 
         ? question.title 
-        : (textSettings?.placeholder || "Введите ответ");
-      const maxLength = textSettings?.maxLength;
+        : "Введите ответ";
       const inputMask = migrateMask(textSettings?.inputMask);
 
       if (inputMask) {
@@ -87,7 +86,6 @@ export function QuestionInput({ question, name }: QuestionInputProps) {
                     {...inputProps}
                     placeholder={placeholder}
                     required={question.required}
-                    maxLength={maxLength}
                   />
                 )}
               </InputMask>
@@ -101,7 +99,6 @@ export function QuestionInput({ question, name }: QuestionInputProps) {
           {...register(name)}
           placeholder={placeholder}
           required={question.required}
-          maxLength={maxLength}
         />
       );
     }
@@ -169,26 +166,6 @@ export function QuestionInput({ question, name }: QuestionInputProps) {
         <Input
           type="date"
           {...register(name)}
-          required={question.required}
-        />
-      );
-
-    case QUESTION_TYPES.Email:
-      return (
-        <Input
-          type="email"
-          {...register(name)}
-          placeholder="Введите email"
-          required={question.required}
-        />
-      );
-
-    case QUESTION_TYPES.Phone:
-      return (
-        <Input
-          type="tel"
-          {...register(name)}
-          placeholder="Введите номер телефона"
           required={question.required}
         />
       );

@@ -2,6 +2,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
+import { Info } from 'lucide-react';
 import { TextSettings, INPUT_MASK_OPTIONS, DEFAULT_TEXT_SETTINGS } from '@survey-platform/shared-types';
 
 interface TextSettingsProps {
@@ -22,21 +24,6 @@ export function TextSettings({ settings = DEFAULT_TEXT_SETTINGS, onChange, readO
     onChange({
       ...settings,
       inputMask: customMask || undefined
-    });
-  };
-
-  const handlePlaceholderChange = (placeholder: string) => {
-    onChange({
-      ...settings,
-      placeholder: placeholder || undefined
-    });
-  };
-
-  const handleMaxLengthChange = (value: string) => {
-    const maxLength = value ? parseInt(value, 10) : undefined;
-    onChange({
-      ...settings,
-      maxLength: isNaN(maxLength!) ? undefined : maxLength
     });
   };
 
@@ -116,35 +103,6 @@ export function TextSettings({ settings = DEFAULT_TEXT_SETTINGS, onChange, readO
         )}
       </div>
 
-      <div>
-        <Label htmlFor="placeholder">Подсказка для пользователя</Label>
-        <Input
-          id="placeholder"
-          type="text"
-          value={settings.placeholder || ''}
-          onChange={(e) => handlePlaceholderChange(e.target.value)}
-          placeholder="Введите ответ"
-          disabled={readOnly}
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="maxLength">Максимальная длина</Label>
-        <Input
-          id="maxLength"
-          type="number"
-          value={settings.maxLength || ''}
-          onChange={(e) => handleMaxLengthChange(e.target.value)}
-          placeholder="Без ограничений"
-          min="1"
-          max="1000"
-          disabled={readOnly}
-        />
-        <p className="text-xs text-gray-500 mt-1">
-          Оставьте пустым для неограниченного ввода
-        </p>
-      </div>
-
       <div className="flex items-center space-x-2">
         <Checkbox
           id="showTitleInside"
@@ -155,9 +113,18 @@ export function TextSettings({ settings = DEFAULT_TEXT_SETTINGS, onChange, readO
         <Label htmlFor="showTitleInside" className="text-sm font-normal">
           Показывать заголовок вопроса внутри поля ввода
         </Label>
-      </div>
-      <div className="text-xs text-gray-500 ml-6 -mt-1">
-        При включении этой опции заголовок вопроса будет отображаться как placeholder внутри поля ввода, а сам заголовок над полем будет скрыт
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Info className="h-4 w-4 text-gray-400 hover:text-gray-600 cursor-help" />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="max-w-xs">
+                При включении этой опции заголовок вопроса будет отображаться как placeholder внутри поля ввода, а сам заголовок над полем будет скрыт
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
     </div>
   );

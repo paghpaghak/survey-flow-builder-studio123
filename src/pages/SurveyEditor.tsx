@@ -154,7 +154,7 @@ export default function SurveyEditor() {
                   editor.setSelectedQuestionId(questionId);
                 }
               }}
-              onQuestionOrderChange={questionOps.handleQuestionOrderChange}
+              onQuestionOrderChange={undefined}
               onUpdatePageTitle={surveyOps.handleUpdatePageTitle}
               onUpdateQuestionTitle={questionOps.handleUpdateQuestionTitle}
               onDeleteQuestion={questionOps.handleDeleteQuestion}

@@ -36,7 +36,6 @@ export type {
   SurveyStatus,
   TransitionRule,
   DateSettings,
-  PhoneSettings,
   TextSettings,
   SelectSettings,
   NumberSettings,
@@ -51,6 +50,10 @@ export type {
   PageTransitionCondition,
   PageTransitionRule,
   ResolutionRule,
+  VisibilityCondition,
+  VisibilityGroup,
+  QuestionVisibilityRule,
+  PageVisibilityRule,
 } from './types/survey';
 
 // Question Form and Dialog
@@ -58,7 +61,6 @@ export type {
   QuestionOption,
   QuestionFormData,
   QuestionEditDialogProps,
-  PhoneQuestionSettings,
   DateQuestionSettings,
   QuestionSettings,
   QuestionBasicFieldsProps,

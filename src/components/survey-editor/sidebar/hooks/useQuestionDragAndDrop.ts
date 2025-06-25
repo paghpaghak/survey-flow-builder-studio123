@@ -7,6 +7,23 @@ interface useQuestionDragAndDropProps {
   onQuestionOrderChange?: (questions: Question[]) => void;
 }
 
+/**
+ * НОВАЯ АРХИТЕКТУРА ОПРЕДЕЛЕНИЯ ПОРЯДКА ВОПРОСОВ
+ * ================================================
+ * 
+ * С этого момента sidebar является ТОЛЬКО навигационным интерфейсом.
+ * Реальный порядок прохождения вопросов определяется:
+ * 
+ * 1. ПОЗИЦИЯ В ВИЗУАЛЬНОМ РЕДАКТОРЕ (position.y) - основной критерий
+ * 2. TRANSITION RULES - кастомные правила переходов между вопросами
+ * 3. УСЛОВНАЯ ЛОГИКА - правила видимости вопросов
+ * 
+ * Sidebar НЕ влияет на реальный порядок, но сохраняет drag-and-drop
+ * для удобства визуальной организации и навигации.
+ * 
+ * Это решает проблему конфликтов между порядком в sidebar'е и
+ * логикой переходов в визуальном редакторе.
+ */
 export function useQuestionDragAndDrop({
   questions,
   setActiveId,
@@ -17,44 +34,13 @@ export function useQuestionDragAndDrop({
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const activeQuestion = questions.find(q => q.id === active.id);
-    const overQuestion = questions.find(q => q.id === over.id);
-
-    // --- Ограничения для параллельных веток ---
-    // 1. Запрет перемещения вопроса внутрь/вне ветки
-    const isActiveInParallel = questions.some(
-      q => q.type === QUESTION_TYPES.ParallelGroup && q.parallelQuestions?.includes(String(active.id))
-    );
-    const isOverInParallel = questions.some(
-      q => q.type === QUESTION_TYPES.ParallelGroup && q.parallelQuestions?.includes(String(over.id))
-    );
-    // 2. Запрет перемещения между разными ветками
-    let activeParallelId = null;
-    let overParallelId = null;
-    for (const q of questions) {
-      if (q.type === QUESTION_TYPES.ParallelGroup && q.parallelQuestions?.includes(String(active.id)))
-        activeParallelId = q.id;
-      if (q.type === QUESTION_TYPES.ParallelGroup && q.parallelQuestions?.includes(String(over.id)))
-        overParallelId = q.id;
-    }
-    if (
-      isActiveInParallel !== isOverInParallel ||
-      (activeParallelId && overParallelId && activeParallelId !== overParallelId)
-    ) {
-      window.alert('Перемещение вопросов внутрь/вне параллельной ветки или между ветками запрещено.');
-      return;
-    }
-
-    if (!activeQuestion || !overQuestion || activeQuestion.pageId !== overQuestion.pageId) return;
-
-    const oldIndex = questions.findIndex(q => q.id === active.id);
-    const newIndex = questions.findIndex(q => q.id === over.id);
-
-    const newQuestions = [...questions];
-    const [removed] = newQuestions.splice(oldIndex, 1);
-    newQuestions.splice(newIndex, 0, removed);
-
-    onQuestionOrderChange?.(newQuestions);
+    // ВАЖНО: Sidebar теперь только для навигации, не влияет на реальный порядок
+    // Drag and drop остается для удобства визуальной организации, но не изменяет данные
+    
+    // Показываем уведомление пользователю о том, что порядок определяется визуальным редактором
+    console.log('[Sidebar] Drag and drop в sidebar используется только для навигации. Реальный порядок вопросов определяется визуальным редактором и правилами переходов.');
+    
+    // Не вызываем onQuestionOrderChange - порядок не изменяется
   };
 
   return { handleDragEnd };

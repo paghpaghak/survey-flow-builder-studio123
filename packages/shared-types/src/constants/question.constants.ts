@@ -1,7 +1,7 @@
 ﻿// Внутренние импорты в пакете не должны содержать расширений .ts
 // Они разрешаются автоматически TypeScript
 import { QuestionType, QUESTION_TYPES, FileUploadSettings, TextSettings, SelectSettings } from '../types/survey';
-import { PhoneQuestionSettings, DateQuestionSettings } from '../types/question.types';
+import { DateQuestionSettings } from '../types/question.types';
 
 // Опции типов вопросов для селекта
 export const QUESTION_TYPE_OPTIONS: { value: QuestionType; label: string }[] = [
@@ -10,8 +10,6 @@ export const QUESTION_TYPE_OPTIONS: { value: QuestionType; label: string }[] = [
   { value: QUESTION_TYPES.Checkbox, label: 'Несколько из списка' },
   { value: QUESTION_TYPES.Select, label: 'Выпадающий список' },
   { value: QUESTION_TYPES.Date, label: 'Дата' },
-  { value: QUESTION_TYPES.Email, label: 'Email' },
-  { value: QUESTION_TYPES.Phone, label: 'Телефон' },
   { value: QUESTION_TYPES.Number, label: 'Число' },
   { value: QUESTION_TYPES.FileUpload, label: 'Загрузка документов' },
   { value: QUESTION_TYPES.ParallelGroup, label: 'Параллельная ветка' },
@@ -48,8 +46,6 @@ export const INPUT_MASK_OPTIONS = [
 // Настройки по умолчанию для текста
 export const DEFAULT_TEXT_SETTINGS: TextSettings = {
   inputMask: undefined,
-  placeholder: 'Введите ответ',
-  maxLength: undefined,
   showTitleInside: false
 };
 
@@ -59,11 +55,7 @@ export const DEFAULT_SELECT_SETTINGS: SelectSettings = {
   placeholder: 'Выберите вариант'
 };
 
-// Настройки по умолчанию для телефона
-export const DEFAULT_PHONE_SETTINGS: PhoneQuestionSettings = {
-  countryCode: '+7',
-  mask: '(###) ###-##-##'
-};
+
 
 // Опции форматов даты
 export const DATE_FORMAT_OPTIONS = [

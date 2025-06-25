@@ -29,17 +29,12 @@ export interface QuestionEditDialogProps {
 }
 
 // Типы для настроек конкретных типов вопросов
-export interface PhoneQuestionSettings {
-  countryCode: string;
-  mask: string;
-}
-
 export interface DateQuestionSettings {
   format: string;
 }
 
 // Объединенный тип для всех настроек
-export type QuestionSettings = PhoneQuestionSettings | DateQuestionSettings | ParallelBranchSettings;
+export type QuestionSettings = DateQuestionSettings | ParallelBranchSettings;
 
 // Интерфейсы для компонентов форм
 export interface QuestionBasicFieldsProps {

@@ -1,6 +1,5 @@
 import { QuestionFormData, QuestionType } from '@survey-platform/shared-types';
 import { QUESTION_TYPES } from '@survey-platform/shared-types';
-import { PhoneSettings } from "./PhoneSettings";
 import { DateSettings } from "./DateSettings";
 import { FileUploadSettings } from "./FileUploadSettings";
 import { TextSettings } from "./TextSettings";
@@ -28,8 +27,6 @@ export function TypeSpecificSettings(props: TypeSpecificSettingsProps) {
       return <TextSettings settings={settings} onChange={onChange} readOnly={readOnly} />;
     case QUESTION_TYPES.Select:
       return <SelectSettings settings={settings} onChange={onChange} readOnly={readOnly} question={question} />;
-    case QUESTION_TYPES.Phone:
-      return <PhoneSettings settings={settings} onChange={onChange} readOnly={readOnly} />;
     // case QuestionType.Number:
     // return <NumberSettings control={control} />;
     case QUESTION_TYPES.Date:

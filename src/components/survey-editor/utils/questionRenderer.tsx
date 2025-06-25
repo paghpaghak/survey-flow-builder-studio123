@@ -82,7 +82,7 @@ export function renderQuestion(
       // Если включена настройка showTitleInside, используем заголовок вопроса как placeholder
       const placeholder = textSettings?.showTitleInside 
         ? question.title 
-        : (textSettings?.placeholder || "Введите ваш ответ");
+        : "Введите ваш ответ";
       const inputMask = migrateMask(textSettings?.inputMask);
 
       if (inputMask) {
@@ -102,7 +102,6 @@ export function renderQuestion(
           value={currentAnswer || ''}
           onChange={(e) => answerHandler(question.id, e.target.value)}
           placeholder={placeholder}
-          maxLength={textSettings?.maxLength}
         />
       );
     }
@@ -189,27 +188,6 @@ export function renderQuestion(
             />
           </PopoverContent>
         </Popover>
-      );
-
-    case QUESTION_TYPES.Email:
-      return (
-        <Input
-          type="email"
-          value={currentAnswer || ''}
-          onChange={(e) => answerHandler(question.id, e.target.value)}
-          placeholder="example@example.com"
-        />
-      );
-    case QUESTION_TYPES.Phone:
-      const phoneSettings = question.settings as { countryCode?: string; mask?: string };
-      return (
-        <IMaskInput
-          mask={phoneSettings?.mask || '+{7} (000) 000-00-00'}
-          value={currentAnswer || ''}
-          onAccept={(value) => answerHandler(question.id, value)}
-          placeholder="Введите номер телефона"
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-        />
       );
 
     case QUESTION_TYPES.FileUpload:

@@ -79,10 +79,6 @@ export function SurveyPreview({ questions, pages, onClose, surveyId }: SurveyPre
           }
         }
         return true;
-      case QUESTION_TYPES.Email:
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(answer);
-      case QUESTION_TYPES.Phone:
-        return answer.replace(/\D/g, '').length >= 10;
       case QUESTION_TYPES.Checkbox:
         return Array.isArray(answer) && answer.length > 0;
       case QUESTION_TYPES.Radio:

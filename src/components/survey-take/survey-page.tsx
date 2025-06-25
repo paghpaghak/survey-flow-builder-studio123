@@ -2,6 +2,8 @@ import { QuestionInput } from './question-inputs';
 import { PlaceholderText } from '@/components/ui/placeholder-text';
 import type { Page as PageType, Question, TextSettings } from '@survey-platform/shared-types';
 import { QUESTION_TYPES } from '@survey-platform/shared-types';
+import { ConditionalLogicEngine } from '@/lib/conditional-logic-engine';
+import { getQuestionsRealOrder } from '@/utils/questionUtils';
 
 interface SurveyPageProps {
   page: PageType;
@@ -19,6 +21,16 @@ export function SurveyPage({ page, answers, allQuestions }: SurveyPageProps) {
     return false;
   };
 
+  // РЕАЛЬНЫЙ ПОРЯДОК: Определяем порядок вопросов на основе позиции в визуальном редакторе
+  const pageQuestions = getQuestionsRealOrder(allQuestions, page.id);
+
+  // Фильтруем видимые вопросы согласно условной логике
+  const visibleQuestions = ConditionalLogicEngine.getVisibleQuestions(
+    pageQuestions,
+    answers,
+    allQuestions
+  );
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-medium">{page.title}</h3>
@@ -29,7 +41,7 @@ export function SurveyPage({ page, answers, allQuestions }: SurveyPageProps) {
       )}
       
       <div className="space-y-4">
-        {page.questions?.map((question) => (
+        {visibleQuestions.map((question) => (
           <div key={question.id} className="space-y-2">
             {!shouldHideTitle(question) && (
               <label className="text-sm font-medium">
