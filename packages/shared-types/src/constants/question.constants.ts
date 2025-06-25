@@ -51,11 +51,8 @@ export const DEFAULT_TEXT_SETTINGS: TextSettings = {
 
 // Настройки по умолчанию для выпадающего списка
 export const DEFAULT_SELECT_SETTINGS: SelectSettings = {
-  defaultOptionId: undefined,
-  placeholder: 'Выберите вариант'
+  defaultOptionId: undefined
 };
-
-
 
 // Опции форматов даты
 export const DATE_FORMAT_OPTIONS = [

@@ -1,5 +1,4 @@
 import React from 'react';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SelectSettings, DEFAULT_SELECT_SETTINGS } from '@survey-platform/shared-types';
@@ -15,13 +14,6 @@ interface SelectSettingsProps {
 export function SelectSettings({ settings, onChange, readOnly = false, question }: SelectSettingsProps) {
   const currentSettings = { ...DEFAULT_SELECT_SETTINGS, ...settings };
 
-  const handlePlaceholderChange = (value: string) => {
-    onChange({
-      ...currentSettings,
-      placeholder: value || undefined
-    });
-  };
-
   const handleDefaultOptionChange = (value: string) => {
     onChange({
       ...currentSettings,
@@ -31,20 +23,6 @@ export function SelectSettings({ settings, onChange, readOnly = false, question 
 
   return (
     <div className="space-y-4">
-      <div>
-        <Label htmlFor="placeholder">Текст подсказки</Label>
-        <Input
-          id="placeholder"
-          value={currentSettings.placeholder || ''}
-          onChange={(e) => handlePlaceholderChange(e.target.value)}
-          placeholder="Выберите вариант"
-          disabled={readOnly}
-        />
-        <p className="text-xs text-gray-500 mt-1">
-          Текст, который будет отображаться когда не выбрано значение
-        </p>
-      </div>
-
       <div>
         <Label htmlFor="defaultOption">Вариант по умолчанию</Label>
         <Select

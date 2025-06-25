@@ -23,7 +23,6 @@ interface PreviewSelectInputProps {
 
 function PreviewSelectInput({ question, currentAnswer, answerHandler }: PreviewSelectInputProps) {
   const selectSettings = question.settings as SelectSettings | undefined;
-  const placeholder = selectSettings?.placeholder || "Выберите ответ";
   
   // Определяем значение: используем current answer или дефолтное значение
   const selectValue = currentAnswer || selectSettings?.defaultOptionId || '';
@@ -41,7 +40,7 @@ function PreviewSelectInput({ question, currentAnswer, answerHandler }: PreviewS
       onValueChange={(value) => answerHandler(question.id, value)}
     >
       <SelectTrigger>
-        <SelectValue placeholder={placeholder} />
+        <SelectValue placeholder="Выберите ответ" />
       </SelectTrigger>
       <SelectContent>
         {question.options?.map(option => (
