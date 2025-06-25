@@ -19,8 +19,7 @@ export const QUESTION_TYPES = {
   Checkbox: 'checkbox',
   Select: 'select',
   Date: 'date',
-  Phone: 'phone',
-  Email: 'email',
+  FileUpload: 'file_upload',
   ParallelGroup: 'parallel_group',
   Resolution: 'resolution',
 } as const;
@@ -32,9 +31,16 @@ export interface DateSettings {
   format?: string;
 }
 
-export interface PhoneSettings {
-  countryCode?: string;
-  mask?: string;
+
+
+export interface TextSettings {
+  inputMask?: string;        // Маска ввода (например, "+7 (999) 999-99-99")
+  showTitleInside?: boolean; // Показывать заголовок вопроса внутри поля ввода
+}
+
+export interface SelectSettings {
+  defaultOptionId?: string;  // ID варианта ответа, выбранного по умолчанию
+  placeholder?: string;      // Текст placeholder для выпадающего списка
 }
 
 export interface NumberSettings {
@@ -54,16 +60,23 @@ export interface ParallelBranchSettings {
   countRequired?: boolean; // Обязательность
 }
 
+export interface FileUploadSettings {
+  allowedTypes: string[];           // ['image/*', 'application/pdf']
+  maxFileSize: number;              // в байтах
+  maxFiles: number;                 // максимальное количество файлов
+  buttonText?: string;              // текст кнопки
+  helpText?: string;                // подсказка
+}
+
 // Тип для настроек вопроса в зависимости от его типа
 export type QuestionTypeSettings = {
   [QUESTION_TYPES.Date]: DateSettings;
-  [QUESTION_TYPES.Phone]: PhoneSettings;
-  [QUESTION_TYPES.Text]: Record<string, never>;
+  [QUESTION_TYPES.Text]: TextSettings;
   [QUESTION_TYPES.Radio]: Record<string, never>;
   [QUESTION_TYPES.Checkbox]: Record<string, never>;
-  [QUESTION_TYPES.Select]: Record<string, never>;
-  [QUESTION_TYPES.Email]: Record<string, never>;
+  [QUESTION_TYPES.Select]: SelectSettings;
   [QUESTION_TYPES.Number]: NumberSettings;
+  [QUESTION_TYPES.FileUpload]: FileUploadSettings;
   [QUESTION_TYPES.ParallelGroup]: ParallelBranchSettings;
   [QUESTION_TYPES.Resolution]: Record<string, never>;
 };
@@ -92,6 +105,7 @@ export interface Page {
   description?: string;
   questions: Question[];  // Массив вопросов вместо массива ID
   descriptionPosition?: 'before' | 'after';
+  visibilityRules?: PageVisibilityRule[]; // Правила условной видимости страницы
 }
 
 /**
@@ -124,15 +138,30 @@ export interface Question {
   parallelQuestions?: string[];  // ID вопросов, которые нужно повторять в параллельной группе
   resolutionRules?: ResolutionRule[];
   defaultResolution?: string;
+  visibilityRules?: QuestionVisibilityRule[]; // Правила условной видимости
 }
 
 // Тип для ответов на вопросы
-export type QuestionAnswer = string | number | Date | string[] | ParallelAnswer;
+export type QuestionAnswer = string | number | Date | string[] | ParallelAnswer | FileUploadAnswer;
 
 // Тип для ответов на параллельные вопросы
 export interface ParallelAnswer {
   count: number;  // Количество повторений
   answers: Record<string, QuestionAnswer[]>;  // Ответы для каждого повторения
+}
+
+// Тип для ответов на загрузку файлов
+export interface FileUploadAnswer {
+  files: UploadedFile[];
+}
+
+export interface UploadedFile {
+  id: string;                 // уникальный ID файла
+  name: string;               // оригинальное имя
+  size: number;               // размер в байтах
+  type: string;               // MIME type
+  uploadedAt: string;         // дата загрузки файла
+  serverFileId?: string;      // ID файла на сервере (GridFS)
 }
 
 /**
@@ -222,4 +251,40 @@ export interface ResolutionRule {
   conditions: Array<{ questionId: string; operator: string; value: any }>;
   logic: 'AND' | 'OR';
   resultText: string;
+}
+
+// ===== УСЛОВНАЯ ЛОГИКА ВИДИМОСТИ =====
+
+// Базовые условия для проверки видимости
+export type VisibilityCondition =
+  | { type: 'answer_equals'; questionId: string; value: string | number | boolean }
+  | { type: 'answer_not_equals'; questionId: string; value: string | number | boolean }
+  | { type: 'answer_contains'; questionId: string; value: string }
+  | { type: 'answer_greater_than'; questionId: string; value: number }
+  | { type: 'answer_less_than'; questionId: string; value: number }
+  | { type: 'answered'; questionId: string }
+  | { type: 'not_answered'; questionId: string }
+  | { type: 'answer_includes'; questionId: string; value: string }; // для множественного выбора
+
+// Группа условий с логическим оператором
+export interface VisibilityGroup {
+  id: string;
+  logic: 'AND' | 'OR';
+  conditions: VisibilityCondition[];
+}
+
+// Правило видимости для вопроса
+export interface QuestionVisibilityRule {
+  id: string;
+  action: 'show' | 'hide';
+  groups: VisibilityGroup[];
+  groupsLogic: 'AND' | 'OR'; // Логика между группами
+}
+
+// Правило видимости для страницы
+export interface PageVisibilityRule {
+  id: string;
+  action: 'show' | 'hide'; 
+  groups: VisibilityGroup[];
+  groupsLogic: 'AND' | 'OR';
 }

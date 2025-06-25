@@ -25,8 +25,6 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
     setShowDeleteDialog,
     editingSurvey,
     setEditingSurvey,
-    showVersionHistory,
-    setShowVersionHistory,
     
     // Данные
     sortedSurveys,
@@ -89,13 +87,11 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
           surveys={sortedSurveys}
           isAdmin={isAdmin}
           showDeleteDialog={showDeleteDialog}
-          showVersionHistory={showVersionHistory}
           getStatusColor={getStatusColor}
           handleDuplicateSurvey={handleDuplicateSurvey}
           setShowDeleteDialog={setShowDeleteDialog}
           deleteSurvey={deleteSurvey}
           reloadSurveys={reloadSurveys}
-          setShowVersionHistory={setShowVersionHistory}
           setEditingSurvey={setEditingSurvey}
         />
       ) : (

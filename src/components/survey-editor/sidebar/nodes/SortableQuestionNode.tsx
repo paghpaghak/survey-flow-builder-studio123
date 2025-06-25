@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useSortable } from '@dnd-kit/sortable';
 import { GripVertical, Trash } from 'lucide-react';
+import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 
 // Эта вспомогательная функция также находилась в SidebarTreeView.tsx
 function getTransformStyle(transform: any) {
@@ -24,6 +25,8 @@ export function SortableQuestionNode({ node, style, isSelected, onSelect, onUpda
   number?: number;
   nested?: boolean;
 }) {
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  
   if (!node?.data) return null;
   const {
     attributes,
@@ -112,12 +115,21 @@ export function SortableQuestionNode({ node, style, isSelected, onSelect, onUpda
           title="Удалить вопрос"
           onClick={e => {
             e.stopPropagation();
-            if (window.confirm('Удалить вопрос?')) onDelete();
+            setShowDeleteDialog(true);
           }}
         >
           <Trash className="w-4 h-4" />
         </button>
       )}
+      
+      {/* Диалог подтверждения удаления */}
+      <ConfirmDeleteDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Удалить вопрос"
+        description={`Вы действительно хотите удалить вопрос "${node.data.title}"? Это действие нельзя отменить.`}
+        onConfirm={() => onDelete?.()}
+      />
     </div>
   );
 } 

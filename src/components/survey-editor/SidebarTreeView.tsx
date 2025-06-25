@@ -8,7 +8,8 @@ import { PageNode } from './sidebar/nodes/PageNode';
 import { 
   ConfirmDeleteDialog, 
   AddResolutionButton, 
-  TreeDragOverlay 
+  TreeDragOverlay,
+  ResolutionDisplay
 } from './sidebar/components';
 
 interface SidebarTreeViewProps {
@@ -115,6 +116,7 @@ export const SidebarTreeView: React.FC<SidebarTreeViewProps> = ({
         modifiers={[restrictToVerticalAxis]}
       >
         <div className="space-y-4">
+          {/* Страницы */}
           {pages.map(page => (
             <PageNode
               key={page.id}
@@ -153,13 +155,32 @@ export const SidebarTreeView: React.FC<SidebarTreeViewProps> = ({
               setDescriptionPosition={setDescriptionPosition}
               descriptionRefs={descriptionRefs}
               handleInsertVariable={handleInsertVariable}
+
             />
           ))}
           
-          <AddResolutionButton
-            questions={questions}
-            onAddResolution={onAddResolution}
-          />
+          {/* Резолюция или кнопка добавления - всегда внизу */}
+          {(() => {
+            const resolution = questions.find(q => q.type === 'resolution');
+            if (resolution) {
+              return (
+                <ResolutionDisplay
+                  resolution={resolution}
+                  selectedQuestionId={selectedQuestionId}
+                  onSelectQuestion={onSelectQuestion}
+                  onEditResolution={onEditResolution}
+                  onDeleteResolution={onDeleteQuestion}
+                />
+              );
+            } else {
+              return (
+                <AddResolutionButton
+                  questions={questions}
+                  onAddResolution={onAddResolution}
+                />
+              );
+            }
+          })()}
         </div>
         
         <TreeDragOverlay

@@ -170,6 +170,22 @@ export default function VisualEditor({ questions, onUpdateQuestions, readOnly = 
       >
         <Controls />
         <Background />
+        <MiniMap 
+          zoomable 
+          pannable 
+          position="bottom-right"
+          nodeColor={(node) => {
+            if (node.id === selectedQuestionId) return '#3b82f6'; // синий для выбранного
+            return '#94a3b8'; // серый для остальных
+          }}
+          style={{
+            backgroundColor: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            width: 200,
+            height: 150,
+          }}
+          maskColor="rgba(0, 0, 0, 0.05)"
+        />
       </ReactFlow>
 
       {selectedQuestion && (

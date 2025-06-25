@@ -24,7 +24,6 @@ export function useSurveyListLogic({
   const [showDeleteDialog, setShowDeleteDialog] = useState<string | null>(null);
   const [editingSurvey, setEditingSurvey] = useState<Survey | null>(null);
   const [localSurveys, setLocalSurveys] = useState<Survey[]>([]);
-  const [showVersionHistory, setShowVersionHistory] = useState<string | null>(null);
 
   // Вычисляемые значения
   const isAdmin = user?.role === 'admin';
@@ -79,8 +78,6 @@ export function useSurveyListLogic({
     setShowDeleteDialog,
     editingSurvey,
     setEditingSurvey,
-    showVersionHistory,
-    setShowVersionHistory,
     
     // Данные
     sortedSurveys: surveyFilters.filteredAndSortedSurveys,

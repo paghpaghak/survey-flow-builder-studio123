@@ -3,7 +3,7 @@ import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import type { Question } from '@survey-platform/shared-types';
 import { useState, useCallback } from 'react';
 import { UseParallelBranchResult } from '@/types/question.types';
-import { PARALLEL_BRANCH_LIMITS, ERROR_MESSAGES } from '@/constants/question.constants';
+import { PARALLEL_BRANCH_LIMITS, ERROR_MESSAGES } from '@survey-platform/shared-types';
 
 /**
  * <summary>
@@ -23,7 +23,7 @@ export function useParallelBranch(
   const [settings, setSettings] = useState<ParallelBranchSettings>(() => ({
     sourceQuestionId: initialSettings.sourceQuestionId || '',
     itemLabel: initialSettings.itemLabel || '',
-    displayMode: initialSettings.displayMode || 'sequential',
+    displayMode: initialSettings.displayMode || 'tabs',
     minItems: initialSettings.minItems || PARALLEL_BRANCH_LIMITS.DEFAULT_MIN,
     maxItems: Math.min(initialSettings.maxItems || PARALLEL_BRANCH_LIMITS.DEFAULT_MAX, PARALLEL_BRANCH_LIMITS.MAX_ITEMS),
     countLabel: initialSettings.countLabel,

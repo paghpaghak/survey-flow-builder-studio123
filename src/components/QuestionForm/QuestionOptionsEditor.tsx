@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Plus, Trash } from 'lucide-react';
 import { createNewOption } from '@/utils/questionUtils';
-import { PLACEHOLDERS } from '@/constants/question.constants';
+import { PLACEHOLDERS } from '@survey-platform/shared-types';
 
 /**
  * <summary>

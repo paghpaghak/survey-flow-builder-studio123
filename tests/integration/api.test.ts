@@ -164,7 +164,7 @@ describe('API Functions', () => {
 
       const result = await fetchSurveys();
 
-      expect(mockFetch).toHaveBeenCalledWith('/api/surveys');
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3001/api/surveys');
       expect(result).toHaveLength(2);
       expect(result[0].id).toBe('1');
       expect(result[1].id).toBe('2');
@@ -195,7 +195,7 @@ describe('API Functions', () => {
 
       const result = await fetchSurveyById('123');
 
-      expect(mockFetch).toHaveBeenCalledWith('/api/surveys?id=123');
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3001/api/surveys?id=123');
       expect(result.id).toBe('123');
       expect(result.title).toBe('Test Survey');
     });
@@ -230,7 +230,7 @@ describe('API Functions', () => {
 
       const result = await createSurvey(newSurvey as any);
 
-      expect(mockFetch).toHaveBeenCalledWith('/api/surveys', {
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3001/api/surveys', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -264,7 +264,7 @@ describe('API Functions', () => {
 
       const result = await updateSurvey(survey as any);
 
-      expect(mockFetch).toHaveBeenCalledWith('/api/surveys/123', {
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3001/api/surveys/123', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -291,7 +291,7 @@ describe('API Functions', () => {
 
       await deleteSurvey('123');
 
-      expect(mockFetch).toHaveBeenCalledWith('/api/surveys/123', {
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3001/api/surveys/123', {
         method: 'DELETE',
       });
     });

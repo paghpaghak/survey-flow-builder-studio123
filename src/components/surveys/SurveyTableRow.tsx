@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Survey, SurveyStatus } from '@survey-platform/shared-types';
 import { Button } from '@/components/ui/button';
@@ -20,13 +21,11 @@ interface SurveyTableRowProps {
   index: number;
   isAdmin: boolean;
   showDeleteDialog: string | null;
-  showVersionHistory: string | null;
   getStatusColor: (status: string) => string;
   handleDuplicateSurvey: (survey: Survey) => Promise<void>;
   setShowDeleteDialog: (id: string | null) => void;
   deleteSurvey: (id: string) => Promise<void>;
   reloadSurveys?: () => void;
-  setShowVersionHistory: (id: string | null) => void;
   setEditingSurvey: (survey: Survey | null) => void;
 }
 
@@ -35,17 +34,16 @@ export function SurveyTableRow({
   index,
   isAdmin,
   showDeleteDialog,
-  showVersionHistory,
   getStatusColor,
   handleDuplicateSurvey,
   setShowDeleteDialog,
   deleteSurvey,
   reloadSurveys,
-  setShowVersionHistory,
   setEditingSurvey,
 }: SurveyTableRowProps) {
   const navigate = useNavigate();
   const key = survey.id || `survey-idx-${index}`;
+  const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
 
   return (
     <TableRow key={key}>
@@ -129,7 +127,7 @@ export function SurveyTableRow({
                 <DropdownMenuItem onClick={() => navigate(`/take/${survey.id}`)}>
                   <UserSquare2 className="h-4 w-4 mr-2" /> Пройти опрос
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setShowVersionHistory(survey.id)}>
+                <DropdownMenuItem onClick={() => setVersionHistoryOpen(true)}>
                   <History className="h-4 w-4 mr-2" /> История версий
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setEditingSurvey(survey)}>
@@ -140,13 +138,16 @@ export function SurveyTableRow({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            {showVersionHistory === survey.id && (
-              <SurveyVersionHistory
-                surveyId={survey.id}
-              />
-            )}
           </TooltipProvider>
         </div>
+        
+        
+        {/* Модальное окно истории версий */}
+        <SurveyVersionHistory
+          surveyId={survey.id}
+          open={versionHistoryOpen}
+          onOpenChange={setVersionHistoryOpen}
+        />
       </TableCell>
     </TableRow>
   );

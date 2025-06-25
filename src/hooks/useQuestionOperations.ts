@@ -1,6 +1,7 @@
 import { toast } from 'sonner';
 import { QUESTION_TYPES } from '@survey-platform/shared-types';
 import type { Question, Page } from '@survey-platform/shared-types';
+import { getDefaultSettingsForType, getQuestionsRealOrder } from '@/utils/questionUtils';
 import { normalizePage } from './useSurveyEditor';
 
 interface UseQuestionOperationsProps {
@@ -99,7 +100,7 @@ export function useQuestionOperations({
   /**
    * <summary>
    * Добавляет новый вопрос на выбранную страницу.
-   * Автоматически исключает вложенные вопросы параллельных групп из визуального редактора.
+   * Использует позицию в визуальном редакторе для определения порядка.
    * </summary>
    */
   const handleAddQuestion = () => {
@@ -112,17 +113,8 @@ export function useQuestionOperations({
 
     const targetPageId = selectedPageId || pages[0].id;
     
-    // Фильтруем вопросы, исключая вложенные в параллельные группы
-    const allParallelQuestionIds = new Set<string>();
-    questions.forEach(q => {
-      if (q.type === QUESTION_TYPES.ParallelGroup && q.parallelQuestions) {
-        q.parallelQuestions.forEach(subId => allParallelQuestionIds.add(subId));
-      }
-    });
-    
-    const pageQuestions = questions.filter(q => 
-      q.pageId === targetPageId && !allParallelQuestionIds.has(q.id)
-    );
+    // Получаем реальный порядок вопросов на странице
+    const pageQuestions = getQuestionsRealOrder(questions, targetPageId);
 
     // Определяем номер для нового вопроса на этой странице
     const nextNumber = pageQuestions.length + 1;
@@ -133,14 +125,20 @@ export function useQuestionOperations({
       newId = crypto.randomUUID();
     }
 
+    // Определяем позицию Y для нового вопроса (под последним вопросом)
+    const lastQuestionY = pageQuestions.length > 0 
+      ? Math.max(...pageQuestions.map(q => q.position?.y || 0))
+      : 0;
+
     const newQuestion: Question = {
       id: newId,
       pageId: targetPageId,
       title: `Новый вопрос ${nextNumber}`,
       type: QUESTION_TYPES.Text,
       required: false,
-      position: { x: 250, y: pageQuestions.length * 150 },
-      options: undefined
+      position: { x: 250, y: lastQuestionY + 150 },
+      options: undefined,
+      settings: getDefaultSettingsForType(QUESTION_TYPES.Text)
     };
 
     // Если тип вопроса — Radio, Checkbox или Select, сразу добавляем два варианта
@@ -198,7 +196,6 @@ export function useQuestionOperations({
       return;
     }
     
-    const lastPageId = pages[pages.length - 1].id;
     let newId = crypto.randomUUID();
     while (questions.some(q => q.id === newId)) {
       newId = crypto.randomUUID();
@@ -206,7 +203,7 @@ export function useQuestionOperations({
     
     const newResolution: Question = {
       id: newId,
-      pageId: lastPageId,
+      pageId: '', // Резолюция не привязана к конкретной странице
       title: 'Резолюция',
       type: QUESTION_TYPES.Resolution,
       required: false,
@@ -227,17 +224,12 @@ export function useQuestionOperations({
   const handlePreviewClick = () => {
     if (!questions) return;
     
-    // Проверяем количество основных вопросов (исключая вложенные в параллельные группы)
-    const allParallelQuestionIds = new Set<string>();
-    questions.forEach(q => {
-      if (q.type === QUESTION_TYPES.ParallelGroup && q.parallelQuestions) {
-        q.parallelQuestions.forEach(subId => allParallelQuestionIds.add(subId));
-      }
-    });
+    // Проверяем количество основных вопросов по всем страницам
+    const allMainQuestions = pages.flatMap(page => 
+      getQuestionsRealOrder(questions, page.id)
+    );
     
-    const mainQuestions = questions.filter(q => !allParallelQuestionIds.has(q.id));
-    
-    if (mainQuestions.length === 0) {
+    if (allMainQuestions.length === 0) {
       toast.error('Добавьте хотя бы один вопрос для предпросмотра');
       return;
     }

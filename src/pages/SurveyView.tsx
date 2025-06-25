@@ -63,10 +63,12 @@ export default function SurveyView() {
         return "Выпадающий список";
       case QUESTION_TYPES.Date:
         return "Дата";
-      case QUESTION_TYPES.Email:
-        return "Email";
-      case QUESTION_TYPES.Phone:
-        return "Телефон";
+      case QUESTION_TYPES.Number:
+        return "Число";
+      case QUESTION_TYPES.FileUpload:
+        return "Загрузка документов";
+      default:
+        return "Неизвестный тип";
     }
   };
 
@@ -182,6 +184,7 @@ export default function SurveyView() {
               questions={questions}
               pages={pages}
               onClose={() => setIsPreviewOpen(false)}
+              surveyId={survey.id}
             />
           </div>
         </div>

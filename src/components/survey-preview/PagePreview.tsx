@@ -1,9 +1,11 @@
 import React from 'react';
-import { Question, QUESTION_TYPES } from '@survey-platform/shared-types';
+import { Question, QUESTION_TYPES, TextSettings } from '@survey-platform/shared-types';
 import { Label } from '@/components/ui/label';
 import { PlaceholderText } from '@/components/ui/placeholder-text';
 import { ParallelGroupRenderer } from '@/components/survey-editor/ParallelGroupRenderer';
 import { renderQuestion } from '@/components/survey-editor/utils/questionRenderer';
+import { ConditionalLogicEngine } from '@/lib/conditional-logic-engine';
+import { getQuestionsRealOrder, hasCustomTransitionRules, findStartQuestion } from '@/utils/questionUtils';
 
 interface PagePreviewProps {
   questions: Question[];
@@ -12,39 +14,37 @@ interface PagePreviewProps {
   pages: { id: string; description: string }[];
   pageId: string;
   page?: { description: string };
+  surveyId?: string;
 }
 
-export function PagePreview({ questions, answers, onAnswerChange, pages, pageId, page }: PagePreviewProps) {
-  // ЛОГИРУЮ входные пропсы
-  console.log('[PagePreview] questions:', questions);
-  console.log('[PagePreview] answers:', answers);
-  console.log('[PagePreview] pages:', pages);
-  console.log('[PagePreview] pageId:', pageId);
+export function PagePreview({ questions, answers, onAnswerChange, pages, pageId, page, surveyId }: PagePreviewProps) {
+  // Функция для проверки нужно ли скрывать заголовок вопроса
+  const shouldHideTitle = (question: Question) => {
+    if (question.type === QUESTION_TYPES.Text) {
+      const textSettings = question.settings as TextSettings | undefined;
+      return textSettings?.showTitleInside === true;
+    }
+    return false;
+  };
 
   // Получаем индекс текущей страницы
   const pageIndex = pages.findIndex(p => p.id === pageId);
   // Собираем вопросы всех предыдущих и текущей страницы
   const prevQuestions = pages.slice(0, pageIndex + 1).flatMap(p => questions.filter(q => q.pageId === p.id));
 
-  // ВАЖНОЕ ИСПРАВЛЕНИЕ: Фильтруем вопросы для страницы, исключая вложенные в параллельные группы
-  const allParallelQuestionIds = new Set<string>();
-  questions.forEach(q => {
-    if (q.type === QUESTION_TYPES.ParallelGroup && q.parallelQuestions) {
-      q.parallelQuestions.forEach(subId => allParallelQuestionIds.add(subId));
-    }
-  });
+  // РЕАЛЬНЫЙ ПОРЯДОК: Определяем порядок вопросов на основе позиции в визуальном редакторе
+  const pageQuestions = getQuestionsRealOrder(questions, pageId);
 
-  const pageQuestions = questions.filter(q => 
-    q.pageId === pageId && !allParallelQuestionIds.has(q.id)
+  // Фильтруем видимые вопросы согласно условной логике
+  // ВАЖНО: передаем ВСЕ вопросы опроса для корректной работы условий между страницами
+  const visibleQuestions = ConditionalLogicEngine.getVisibleQuestions(
+    pageQuestions, 
+    answers, 
+    questions // передаем все вопросы, а не только prevQuestions
   );
 
-  console.log('[PagePreview] pageQuestions after filtering:', pageQuestions);
-  console.log('[PagePreview] allParallelQuestionIds:', allParallelQuestionIds);
-
-  // Проверяем, есть ли кастомные transitionRules (answer != '')
-  const hasCustomRules = pageQuestions.some(q =>
-    (q.transitionRules || []).some(r => r.answer && r.answer !== '')
-  );
+  // Проверяем, есть ли кастомные transitionRules среди видимых вопросов
+  const hasCustomRules = hasCustomTransitionRules(visibleQuestions);
 
   // Если только дефолтные переходы — показываем все вопросы сразу
   if (!hasCustomRules) {
@@ -56,18 +56,20 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
     
     return (
       <div className="space-y-6">
-        {page?.description && (
+        {page?.description && page.description.trim() && (
           <div className="mb-4 text-muted-foreground">
             <PlaceholderText text={page.description} answers={answers} questions={questions} />
           </div>
         )}
-        {pageQuestions.map((question) => (
+        {visibleQuestions.map((question) => (
           <div key={question.id} className="space-y-2">
             <div className="space-y-1">
-              <Label className="text-base">
-                {question.title}
-                {question.required && <span className="text-red-500 ml-1">*</span>}
-              </Label>
+              {!shouldHideTitle(question) && (
+                <Label className="text-base">
+                  {question.title}
+                  {question.required && <span className="text-red-500 ml-1">*</span>}
+                </Label>
+              )}
               {question.description && (
                 <p className="text-sm text-gray-500">
                   <PlaceholderText text={question.description} answers={answers} questions={questions} />
@@ -83,9 +85,10 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
                 repeatIndexes={repeatIndexes}
                 onRepeatIndexChange={handleRepeatIndex}
                 mode="preview"
+                surveyId={surveyId}
               />
             ) : (
-              renderQuestion(question, questions, answers, onAnswerChange)
+              renderQuestion(question, questions, answers, onAnswerChange, undefined, surveyId)
             )}
           </div>
         ))}
@@ -93,20 +96,17 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
     );
   }
 
-  // Если есть кастомные transitionRules — пошаговый режим (старое поведение)
+  // Если есть кастомные transitionRules — пошаговый режим
   const [currentQuestionId, setCurrentQuestionId] = React.useState<string | null>(() => {
-    // Находим стартовый вопрос (без входящих transitionRules)
-    const allNextIds = new Set(
-      pageQuestions.flatMap(q => q.transitionRules?.map(r => r.nextQuestionId) || [])
-    );
-    const start = pageQuestions.find(q => !allNextIds.has(q.id));
-    return start ? start.id : pageQuestions[0]?.id || null;
+    // Находим стартовый вопрос среди видимых
+    const startQuestion = findStartQuestion(visibleQuestions);
+    return startQuestion?.id || null;
   });
 
-  const currentQuestion = pageQuestions.find(q => q.id === currentQuestionId);
+  const currentQuestion = visibleQuestions.find(q => q.id === currentQuestionId);
 
   function handleAnswer(questionId: string, value: any) {
-    const q = pageQuestions.find(q => q.id === questionId);
+    const q = visibleQuestions.find(q => q.id === questionId);
     let validValue = value;
     if (q && (q.type === QUESTION_TYPES.Radio || q.type === QUESTION_TYPES.Select)) {
       // Если value не найден среди options — не сохраняем
@@ -134,17 +134,19 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
 
   return (
     <div className="space-y-6">
-      {page?.description && (
+      {page?.description && page.description.trim() && (
         <div className="mb-4 text-muted-foreground">
           <PlaceholderText text={page.description} answers={answers} questions={questions} />
         </div>
       )}
       <div key={currentQuestion.id} className="space-y-2">
         <div className="space-y-1">
-          <Label className="text-base">
-            {currentQuestion.title}
-            {currentQuestion.required && <span className="text-red-500 ml-1">*</span>}
-          </Label>
+          {!shouldHideTitle(currentQuestion) && (
+            <Label className="text-base">
+              {currentQuestion.title}
+              {currentQuestion.required && <span className="text-red-500 ml-1">*</span>}
+            </Label>
+          )}
           {currentQuestion.description && (
             <p className="text-sm text-gray-500">
               <PlaceholderText text={currentQuestion.description} answers={answers} questions={questions} />
@@ -158,9 +160,10 @@ export function PagePreview({ questions, answers, onAnswerChange, pages, pageId,
             answers={answers}
             onAnswerChange={onAnswerChange}
             mode="preview"
+            surveyId={surveyId}
           />
         ) : (
-          renderQuestion(currentQuestion, questions, answers, handleAnswer)
+          renderQuestion(currentQuestion, questions, answers, handleAnswer, undefined, surveyId)
         )}
       </div>
     </div>

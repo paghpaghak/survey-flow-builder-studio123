@@ -1,11 +1,9 @@
 import {
-  Mail,
   Type,
   CheckSquare,
   List,
   ChevronDownSquare,
   Calendar,
-  Phone,
   Hash,
   Combine,
   GitCommitVertical,
@@ -44,10 +42,6 @@ const getIcon = (type: QuestionType) => {
       return <ChevronDownSquare size={16} />;
     case QUESTION_TYPES.Date:
       return <Calendar size={16} />;
-    case QUESTION_TYPES.Email:
-      return <Mail size={16} />;
-    case QUESTION_TYPES.Phone:
-      return <Phone size={16} />;
     case QUESTION_TYPES.Number:
       return <Hash size={16} />;
     case QUESTION_TYPES.ParallelGroup:
@@ -72,10 +66,6 @@ export default function QuestionNode({ data, selected = false }: QuestionNodePro
         return 'Выпадающий список';
       case QUESTION_TYPES.Date:
         return 'Дата';
-      case QUESTION_TYPES.Email:
-        return 'Email';
-      case QUESTION_TYPES.Phone:
-        return 'Телефон';
       case QUESTION_TYPES.Number:
         return 'Число';
       case QUESTION_TYPES.ParallelGroup:

@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuestionForm } from "@/hooks/useQuestionForm";
 import { useParallelBranch } from "@/hooks/useParallelBranch";
 import { useTransitionRules } from "@/hooks/useTransitionRules";
+import { useQuestionVisibilityRules } from "@/hooks/useVisibilityRules";
 import { 
   QuestionBasicFields, 
   QuestionTypeSelector, 
@@ -58,6 +59,9 @@ export default function QuestionEditDialog({
   // Логика правил перехода
   const transitionRules = useTransitionRules(formData.transitionRules);
 
+  // Логика правил видимости
+  const visibilityRules = useQuestionVisibilityRules(question.visibilityRules || []);
+
   // Состояние для редактирования подвопросов
   const [editingSubQuestionId, setEditingSubQuestionId] = React.useState<string | null>(null);
 
@@ -81,6 +85,14 @@ export default function QuestionEditDialog({
       updatedQuestion.transitionRules = validRules;
     }
 
+    // Добавляем валидные правила видимости
+    const validVisibilityRules = visibilityRules.getValidRules();
+    if (validVisibilityRules.length > 0) {
+      updatedQuestion.visibilityRules = validVisibilityRules;
+    } else {
+      updatedQuestion.visibilityRules = undefined;
+    }
+
     onSave?.(updatedQuestion);
     onClose();
   };
@@ -93,7 +105,7 @@ export default function QuestionEditDialog({
   return (
     <>
       <Dialog open onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-[773px] max-h-[90vh] flex flex-col">
           <div className="flex-1 overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="mb-4">
@@ -144,6 +156,7 @@ export default function QuestionEditDialog({
                   settings={formData.settings}
                   onChange={(settings) => updateField('settings', settings)}
                   readOnly={readOnly}
+                  question={formData}
                 />
               </TabsContent>
 
@@ -168,6 +181,7 @@ export default function QuestionEditDialog({
                   availableQuestions={availableQuestions}
                   currentQuestionId={question.id}
                   readOnly={readOnly}
+                  visibilityRules={visibilityRules}
                 />
               )}
             </Tabs>

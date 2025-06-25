@@ -10,6 +10,7 @@ interface ParallelGroupContentProps {
   onAnswerChange: (questionId: string, value: any) => void;
   settings: ParallelBranchSettings;
   index: number;
+  surveyId?: string;
 }
 
 export function ParallelGroupContent({
@@ -19,6 +20,7 @@ export function ParallelGroupContent({
   onAnswerChange,
   settings,
   index,
+  surveyId,
 }: ParallelGroupContentProps) {
   return (
     <div className="border rounded-lg p-4 bg-card">
@@ -47,7 +49,8 @@ export function ParallelGroupContent({
                   const answerKey = `${id}_${index}`;
                   onAnswerChange(answerKey, value);
                 },
-                index // Передаем индекс для правильного получения ответов
+                index, // Передаем индекс для правильного получения ответов
+                surveyId
               )}
             </div>
           ))}

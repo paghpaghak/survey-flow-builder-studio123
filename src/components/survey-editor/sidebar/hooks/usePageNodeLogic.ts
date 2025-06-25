@@ -46,18 +46,11 @@ export function usePageNodeLogic({
     return prevPages.flatMap(p => questions.filter(q => q.pageId === p.id));
   }, [pages, questions, page.id]);
 
-  // Проверяем, есть ли резолюция на этой странице
-  const resolution = useMemo(() => 
-    questions.find(q => q.pageId === page.id && q.type === 'resolution'),
-    [questions, page.id]
-  );
-
   return {
     pageQuestions,
     isEditing,
     isSelected,
     isPageExpanded,
     availableQuestions,
-    resolution,
   };
 } 
