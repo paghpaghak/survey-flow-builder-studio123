@@ -164,7 +164,10 @@ describe('API Functions', () => {
 
       const result = await fetchSurveys();
 
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3001/api/surveys');
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3001/api/surveys', {
+        credentials: 'include',
+        headers: expect.any(Headers),
+      });
       expect(result).toHaveLength(2);
       expect(result[0].id).toBe('1');
       expect(result[1].id).toBe('2');
@@ -173,7 +176,8 @@ describe('API Functions', () => {
     it('выбрасывает ошибку при неудачном запросе', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
-        statusText: 'Not Found'
+        statusText: 'Not Found',
+        text: () => Promise.resolve('Failed to fetch surveys')
       });
 
       await expect(fetchSurveys()).rejects.toThrow('Failed to fetch surveys');
@@ -195,7 +199,10 @@ describe('API Functions', () => {
 
       const result = await fetchSurveyById('123');
 
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3001/api/surveys?id=123');
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3001/api/surveys?id=123', {
+        credentials: 'include',
+        headers: expect.any(Headers),
+      });
       expect(result.id).toBe('123');
       expect(result.title).toBe('Test Survey');
     });
@@ -232,9 +239,8 @@ describe('API Functions', () => {
 
       expect(mockFetch).toHaveBeenCalledWith('http://localhost:3001/api/surveys', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        credentials: 'include',
+        headers: expect.any(Headers),
         body: JSON.stringify(newSurvey),
       });
       expect(result.id).toBe('123');
@@ -242,7 +248,8 @@ describe('API Functions', () => {
 
     it('выбрасывает ошибку при неудачном создании', async () => {
       mockFetch.mockResolvedValueOnce({
-        ok: false
+        ok: false,
+        text: () => Promise.resolve('Failed to create survey')
       });
 
       await expect(createSurvey({ title: 'Test' } as any)).rejects.toThrow('Failed to create survey');
@@ -266,9 +273,8 @@ describe('API Functions', () => {
 
       expect(mockFetch).toHaveBeenCalledWith('http://localhost:3001/api/surveys/123', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        credentials: 'include',
+        headers: expect.any(Headers),
         body: JSON.stringify(survey),
       });
       expect(result.id).toBe('123');
@@ -276,7 +282,8 @@ describe('API Functions', () => {
 
     it('выбрасывает ошибку при неудачном обновлении', async () => {
       mockFetch.mockResolvedValueOnce({
-        ok: false
+        ok: false,
+        text: () => Promise.resolve('Failed to update survey')
       });
 
       await expect(updateSurvey({ id: '123' } as any)).rejects.toThrow('Failed to update survey');
@@ -293,12 +300,15 @@ describe('API Functions', () => {
 
       expect(mockFetch).toHaveBeenCalledWith('http://localhost:3001/api/surveys/123', {
         method: 'DELETE',
+        credentials: 'include',
+        headers: expect.any(Headers),
       });
     });
 
     it('выбрасывает ошибку при неудачном удалении', async () => {
       mockFetch.mockResolvedValueOnce({
-        ok: false
+        ok: false,
+        text: () => Promise.resolve('Failed to delete survey')
       });
 
       await expect(deleteSurvey('123')).rejects.toThrow('Failed to delete survey');

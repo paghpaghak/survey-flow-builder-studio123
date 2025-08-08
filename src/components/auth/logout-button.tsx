@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
+import { apiJson } from '@/lib/api';
 
 export function LogoutButton() {
   const navigate = useNavigate();
@@ -21,18 +22,13 @@ export function LogoutButton() {
 
   const handleLogout = async () => {
     try {
-      // Удаляем токен из localStorage
-      localStorage.removeItem('auth-token');
-      
-      // Удаляем cookie через API
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-      });
+      await apiJson('/api/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
 
       // Перенаправляем на страницу входа
       navigate('/login');
     } catch (error) {
       console.error('Ошибка при выходе:', error);
+      navigate('/login');
     }
   };
 
