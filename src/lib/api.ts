@@ -2,6 +2,41 @@ import type { Survey } from '@survey-platform/shared-types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
+function readCookie(name: string): string | null {
+  const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()\[\]\\\/\+^])/g, '\\$1') + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+async function apiFetch(input: RequestInfo, init: RequestInit = {}) {
+  const csrf = readCookie('csrf-token');
+  const headers = new Headers(init.headers || {});
+  if (csrf) headers.set('X-CSRF-Token', csrf);
+  const res = await fetch(input, {
+    ...init,
+    headers,
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(text || `HTTP ${res.status}`);
+  }
+  return res;
+}
+
+// Унифицированный разбор ApiResponse<T>
+export async function apiJson<T>(input: RequestInfo, init: RequestInit = {}): Promise<T> {
+  const res = await apiFetch(input, init);
+  const json = await res.json();
+  if (json && typeof json === 'object' && 'success' in json) {
+    if (!json.success) {
+      const message = json.error || 'Request failed';
+      throw new Error(message);
+    }
+    return (json.data ?? null) as T;
+  }
+  return json as T; // обратная совместимость
+}
+
 // Функция для преобразования данных опроса
 export const transformSurveyData = (data: any): Survey => {
   if (!data) {
@@ -75,12 +110,8 @@ export const transformSurveyData = (data: any): Survey => {
 };
 
 export async function fetchSurveys(): Promise<Survey[]> {
-  const response = await fetch(`${API_URL}/surveys`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch surveys');
-  }
-  const data = await response.json();
-  const transformedData = data.map(transformSurveyData);
+  const data = await apiJson<any[]>(`${API_URL}/surveys`);
+  const transformedData = (Array.isArray(data) ? data : []).map(transformSurveyData);
   return transformedData;
 }
 
@@ -92,22 +123,10 @@ export async function fetchSurveys(): Promise<Survey[]> {
  * <returns>Данные опроса</returns>
  */
 export async function fetchSurveyById(id: string): Promise<Survey> {
-  const response = await fetch(`${API_URL}/surveys?id=${id}`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch survey');
-  }
-  const data = await response.json();
-  // Проверяем, получили ли мы массив и ищем нужный элемент по id
-  const surveyData = Array.isArray(data)
-    ? data.find(s => s._id === id || s.id === id)
-    : data;
-  
-  if (!surveyData) {
-    throw new Error('Survey not found');
-  }
-
-  const transformedData = transformSurveyData(surveyData);
-  return transformedData;
+  const data = await apiJson<any>(`${API_URL}/surveys?id=${id}`);
+  const surveyData = Array.isArray(data) ? data.find(s => s._id === id || s.id === id) : data;
+  if (!surveyData) throw new Error('Survey not found');
+  return transformSurveyData(surveyData);
 }
 
 /**
@@ -118,39 +137,24 @@ export async function fetchSurveyById(id: string): Promise<Survey> {
  * <returns>Созданный опрос</returns>
  */
 export async function createSurvey(survey: Omit<Survey, 'id'>): Promise<Survey> {
-  const response = await fetch(`${API_URL}/surveys`, {
+  const data = await apiJson<any>(`${API_URL}/surveys`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(survey),
   });
-  if (!response.ok) {
-    throw new Error('Failed to create survey');
-  }
-  const data = await response.json();
   return transformSurveyData(data);
 }
 
 export async function deleteSurvey(id: string): Promise<void> {
-  const response = await fetch(`${API_URL}/surveys/${id}`, {
-    method: 'DELETE',
-  });
-  if (!response.ok) {
-    throw new Error('Failed to delete survey');
-  }
+  await apiFetch(`${API_URL}/surveys/${id}`, { method: 'DELETE' });
 }
 
 export async function updateSurvey(survey: Survey): Promise<Survey> {
-  const response = await fetch(`${API_URL}/surveys/${survey.id}`, {
+  return apiJson<Survey>(`${API_URL}/surveys/${survey.id}`, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(survey),
   });
-  if (!response.ok) {
-    throw new Error('Failed to update survey');
-  }
-  return response.json();
-} 
+}

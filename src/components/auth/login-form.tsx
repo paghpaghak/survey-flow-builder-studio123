@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useForm } from 'react-hook-form';
 import type { LoginCredentials } from '@survey-platform/shared-types';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { apiJson } from '@/lib/api';
 
 export function LoginForm() {
   const navigate = useNavigate();
@@ -28,22 +29,11 @@ export function LoginForm() {
     };
 
     try {
-      const response = await fetch('/api/auth/login', {
+      await apiJson('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials),
       });
-
-      if (!response.ok) {
-        throw new Error('Неверный email или пароль');
-      }
-
-      const data = await response.json();
-      
-      // Сохраняем токен в localStorage для клиентской авторизации
-      localStorage.setItem('auth-token', data.token);
-      
-      // Редиректим всех пользователей на страницу со списком опросов
       navigate('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Произошла ошибка');

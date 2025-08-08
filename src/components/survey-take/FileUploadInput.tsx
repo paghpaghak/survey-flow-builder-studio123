@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { X, FileIcon, Upload } from 'lucide-react';
 import { FileUploadSettings, UploadedFile, FileUploadAnswer } from '@survey-platform/shared-types';
+import { apiFetch } from '@/lib/api';
 
 interface FileUploadInputProps {
   settings: FileUploadSettings;
@@ -78,7 +79,7 @@ export function FileUploadInput({
     if (surveyId) formData.append('surveyId', surveyId);
     if (questionId) formData.append('questionId', questionId);
 
-    const response = await fetch('/api/files/upload', {
+    const response = await apiFetch('/api/files/upload', {
       method: 'POST',
       body: formData,
     });
@@ -88,8 +89,9 @@ export function FileUploadInput({
       throw new Error(errorData.error || 'Ошибка загрузки файла');
     }
 
-    const result = await response.json();
-    
+    const json = await response.json();
+    const result = json?.data ?? json;
+
     return {
       id: result.fileId,
       name: result.filename,

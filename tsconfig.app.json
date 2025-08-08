@@ -1,33 +1,35 @@
 {
-    "include":  [
-                    "src"
-                ],
-    "compilerOptions":  {
-                            "skipLibCheck":  true,
-                            "allowImportingTsExtensions":  true,
-                            "noUnusedLocals":  false,
-                            "jsx":  "react-jsx",
-                            "module":  "ESNext",
-                            "noUnusedParameters":  false,
-                            "isolatedModules":  true,
-                            "target":  "ES2020",
-                            "baseUrl":  ".",
-                            "moduleResolution":  "bundler",
-                            "useDefineForClassFields":  true,
-                            "moduleDetection":  "force",
-                            "paths":  {
-                                          "@/*":  [
-                                                      "./src/*"
-                                                  ]
-                                      },
-                            "strict":  false,
-                            "noImplicitAny":  false,
-                            "noEmit":  true,
-                            "noFallthroughCasesInSwitch":  false,
-                            "lib":  [
-                                        "ES2020",
-                                        "DOM",
-                                        "DOM.Iterable"
-                                    ]
-                        }
+    "include": [
+        "src"
+    ],
+    "compilerOptions": {
+        "skipLibCheck": true,
+        "allowImportingTsExtensions": true,
+        "noUnusedLocals": true,
+        "jsx": "react-jsx",
+        "module": "ESNext",
+        "noUnusedParameters": true,
+        "isolatedModules": true,
+        "target": "ES2020",
+        "baseUrl": ".",
+        "moduleResolution": "bundler",
+        "useDefineForClassFields": true,
+        "moduleDetection": "force",
+        "paths": {
+            "@/*": [
+                "./src/*"
+            ]
+        },
+        "strict": true,
+        "noImplicitAny": true,
+        "strictNullChecks": true,
+        "exactOptionalPropertyTypes": true,
+        "noEmit": true,
+        "noFallthroughCasesInSwitch": true,
+        "lib": [
+            "ES2020",
+            "DOM",
+            "DOM.Iterable"
+        ]
+    }
 }

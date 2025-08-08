@@ -110,7 +110,10 @@ const options = {
       }
     }
   },
-  apis: ['./server/index.ts'], // путь к файлу с API
+  apis: [
+    './server/routes/*.ts',        // Роуты с API документацией
+    './server/controllers/*.ts',   // Контроллеры с Swagger комментариями
+  ], // пути к файлам с API
 };
 
 export default swaggerJsdoc(options); 

@@ -1,10 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { ReactNode } from 'react';
-
-function isAuthenticated(): boolean {
-  // Проверяем наличие токена в localStorage (или можно заменить на cookie)
-  return Boolean(localStorage.getItem('auth-token'));
-}
+import { useAuth } from '@/hooks/useAuth';
 
 interface RequireAuthProps {
   children: ReactNode;
@@ -12,10 +8,10 @@ interface RequireAuthProps {
 
 export function RequireAuth({ children }: RequireAuthProps) {
   const location = useLocation();
+  const { user, isLoading } = useAuth();
 
-  if (!isAuthenticated()) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
+  if (isLoading) return null; // можно заменить на skeleton
+  if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
 
   return <>{children}</>;
-} 
+}

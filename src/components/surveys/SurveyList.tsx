@@ -3,6 +3,7 @@ import type { Survey } from '@survey-platform/shared-types';
 import { CreateSurveyDialog } from './CreateSurveyDialog';
 import { EditSurveyDialog } from './EditSurveyDialog';
 import { useSurveyListLogic } from './hooks/useSurveyListLogic';
+import { useUserRole } from '@/hooks/useUserRole';
 import {
   SurveySearchBar,
   SurveyFilters,
@@ -18,6 +19,8 @@ interface SurveyListProps {
 }
 
 export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyListProps) {
+  const { canCreateSurvey, canEditSurvey, canDeleteSurvey, canViewResponses } = useUserRole();
+  
   const {
     // Состояние
     isAdmin,
@@ -76,9 +79,11 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
             onSortChange={handleSortChange}
           />
 
-          <CreateSurveyDialog 
-            onSurveyCreated={handleSurveyCreated}
-          />
+          {canCreateSurvey && (
+            <CreateSurveyDialog 
+              onSurveyCreated={handleSurveyCreated}
+            />
+          )}
         </div>
       </div>
 
@@ -93,6 +98,9 @@ export function SurveyList({ surveys, reloadSurveys, onSurveyCreated }: SurveyLi
           deleteSurvey={deleteSurvey}
           reloadSurveys={reloadSurveys}
           setEditingSurvey={setEditingSurvey}
+          canEditSurvey={canEditSurvey}
+          canDeleteSurvey={canDeleteSurvey}
+          canViewResponses={canViewResponses}
         />
       ) : (
         <SurveyEmptyState

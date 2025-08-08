@@ -13,6 +13,9 @@ interface SurveyTableProps {
   deleteSurvey: (id: string) => Promise<void>;
   reloadSurveys?: () => void;
   setEditingSurvey: (survey: Survey | null) => void;
+  canEditSurvey: boolean;
+  canDeleteSurvey: boolean;
+  canViewResponses: boolean;
 }
 
 export function SurveyTable({
@@ -25,6 +28,9 @@ export function SurveyTable({
   deleteSurvey,
   reloadSurveys,
   setEditingSurvey,
+  canEditSurvey,
+  canDeleteSurvey,
+  canViewResponses,
 }: SurveyTableProps) {
   return (
     <div className="rounded-md border">
@@ -54,6 +60,9 @@ export function SurveyTable({
               deleteSurvey={deleteSurvey}
               reloadSurveys={reloadSurveys}
               setEditingSurvey={setEditingSurvey}
+              canEditSurvey={canEditSurvey}
+              canDeleteSurvey={canDeleteSurvey}
+              canViewResponses={canViewResponses}
             />
           ))}
         </TableBody>

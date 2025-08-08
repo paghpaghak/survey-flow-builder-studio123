@@ -1,4 +1,5 @@
 import type { User, AuthState as AuthStateInterface } from '@survey-platform/shared-types';
+import { apiJson } from '@/lib/api';
 import { useState, useEffect } from 'react';
 
 export function useAuth(): AuthStateInterface {
@@ -9,11 +10,7 @@ export function useAuth(): AuthStateInterface {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch('/api/auth/me');
-        if (!response.ok) {
-          throw new Error('Не авторизован');
-        }
-        const data = await response.json();
+        const data = await apiJson<{ user: User }>('/api/auth/me');
         setUser(data.user);
       } catch (error) {
         console.error('Ошибка при проверке авторизации:', error);

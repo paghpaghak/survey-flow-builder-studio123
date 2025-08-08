@@ -103,3 +103,7 @@
    - Measure effectiveness
 
 Remember: These rules are guidelines to help maintain code quality and team efficiency. They should be adapted to your specific project needs and team requirements. 
+
+Мы пишем чистый код, все должно быть модульно и масштабируемо. Никаких костылей, никаких больших файлов, никаких быстрых и временных решений. Если файл получается большой — разбивай на мелкие функции.
+
+Код мы пишем в CursorAI, команды выполняем в powershell (работаем мы за ПК на Windows), проект подключенк к удаленной базе данных mongoDB.
