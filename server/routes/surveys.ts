@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { SurveyController } from '../controllers/SurveyController.js';
-import { requireAuth } from '../middleware/auth.js';
-import { requireAnyRole } from '../middleware/roles.js';
+import { SurveyController } from '../controllers/SurveyController';
+import { requireAuth } from '../middleware/auth';
+import { requireAnyRole } from '../middleware/roles';
 
 /**
  * Роуты для API опросов

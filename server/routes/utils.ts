@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { UtilsController } from '../controllers/UtilsController.js';
-import { requireAuth } from '../middleware/auth.js';
-import { requireRole } from '../middleware/roles.js';
+import { UtilsController } from '../controllers/UtilsController';
+import { requireAuth } from '../middleware/auth';
+import { requireRole } from '../middleware/roles';
 
 /**
  * Роуты для утилитарных эндпоинтов

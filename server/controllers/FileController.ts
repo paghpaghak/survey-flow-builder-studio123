@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { FileService } from '../services/FileService.js';
-import { UploadFileSchema } from '../validation/schemas.js';
-import { ApiError } from '../middleware/error-handler.js';
+import { FileService } from '../services/FileService';
+import { UploadFileSchema } from '../validation/schemas';
+import { ApiError } from '../middleware/error-handler';
 
 /**
  * Контроллер для обработки HTTP запросов работы с файлами

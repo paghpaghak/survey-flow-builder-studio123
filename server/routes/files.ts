@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { FileController } from '../controllers/FileController.js';
-import { uploadConfig } from '../config/multer.js';
-import { requireAuth } from '../middleware/auth.js';
-import { requireAnyRole } from '../middleware/roles.js';
+import { FileController } from '../controllers/FileController';
+import { uploadConfig } from '../config/multer';
+import { requireAuth } from '../middleware/auth';
+import { requireAnyRole } from '../middleware/roles';
 
 /**
  * Роуты для API файлов
@@ -20,6 +20,6 @@ router.post('/upload', requireAnyRole('viewer', 'expert', 'editor', 'admin'), up
 router.get('/:fileId', requireAnyRole('viewer', 'expert', 'editor', 'admin'), FileController.download);
 
 // Получение информации о файле
-router.get('/:fileId/info', FileController.getInfo);
+router.get('/:fileId/info', requireAnyRole('viewer', 'expert', 'editor', 'admin'), FileController.getInfo);
 
 export default router; 

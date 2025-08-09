@@ -1,5 +1,5 @@
 import type { CorsOptions } from 'cors';
-import { getCorsOrigins } from './env.js';
+import { getCorsOrigins } from './env';
 
 /**
  * Конфигурация CORS для Express сервера

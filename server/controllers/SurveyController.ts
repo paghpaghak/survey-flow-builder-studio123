@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { SurveyService } from '../services/SurveyService.js';
-import { CreateSurveySchema, UpdateSurveySchema, CreateResponseSchema } from '../validation/schemas.js';
-import { ApiError } from '../middleware/error-handler.js';
+import { SurveyService } from '../services/SurveyService';
+import { CreateSurveySchema, UpdateSurveySchema, CreateResponseSchema } from '../validation/schemas';
+import { ApiError } from '../middleware/error-handler';
 
 /**
  * Контроллер для обработки HTTP запросов к API опросов
@@ -31,7 +31,7 @@ export class SurveyController {
       res.json({ success: true, data: surveys });
     } catch (error) {
       console.error('Error in SurveyController.getAll:', error);
-      res.status(500).json({ success: false, error: 'Failed to fetch surveys' });
+      throw new ApiError('DB_ERROR');
     }
   }
 
@@ -62,15 +62,13 @@ export class SurveyController {
       const { id } = req.params;
       const survey = await SurveyService.getSurveyById(id);
       
-      if (!survey) {
-        res.status(404).json({ success: false, error: 'Survey not found' });
-        return;
-      }
+      if (!survey) throw new ApiError('NOT_FOUND');
       
       res.json({ success: true, data: survey });
     } catch (error) {
       console.error('Error in SurveyController.getById:', error);
-      res.status(500).json({ success: false, error: 'Failed to fetch survey' });
+      if (error instanceof ApiError) throw error;
+      throw new ApiError('DB_ERROR');
     }
   }
 
@@ -101,7 +99,8 @@ export class SurveyController {
       res.status(201).json({ success: true, data: newSurvey });
     } catch (error) {
       console.error('Error in SurveyController.create:', error);
-      res.status(500).json({ success: false, error: 'Failed to create survey' });
+      if (error instanceof ApiError) throw error;
+      throw new ApiError('DB_ERROR');
     }
   }
 
@@ -139,16 +138,13 @@ export class SurveyController {
       const updateData = UpdateSurveySchema.parse(req.body);
       
       const success = await SurveyService.updateSurvey(id, updateData);
-      
-      if (!success) {
-        res.status(404).json({ success: false, error: 'Survey not found' });
-        return;
-      }
+      if (!success) throw new ApiError('NOT_FOUND');
       
       res.json({ success: true });
     } catch (error) {
       console.error('Error in SurveyController.update:', error);
-      res.status(500).json({ success: false, error: 'Failed to update survey' });
+      if (error instanceof ApiError) throw error;
+      throw new ApiError('DB_ERROR');
     }
   }
 
@@ -175,10 +171,7 @@ export class SurveyController {
       const { id } = req.params;
       const result = await SurveyService.deleteSurvey(id);
       
-      if (result.deletedSurvey === 0) {
-        res.status(404).json({ success: false, error: 'Survey not found' });
-        return;
-      }
+      if (result.deletedSurvey === 0) throw new ApiError('NOT_FOUND');
 
       res.status(200).json({
         success: true,
@@ -190,7 +183,8 @@ export class SurveyController {
       });
     } catch (error) {
       console.error('Error in SurveyController.delete:', error);
-      res.status(500).json({ success: false, error: 'Failed to delete survey' });
+      if (error instanceof ApiError) throw error;
+      throw new ApiError('DB_ERROR');
     }
   }
 
@@ -223,7 +217,7 @@ export class SurveyController {
       res.json({ success: true, data: responses });
     } catch (error) {
       console.error('Error in SurveyController.getResponses:', error);
-      res.status(500).json({ success: false, error: 'Failed to fetch responses' });
+      throw new ApiError('DB_ERROR');
     }
   }
 

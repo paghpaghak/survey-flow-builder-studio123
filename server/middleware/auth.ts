@@ -1,7 +1,7 @@
 import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { RequestWithUser } from '../types/api.js';
-import { env } from '../config/env.js';
+import { RequestWithUser } from '../types/api';
+import { env } from '../config/env';
 
 /**
  * Middleware для проверки JWT токена

@@ -1,5 +1,5 @@
 import type { NextFunction, Response } from 'express';
-import type { RequestWithUser } from '../types/api.js';
+import type { RequestWithUser } from '../types/api';
 import type { UserRole } from '@survey-platform/shared-types';
 
 const roleOrder: Record<UserRole, number> = {

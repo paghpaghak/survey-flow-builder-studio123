@@ -4,14 +4,28 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 /**
  * Обертка над `fetch`, добавляющая общую обработку ошибок и передачу cookie.
  */
+function readCookie(name: string): string | null {
+  const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 export async function apiFetch(
   input: RequestInfo | URL,
   init: RequestInit = {}
 ): Promise<Response> {
   try {
+    const method = (init.method || 'GET').toUpperCase();
+    const headers = new Headers(init.headers || {});
+
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+      const csrf = readCookie('csrf-token');
+      if (csrf) headers.set('X-CSRF-Token', csrf);
+    }
+
     const response = await fetch(input, {
       credentials: 'include',
       ...init,
+      headers,
     });
 
     if (!response.ok) {

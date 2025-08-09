@@ -46,6 +46,12 @@ export interface FileMetadata {
  * Результат аутентификации
  */
 export interface AuthResult {
-  user: any;
+  user: {
+    id: string;
+    email: string;
+    role: string;
+    createdAt: Date | string;
+    updatedAt: Date | string;
+  };
   token: string;
 } 
