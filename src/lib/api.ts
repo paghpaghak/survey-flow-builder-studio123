@@ -1,7 +1,48 @@
 import type { Survey } from '@survey-platform/shared-types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+/**
+ * Обертка над `fetch`, добавляющая общую обработку ошибок и передачу cookie.
+ */
+export async function apiFetch(
+  input: RequestInfo | URL,
+  init: RequestInit = {}
+): Promise<Response> {
+  try {
+    const response = await fetch(input, {
+      credentials: 'include',
+      ...init,
+    });
 
+    if (!response.ok) {
+      let message = `Request failed with status ${response.status}`;
+      try {
+        const errorData = await response.json();
+        message = errorData?.error || errorData?.message || message;
+      } catch {
+        // ignore json parse errors
+      }
+      throw new Error(message);
+    }
+
+    return response;
+  } catch (error) {
+    if (error instanceof Error) throw error;
+    throw new Error('Network error');
+  }
+}
+
+/**
+ * Выполняет запрос и возвращает JSON-ответ.
+ */
+export async function apiJson<T>(
+  input: RequestInfo | URL,
+  init: RequestInit = {}
+): Promise<T> {
+  const response = await apiFetch(input, init);
+  const data = await response.json().catch(() => null);
+  return (data?.data ?? data) as T;
+}
 // Функция для преобразования данных опроса
 export const transformSurveyData = (data: any): Survey => {
   if (!data) {
