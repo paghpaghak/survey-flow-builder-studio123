@@ -2,41 +2,6 @@ import type { Survey } from '@survey-platform/shared-types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
-function readCookie(name: string): string | null {
-  const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()\[\]\\\/\+^])/g, '\\$1') + '=([^;]*)'));
-  return match ? decodeURIComponent(match[1]) : null;
-}
-
-async function apiFetch(input: RequestInfo, init: RequestInit = {}) {
-  const csrf = readCookie('csrf-token');
-  const headers = new Headers(init.headers || {});
-  if (csrf) headers.set('X-CSRF-Token', csrf);
-  const res = await fetch(input, {
-    ...init,
-    headers,
-    credentials: 'include',
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(text || `HTTP ${res.status}`);
-  }
-  return res;
-}
-
-// Унифицированный разбор ApiResponse<T>
-export async function apiJson<T>(input: RequestInfo, init: RequestInit = {}): Promise<T> {
-  const res = await apiFetch(input, init);
-  const json = await res.json();
-  if (json && typeof json === 'object' && 'success' in json) {
-    if (!json.success) {
-      const message = json.error || 'Request failed';
-      throw new Error(message);
-    }
-    return (json.data ?? null) as T;
-  }
-  return json as T; // обратная совместимость
-}
-
 // Функция для преобразования данных опроса
 export const transformSurveyData = (data: any): Survey => {
   if (!data) {
@@ -55,7 +20,7 @@ export const transformSurveyData = (data: any): Survey => {
     // Преобразуем страницы и связываем их с вопросами
     const pages = Array.isArray(version.pages) ? version.pages.map((page: any) => {
       // Находим вопросы для этой страницы
-      const pageQuestions = questions.filter(q => q.pageId === (page.id || page._id));
+      const pageQuestions = questions.filter((q: { pageId: any; }) => q.pageId === (page.id || page._id));
       
       return {
         id: page.id || page._id,
