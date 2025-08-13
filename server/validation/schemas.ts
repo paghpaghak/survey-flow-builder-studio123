@@ -154,14 +154,56 @@ const SurveyVersionSchema = z.object({
   archivedAt: z.string().optional(),
 });
 
-export const CreateSurveySchema = z.object({
+// Дополнительная проверка: запрет глубины > 1 и циклов для ParallelGroup
+function validateParallelGroups(questions: any[]): void {
+  const byId = new Map<string, any>(questions.map(q => [q.id, q]));
+  for (const q of questions) {
+    if (q.type !== QUESTION_TYPES.ParallelGroup) continue;
+    const children: string[] = Array.isArray(q.parallelQuestions) ? q.parallelQuestions : [];
+    for (const childId of children) {
+      const child = byId.get(childId);
+      if (!child) continue;
+      // Запрет самоссылок и циклов
+      if (childId === q.id) {
+        throw new Error('Параллельная ветка не может ссылаться на саму себя');
+      }
+      // Запрет глубины > 1: дочерняя PG не должна содержать PG
+      if (child.type === QUESTION_TYPES.ParallelGroup) {
+        const grandChildren: string[] = Array.isArray(child.parallelQuestions) ? child.parallelQuestions : [];
+        const hasPgGrand = grandChildren.some(gcId => (byId.get(gcId)?.type === QUESTION_TYPES.ParallelGroup));
+        if (hasPgGrand) {
+          throw new Error('Запрещена вложенность параллельных веток глубже одного уровня');
+        }
+      }
+    }
+  }
+}
+
+// Базовая схема опроса без доп. проверок, чтобы можно было брать partial()
+const BaseSurveySchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().default(''),
   status: z.enum(['draft', 'published', 'archived']).default('draft'),
   versions: z.array(SurveyVersionSchema).optional(),
 });
 
-export const UpdateSurveySchema = CreateSurveySchema.partial();
+export const CreateSurveySchema = BaseSurveySchema.superRefine((data, ctx) => {
+  try {
+    const questions = data.versions?.flatMap(v => v.questions) || [];
+    validateParallelGroups(questions);
+  } catch (e: any) {
+    ctx.addIssue({ code: 'custom', message: e?.message || 'Ошибка валидации параллельных веток' });
+  }
+});
+
+export const UpdateSurveySchema = BaseSurveySchema.partial().superRefine((data, ctx) => {
+  try {
+    const questions = data.versions?.flatMap((v: any) => v.questions) || [];
+    validateParallelGroups(questions);
+  } catch (e: any) {
+    ctx.addIssue({ code: 'custom', message: e?.message || 'Ошибка валидации параллельных веток' });
+  }
+});
 
 // Responses
 export const CreateResponseSchema = z.object({

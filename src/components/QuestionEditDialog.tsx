@@ -209,7 +209,7 @@ export default function QuestionEditDialog({
         <QuestionEditDialog
           question={availableQuestions.find(q => q.id === editingSubQuestionId)!}
           availableQuestions={availableQuestions.filter(q => 
-            parallelBranch.questions.includes(q.id) && q.id !== editingSubQuestionId
+            q.pageId === question.pageId && q.id !== editingSubQuestionId
           )}
           onClose={() => setEditingSubQuestionId(null)}
           onSave={updatedQ => {

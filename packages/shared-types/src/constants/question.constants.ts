@@ -103,7 +103,7 @@ export const PARALLEL_DISPLAY_MODES = [
 // Ограничения для параллельных веток
 export const PARALLEL_BRANCH_LIMITS = {
   MIN_ITEMS: 1,
-  MAX_ITEMS: 30,
+  MAX_ITEMS: 15,
   DEFAULT_MIN: 1,
   DEFAULT_MAX: 5
 } as const;

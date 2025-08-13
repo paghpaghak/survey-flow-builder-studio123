@@ -13,6 +13,7 @@ export function validateDragOperation(
   overQuestion: Question,
   allQuestions: Question[]
 ): DragValidationResult {
+  // Запрещаем межстраничные переносы в любом случае
   // Проверяем, находятся ли вопросы в параллельных группах
   const isActiveInParallel = isQuestionInParallelGroup(activeQuestion.id, allQuestions);
   const isOverInParallel = isQuestionInParallelGroup(overQuestion.id, allQuestions);
@@ -25,7 +26,7 @@ export function validateDragOperation(
     };
   }
   
-  // Если оба вопроса в параллельных группах, проверяем, что это одна группа
+  // Если оба вопроса в параллельных группах, проверяем, что это одна и та же группа
   if (isActiveInParallel && isOverInParallel) {
     const activeParentGroup = getParentParallelGroup(activeQuestion.id, allQuestions);
     const overParentGroup = getParentParallelGroup(overQuestion.id, allQuestions);
@@ -36,6 +37,13 @@ export function validateDragOperation(
         errorMessage: 'Перемещение вопросов между разными параллельными ветками запрещено.'
       };
     }
+    // Дополнительно: если переносим параллельную группу внутрь другой параллельной группы — запрещено (глубина > 1)
+    if (activeQuestion.type === QUESTION_TYPES.ParallelGroup && overParentGroup) {
+      return {
+        isValid: false,
+        errorMessage: 'Нельзя вкладывать параллельную ветку в параллельную ветку через перетаскивание.'
+      };
+    }
   }
   
   // Проверяем, что вопросы находятся на одной странице
@@ -44,6 +52,18 @@ export function validateDragOperation(
       isValid: false,
       errorMessage: 'Перемещение вопросов между страницами запрещено.'
     };
+  }
+
+  // Запрет: перемещение параллельной группы между разными родителями даже на одной странице
+  if (activeQuestion.type === QUESTION_TYPES.ParallelGroup && isActiveInParallel) {
+    const activeParentGroup = getParentParallelGroup(activeQuestion.id, allQuestions);
+    const overParentGroup = getParentParallelGroup(overQuestion.id, allQuestions);
+    if (activeParentGroup && (!overParentGroup || activeParentGroup.id !== overParentGroup.id)) {
+      return {
+        isValid: false,
+        errorMessage: 'Перемещение дочерней параллельной ветки к другому родителю запрещено.'
+      };
+    }
   }
   
   return { isValid: true };
