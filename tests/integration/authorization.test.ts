@@ -16,7 +16,7 @@ process.env.BODY_LIMIT = '1mb';
 vi.mock('dotenv/config', () => ({}));
 
 // Мокаем env.ts
-vi.mock('../../server/config/env.js', () => ({
+vi.mock('../../server/config/env', () => ({
   env: {
     NODE_ENV: 'test',
     PORT: '3001',
@@ -29,7 +29,7 @@ vi.mock('../../server/config/env.js', () => ({
 }));
 
 // Мокаем MongoDB
-vi.mock('../../server/config/database.js', () => {
+vi.mock('../../server/config/database', () => {
   const mockCollection = {
     deleteMany: vi.fn().mockResolvedValue({}),
     insertOne: vi.fn().mockResolvedValue({ insertedId: 'test-id' }),
@@ -74,7 +74,7 @@ vi.mock('../../server/config/database.js', () => {
 });
 
 // Мокаем AuthService
-vi.mock('../../server/services/AuthService.js', () => {
+vi.mock('../../server/services/AuthService', () => {
   const mockAuthService = {
     login: vi.fn(),
     getUserProfile: vi.fn(),

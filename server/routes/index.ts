@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import surveysRouter from './surveys.js';
-import authRouter from './auth.js';
-import filesRouter from './files.js';
-import utilsRouter from './utils.js';
+import surveysRouter from './surveys';
+import authRouter from './auth';
+import filesRouter from './files';
+import utilsRouter from './utils';
 
 /**
  * Главный роутер API

@@ -70,11 +70,7 @@ export class UtilsController {
       });
     } catch (error) {
       console.error('MongoDB connection test error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to connect to MongoDB',
-        data: { message: error instanceof Error ? error.message : 'Unknown error' }
-      });
+      throw new (await import('../middleware/error-handler.js')).ApiError('DB_ERROR');
     }
   }
 
@@ -108,15 +104,11 @@ export class UtilsController {
       if (success) {
         res.json({ success: true, data: { message: 'Database collections initialized successfully' } });
       } else {
-        res.status(500).json({ success: false, error: 'Failed to initialize collections' });
+        throw new (await import('../middleware/error-handler.js')).ApiError('DB_ERROR');
       }
     } catch (error) {
       console.error('Error in UtilsController.initializeDatabase:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to initialize database',
-        data: { message: error instanceof Error ? error.message : 'Unknown error' }
-      });
+      throw new (await import('../middleware/error-handler.js')).ApiError('DB_ERROR');
     }
   }
 } 

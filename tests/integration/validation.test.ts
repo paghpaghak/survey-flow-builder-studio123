@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { LoginSchema, CreateSurveySchema, UpdateSurveySchema, CreateResponseSchema, UploadFileSchema } from '../../server/validation/schemas.js';
+import { LoginSchema, CreateSurveySchema, UpdateSurveySchema, CreateResponseSchema, UploadFileSchema } from '../../server/validation/schemas';
 
 describe('Zod Validation Tests', () => {
   describe('LoginSchema validation', () => {

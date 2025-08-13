@@ -1,5 +1,5 @@
 import { MongoClient, Db } from 'mongodb';
-import { env } from './env.js';
+import { env } from './env';
 
 /**
  * Конфигурация и управление подключением к MongoDB

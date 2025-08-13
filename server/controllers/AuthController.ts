@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
-import { AuthService } from '../services/AuthService.js';
-import { RequestWithUser } from '../types/api.js';
-import { setCsrfCookie } from '../middleware/csrf.js';
-import { LoginSchema } from '../validation/schemas.js';
-import { ApiError } from '../middleware/error-handler.js';
-import { ERROR_CODES } from '../errors/error-codes.js';
+import { AuthService } from '../services/AuthService';
+import { RequestWithUser } from '../types/api';
+import { setCsrfCookie } from '../middleware/csrf';
+import { LoginSchema } from '../validation/schemas';
+import { ApiError } from '../middleware/error-handler';
+import { ERROR_CODES } from '../errors/error-codes';
 
 /**
  * Контроллер для обработки HTTP запросов аутентификации
@@ -39,8 +39,6 @@ export class AuthController {
    *               properties:
    *                 user:
    *                   type: object
-   *                 token:
-   *                   type: string
    *       401:
    *         description: Неверный email или пароль
    */

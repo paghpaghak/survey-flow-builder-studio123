@@ -3,12 +3,12 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { corsOptions } from './config/cors.js';
-import { env } from './config/env.js';
-import { setupSwagger } from './config/swagger.js';
-import { csrfProtection } from './middleware/csrf.js';
-import apiRoutes from './routes/index.js';
-import { errorHandler } from './middleware/error-handler.js';
+import { corsOptions } from './config/cors';
+import { env } from './config/env';
+import { setupSwagger } from './config/swagger';
+import { csrfProtection } from './middleware/csrf';
+import apiRoutes from './routes/index';
+import { errorHandler } from './middleware/error-handler';
 
 /**
  * Настройка Express приложения
@@ -57,4 +57,4 @@ function createApp(): express.Application {
   return app;
 }
 
-export default createApp(); 
+export default createApp();

@@ -56,29 +56,49 @@ export function SurveyPreview({ questions, pages, onClose, surveyId }: SurveyPre
     if (!answer) return false;
 
     switch (question.type) {
-      case QUESTION_TYPES.ParallelGroup:
-        // Для параллельной группы проверяем наличие ответа на количество
+      case QUESTION_TYPES.ParallelGroup: {
         const countKey = question.id + '_count';
-        const count = Number(answers[countKey]) || 0;
-        if (count <= 0) return false;
-        
-        // Проверяем ответы на все вложенные обязательные вопросы
-        if (question.parallelQuestions) {
-          for (const subQuestionId of question.parallelQuestions) {
-            const subQuestion = questions.find(q => q.id === subQuestionId);
-            if (subQuestion?.required) {
-              // Проверяем ответы для всех повторений
-              for (let i = 0; i < count; i++) {
-                const subAnswerKey = `${subQuestionId}_${i}`;
-                const subAnswer = answers[subAnswerKey];
-                if (!isAnswerValid(subQuestion, subAnswer)) {
-                  return false;
+        const parentCount = Number(answers[countKey]) || 0;
+        if (parentCount <= 0) return false;
+
+        // Валидация под-уровня: если среди под-вопросов есть PG — валидируем её с учётом общего child.count
+        for (const subId of question.parallelQuestions || []) {
+          const subQ = questions.find(q => q.id === subId);
+          if (!subQ) continue;
+
+          if (subQ.type === QUESTION_TYPES.ParallelGroup) {
+            // Общий child.count
+            const childCountKey = `${subQ.id}_count`;
+            const childCount = Number(answers[childCountKey]) || 0;
+            if (subQ.required && childCount <= 0) return false;
+            // Для каждого повтора родителя проверяем каждый повтор дочерней PG
+            for (let i = 0; i < parentCount; i++) {
+              for (const grandId of subQ.parallelQuestions || []) {
+                const grandQ = questions.find(q => q.id === grandId);
+                if (grandQ?.required) {
+                  for (let j = 0; j < childCount; j++) {
+                    const key = `${grandId}_${j}`;
+                    const val = answers[key];
+                    if (!isAnswerValid(grandQ, val)) {
+                      return false;
+                    }
+                  }
                 }
+              }
+            }
+          } else if (subQ.required) {
+            // Обычные под-вопросы родителя: проверяем все итерации
+            for (let i = 0; i < parentCount; i++) {
+              const subKey = `${subQ.id}_${i}`;
+              const subVal = answers[subKey];
+              if (!isAnswerValid(subQ, subVal)) {
+                return false;
               }
             }
           }
         }
         return true;
+      }
       case QUESTION_TYPES.Checkbox:
         return Array.isArray(answer) && answer.length > 0;
       case QUESTION_TYPES.Radio:
