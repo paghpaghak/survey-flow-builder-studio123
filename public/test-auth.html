@@ -8,6 +8,7 @@
     <button onclick="testLogin()">Test Login</button>
     <button onclick="testSurveys()">Test Surveys</button>
     <button onclick="checkCookies()">Check Cookies</button>
+    <button onclick="testAuthToken()">Test Auth Token</button>
     <div id="result"></div>
 
     <script>
@@ -43,7 +44,33 @@
 
         function checkCookies() {
             const cookies = document.cookie;
-            document.getElementById('result').innerHTML = `<pre>Cookies: ${cookies}</pre>`;
+            document.getElementById('result').innerHTML = `<pre>All Cookies: ${cookies}</pre>`;
+        }
+
+        async function testAuthToken() {
+            try {
+                // Try to get auth token from cookie
+                const authToken = document.cookie
+                    .split('; ')
+                    .find(row => row.startsWith('auth-token='))
+                    ?.split('=')[1];
+                
+                if (!authToken) {
+                    document.getElementById('result').innerHTML = `<pre>No auth-token cookie found</pre>`;
+                    return;
+                }
+
+                // Test with Authorization header
+                const response = await fetch('https://survey-flow-builder-studio123.onrender.com/api/surveys', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                const data = await response.json();
+                document.getElementById('result').innerHTML = `<pre>Auth Token Test Status: ${response.status}\n${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                document.getElementById('result').innerHTML = `<pre>Auth Token Test Error: ${error.message}</pre>`;
+            }
         }
     </script>
 </body>
