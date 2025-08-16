@@ -1,11 +1,25 @@
 import type { User, AuthState as AuthStateInterface } from '@survey-platform/shared-types';
 import { apiJson } from '@/lib/api';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
-export function useAuth(): AuthStateInterface {
+export function useAuth(): AuthStateInterface & { logout: () => void } {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const logout = useCallback(async () => {
+    try {
+      await apiJson('/api/auth/logout', { method: 'POST' });
+    } catch (error) {
+      console.error('Ошибка при выходе:', error);
+    } finally {
+      // Очищаем localStorage
+      localStorage.removeItem('auth-token');
+      // Очищаем состояние
+      setUser(null);
+      setError(null);
+    }
+  }, []);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -16,6 +30,8 @@ export function useAuth(): AuthStateInterface {
         console.error('Ошибка при проверке авторизации:', error);
         setError(error instanceof Error ? error.message : 'Неизвестная ошибка');
         setUser(null);
+        // Очищаем localStorage при ошибке авторизации
+        localStorage.removeItem('auth-token');
       } finally {
         setIsLoading(false);
       }
@@ -24,5 +40,5 @@ export function useAuth(): AuthStateInterface {
     checkAuth();
   }, []);
 
-  return { user, isLoading, error };
+  return { user, isLoading, error, logout };
 } 
