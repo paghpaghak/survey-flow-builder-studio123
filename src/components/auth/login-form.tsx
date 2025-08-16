@@ -12,6 +12,21 @@ import type { LoginCredentials } from '@survey-platform/shared-types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { apiJson } from '@/lib/api';
 
+// Добавляем тип для login response
+interface LoginResponse {
+  success: boolean;
+  data: {
+    user: {
+      id: string;
+      email: string;
+      role: string;
+      createdAt: string;
+      updatedAt: string;
+    };
+    token: string;
+  };
+}
+
 export function LoginForm() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -29,20 +44,15 @@ export function LoginForm() {
     };
 
     try {
-      const response = await apiJson('/api/auth/login', {
+      const response = await apiJson<LoginResponse>('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials),
       });
       
-      // Save auth token to localStorage as backup
-      const authToken = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('auth-token='))
-        ?.split('=')[1];
-      
-      if (authToken) {
-        localStorage.setItem('auth-token', authToken);
+      // Save auth token to localStorage from response
+      if (response.success && response.data.token) {
+        localStorage.setItem('auth-token', response.data.token);
       }
       
       navigate('/');
