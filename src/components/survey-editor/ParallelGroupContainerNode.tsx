@@ -1,7 +1,8 @@
 import React from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { Badge } from '@/components/ui/badge';
-import { Repeat2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Repeat2, ChevronDown, ChevronRight, Pencil, Trash } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Question } from '@survey-platform/shared-types';
 import type { ParallelBranchSettings } from '@/types/question.types';
 import { calcContainerSize } from '@/utils/parallelGroupUtils';
@@ -14,6 +15,8 @@ interface ParallelGroupContainerNodeProps {
 		settings?: Partial<ParallelBranchSettings>;
 		expanded: boolean;
 		onToggleExpand: (groupId: string) => void;
+		onEditClick?: (question: Question) => void;
+		onDelete?: (id: string) => void;
 		layout?: { cols?: number; childWidth?: number; childHeight?: number; gapX?: number; gapY?: number; paddingX?: number; paddingY?: number };
 		pageName?: string;
 	};
@@ -21,7 +24,7 @@ interface ParallelGroupContainerNodeProps {
 }
 
 export default function ParallelGroupContainerNode({ data, selected = false }: ParallelGroupContainerNodeProps) {
-	const { group, children, settings, expanded, onToggleExpand, layout, pageName } = data;
+	const { group, children, settings, expanded, onToggleExpand, layout, pageName, onEditClick, onDelete } = data;
 	const { width, height } = calcContainerSize(children?.length || 0, {
 		cols: layout?.cols ?? 2,
 		childWidth: layout?.childWidth ?? 250,
@@ -66,6 +69,15 @@ export default function ParallelGroupContainerNode({ data, selected = false }: P
 						<span className="text-blue-700">({(settings as any).minItems}–{(settings as any).maxItems})</span>
 					)}
 					<Badge variant="secondary">{children?.length || 0}</Badge>
+					{/* actions */}
+					<div className="flex items-center gap-1 ml-2">
+						<Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEditClick?.(group)}>
+							<Pencil className="h-3 w-3" />
+						</Button>
+						<Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onDelete?.(group.id)}>
+							<Trash className="h-3 w-3" />
+						</Button>
+					</div>
 				</div>
 			</div>
 

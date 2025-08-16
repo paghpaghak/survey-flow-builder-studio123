@@ -48,6 +48,8 @@ export function useFlowNodesAndEdges({
           children,
           expanded: true,
           onToggleExpand: () => {},
+          onEditClick,
+          onDelete,
           pageName: page?.title || 'Без страницы',
         },
         style: {
