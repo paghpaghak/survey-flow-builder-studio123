@@ -1,31 +1,8 @@
 {
-  "version": 2,
   "rewrites": [
-    { "source": "/api/health", "destination": "https://survey-flow-builder-studio123.onrender.com/api/health" },
-    { "source": "/api/auth/:path*", "destination": "https://survey-flow-builder-studio123.onrender.com/api/auth/:path*" },
-    { "source": "/api/surveys/:path*", "destination": "https://survey-flow-builder-studio123.onrender.com/api/surveys/:path*" },
-    { "source": "/api/files/:path*", "destination": "https://survey-flow-builder-studio123.onrender.com/api/files/:path*" },
-    { "source": "/api/:path*", "destination": "https://survey-flow-builder-studio123.onrender.com/api/:path*" },
-    { "source": "/api-docs", "destination": "https://survey-flow-builder-studio123.onrender.com/api-docs" },
-    { "source": "/api-docs/:path*", "destination": "https://survey-flow-builder-studio123.onrender.com/api-docs/:path*" }
-  ],
-  "headers": [
     {
       "source": "/api/(.*)",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, PUT, DELETE, OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization, X-CSRF-Token"
-        }
-      ]
+      "destination": "https://survey-flow-builder-studio123.onrender.com/api/$1"
     }
   ]
 }
