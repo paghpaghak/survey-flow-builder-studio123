@@ -55,6 +55,7 @@ export function useFlowNodesAndEdges({
         style: {
           width,
           height,
+          zIndex: 0,
           border: isSelected ? '2px solid #3b82f6' : undefined,
           boxShadow: isSelected ? '0 0 10px rgba(59, 130, 246, 0.5)' : undefined,
         },
@@ -94,6 +95,7 @@ export function useFlowNodesAndEdges({
         baseNode.parentNode = parentGroupId;
         baseNode.extent = 'parent';
         baseNode.position = { x, y };
+        baseNode.style = { ...(baseNode.style || {}), zIndex: 2 } as any;
       }
 
       newNodes.push(baseNode);

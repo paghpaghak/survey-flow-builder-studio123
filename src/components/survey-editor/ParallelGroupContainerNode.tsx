@@ -85,10 +85,8 @@ export default function ParallelGroupContainerNode({ data, selected = false }: P
 			<Handle type="target" position={Position.Top} id="target" style={{ background: '#3b82f6', width: 8, height: 8 }} />
 			<Handle type="source" position={Position.Bottom} id="source" style={{ background: '#3b82f6', width: 8, height: 8 }} />
 
-			{/* Body placeholder (children will be separate nodes with parentNode) */}
-			{expanded && (
-				<div className="absolute inset-0" aria-hidden="true" />
-			)}
+			{/* Children are rendered by React Flow as separate nodes with parentNode.
+			  Do not add any overlay here to avoid blocking interactions. */}
 		</div>
 	);
 }
