@@ -35,6 +35,20 @@
                     })
                 });
                 const data = await response.json();
+                
+                // Сохраняем токен в localStorage для использования в Authorization header
+                if (data.success) {
+                    // Получаем токен из cookie (если доступен) или из response
+                    const authToken = document.cookie
+                        .split('; ')
+                        .find(row => row.startsWith('auth-token='))
+                        ?.split('=')[1];
+                    
+                    if (authToken) {
+                        localStorage.setItem('auth-token', authToken);
+                    }
+                }
+                
                 document.getElementById('result').innerHTML = `<pre>Login Status: ${response.status}\n${JSON.stringify(data, null, 2)}</pre>`;
             } catch (error) {
                 document.getElementById('result').innerHTML = `<pre>Login Error: ${error.message}</pre>`;
@@ -43,7 +57,16 @@
 
         async function testSurveys() {
             try {
+                // Получаем токен из localStorage
+                const authToken = localStorage.getItem('auth-token');
+                
+                const headers = {};
+                if (authToken) {
+                    headers['Authorization'] = `Bearer ${authToken}`;
+                }
+                
                 const response = await fetch('https://survey-flow-builder-studio123.onrender.com/api/surveys', {
+                    headers,
                     credentials: 'include'
                 });
                 const data = await response.json();
