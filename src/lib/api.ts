@@ -3,6 +3,22 @@ import type { Survey } from '@survey-platform/shared-types';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 /**
+ * Get auth token from cookie or localStorage
+ */
+function getAuthToken(): string | null {
+  // Try to get from cookie first
+  const authToken = document.cookie
+    .split('; ')
+    .find(row => row.startsWith('auth-token='))
+    ?.split('=')[1];
+  
+  if (authToken) return authToken;
+  
+  // Fallback to localStorage
+  return localStorage.getItem('auth-token');
+}
+
+/**
  * Retry logic for slow Render responses
  */
 async function fetchWithRetry(
@@ -66,6 +82,12 @@ export async function apiFetch(
   try {
     const method = (init.method || 'GET').toUpperCase();
     const headers = new Headers(init.headers || {});
+
+    // Add auth token to Authorization header
+    const authToken = getAuthToken();
+    if (authToken) {
+      headers.set('Authorization', `Bearer ${authToken}`);
+    }
 
     if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
       const csrf = readCookie('csrf-token');

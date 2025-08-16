@@ -29,11 +29,22 @@ export function LoginForm() {
     };
 
     try {
-      await apiJson('/api/auth/login', {
+      const response = await apiJson('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials),
       });
+      
+      // Save auth token to localStorage as backup
+      const authToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('auth-token='))
+        ?.split('=')[1];
+      
+      if (authToken) {
+        localStorage.setItem('auth-token', authToken);
+      }
+      
       navigate('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Произошла ошибка');
