@@ -19,6 +19,27 @@ function getAuthToken(): string | null {
 }
 
 /**
+ * Get CSRF token from cookie or fetch new one
+ */
+async function getCsrfToken(): Promise<string | null> {
+  // Try to get from cookie first
+  const csrf = readCookie('csrf-token');
+  if (csrf) return csrf;
+  
+  // If no CSRF token, fetch one
+  try {
+    await fetch(`${API_URL}/csrf-token`, {
+      credentials: 'include'
+    });
+    // Try to read again after setting
+    return readCookie('csrf-token');
+  } catch (error) {
+    console.error('Failed to get CSRF token:', error);
+    return null;
+  }
+}
+
+/**
  * Retry logic for slow Render responses
  */
 async function fetchWithRetry(
@@ -90,7 +111,7 @@ export async function apiFetch(
     }
 
     if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
-      const csrf = readCookie('csrf-token');
+      const csrf = await getCsrfToken();
       if (csrf) headers.set('X-CSRF-Token', csrf);
     }
 
