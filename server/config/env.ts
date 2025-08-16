@@ -16,7 +16,18 @@ export const env = EnvSchema.parse(process.env);
 
 export function getCorsOrigins(): string[] {
   const origins = env.CORS_ORIGINS ?? 'http://localhost:8081';
-  return origins.split(',').map((s) => s.trim()).filter(Boolean);
+  const fallbackOrigins = [
+    'http://localhost:8081',
+    'https://survey-flow-builder-studio123.vercel.app',
+    'https://survey-flow-builder-studio123-lmntorcdu.vercel.app',
+    'https://*.vercel.app'
+  ];
+  
+  const configuredOrigins = origins.split(',').map((s) => s.trim()).filter(Boolean);
+  const allOrigins = [...configuredOrigins, ...fallbackOrigins];
+  
+  console.log('CORS origins:', allOrigins);
+  return allOrigins;
 }
 
 
