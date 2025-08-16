@@ -24,15 +24,27 @@ function getAuthToken(): string | null {
 async function getCsrfToken(): Promise<string | null> {
   // Try to get from cookie first
   const csrf = readCookie('csrf-token');
-  if (csrf) return csrf;
+  if (csrf) {
+    console.log('CSRF token found in cookie:', csrf);
+    return csrf;
+  }
   
   // If no CSRF token, fetch one
   try {
-    await fetch(`${API_URL}/csrf-token`, {
+    console.log('No CSRF token found, fetching new one...');
+    const response = await fetch(`${API_URL}/csrf-token`, {
       credentials: 'include'
     });
+    
+    if (!response.ok) {
+      console.error('Failed to get CSRF token, status:', response.status);
+      return null;
+    }
+    
     // Try to read again after setting
-    return readCookie('csrf-token');
+    const newCsrf = readCookie('csrf-token');
+    console.log('New CSRF token fetched:', newCsrf);
+    return newCsrf;
   } catch (error) {
     console.error('Failed to get CSRF token:', error);
     return null;
@@ -112,8 +124,20 @@ export async function apiFetch(
 
     if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
       const csrf = await getCsrfToken();
-      if (csrf) headers.set('x-csrf-token', csrf);
+      if (csrf) {
+        headers.set('x-csrf-token', csrf);
+        console.log('Added CSRF token to request:', csrf);
+      } else {
+        console.warn('No CSRF token available for request');
+      }
     }
+
+    console.log('Making request:', {
+      url: input,
+      method,
+      hasAuthToken: !!authToken,
+      hasCsrfToken: headers.has('x-csrf-token')
+    });
 
     const response = await fetchWithRetry(input, {
       credentials: 'include',
