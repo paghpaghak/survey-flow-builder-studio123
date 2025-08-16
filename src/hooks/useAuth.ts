@@ -26,12 +26,20 @@ export function useAuth(): AuthStateInterface & { logout: () => void } {
       try {
         const data = await apiJson<{ user: User }>('/api/auth/me');
         setUser(data.user);
+        setError(null); // Очищаем ошибки при успешной авторизации
       } catch (error) {
         console.error('Ошибка при проверке авторизации:', error);
         setError(error instanceof Error ? error.message : 'Неизвестная ошибка');
         setUser(null);
-        // Очищаем localStorage при ошибке авторизации
-        localStorage.removeItem('auth-token');
+        
+        // Очищаем localStorage только при определенных ошибках
+        if (error instanceof Error) {
+          if (error.message.includes('401') || 
+              error.message.includes('Не авторизован') ||
+              error.message.includes('Unauthorized')) {
+            localStorage.removeItem('auth-token');
+          }
+        }
       } finally {
         setIsLoading(false);
       }
