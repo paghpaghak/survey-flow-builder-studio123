@@ -42,11 +42,11 @@ export default function ParallelGroupContainerNode({ data, selected = false }: P
 				'overflow-hidden relative',
 				selected && 'ring-2 ring-blue-500'
 			)}
-			style={{ width, height: expanded ? height : 64 }}
+			style={{ width, height: expanded ? height : 64, pointerEvents: 'none' }}
 			role="group"
 		>
 			{/* Header */}
-			<div className="flex items-center justify-between px-3 py-2 bg-blue-100 border-b border-blue-200">
+			<div className="flex items-center justify-between px-3 py-2 bg-blue-100 border-b border-blue-200 pointer-events-auto drag-handle">
 				<div className="flex items-center gap-2">
 					<button
 						className="h-6 w-6 inline-flex items-center justify-center rounded hover:bg-blue-200"
@@ -71,10 +71,10 @@ export default function ParallelGroupContainerNode({ data, selected = false }: P
 					<Badge variant="secondary">{children?.length || 0}</Badge>
 					{/* actions */}
 					<div className="flex items-center gap-1 ml-2">
-						<Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEditClick?.(group)}>
+						<Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); e.preventDefault(); onEditClick?.(group); }}>
 							<Pencil className="h-3 w-3" />
 						</Button>
-						<Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onDelete?.(group.id)}>
+						<Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); e.preventDefault(); onDelete?.(group.id); }}>
 							<Trash className="h-3 w-3" />
 						</Button>
 					</div>

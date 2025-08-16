@@ -90,6 +90,7 @@ export function useFlowNodesAndEdges({
       const baseNode: Node = {
         id: question.id,
         type: 'questionNode',
+        // Вложенные управляются внутренней сеткой; позиция для top-level
         position: question.position || { x: (index % 5) * 250, y: Math.floor(index / 5) * 200 },
         data: {
           question: question,
@@ -102,6 +103,7 @@ export function useFlowNodesAndEdges({
         style: {
           border: isSelected ? '2px solid #3b82f6' : undefined,
           boxShadow: isSelected ? '0 0 10px rgba(59, 130, 246, 0.5)' : undefined,
+          pointerEvents: 'auto',
         },
       };
 
@@ -112,7 +114,8 @@ export function useFlowNodesAndEdges({
         baseNode.parentNode = parentGroupId;
         baseNode.extent = 'parent';
         baseNode.position = { x, y };
-        baseNode.style = { ...(baseNode.style || {}), zIndex: 2 } as any;
+        baseNode.draggable = true;
+        baseNode.style = { ...(baseNode.style || {}), zIndex: 2, pointerEvents: 'auto' } as any;
       }
 
       newNodes.push(baseNode);
