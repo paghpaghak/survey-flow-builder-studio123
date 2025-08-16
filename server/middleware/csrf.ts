@@ -8,6 +8,7 @@ const SAFE = new Set(['GET', 'HEAD', 'OPTIONS']);
 const SKIP_PATHS = new Set<string>([
   '/api/auth/login',
   '/api/auth/logout',
+  '/api/csrf-token', // Allow getting CSRF token
 ]);
 
 export function csrfProtection(req: Request, res: Response, next: NextFunction): void {
@@ -17,7 +18,9 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction):
     path: req.path,
     originalUrl: req.originalUrl,
     header: req.header(CSRF_HEADER),
-    cookie: req.cookies?.[CSRF_COOKIE]
+    cookie: req.cookies?.[CSRF_COOKIE],
+    allHeaders: req.headers,
+    allCookies: req.cookies
   });
 
   if (SAFE.has(req.method) || SKIP_PATHS.has(req.path)) {
@@ -33,7 +36,9 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction):
     console.log('CSRF: Token validation failed', {
       hasHeader: !!header,
       hasCookie: !!cookie,
-      headerMatch: header === cookie
+      headerMatch: header === cookie,
+      headerValue: header,
+      cookieValue: cookie
     });
     res.status(403).json({ error: 'CSRF token invalid' });
     return;
