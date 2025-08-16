@@ -68,7 +68,7 @@ All Cookies: ${cookies}
                 };
                 
                 if (csrf) {
-                    headers['X-CSRF-Token'] = csrf;
+                    headers['x-csrf-token'] = csrf; // Use lowercase header
                 }
                 
                 const response = await fetch('https://survey-flow-builder-studio123.onrender.com/api/surveys', {
