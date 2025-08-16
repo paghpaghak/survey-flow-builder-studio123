@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { QUESTION_TYPES } from '@survey-platform/shared-types';
 import type { Question, QuestionType, Page } from '@survey-platform/shared-types';
 import QuestionNode from './QuestionNode';
+import ParallelGroupContainerNode from './ParallelGroupContainerNode';
 import ResolutionNode from './ResolutionNode';
 import QuestionEditDialog from '../QuestionEditDialog';
 import { useSurveyStore } from '@/store/survey-store';
@@ -44,6 +45,7 @@ interface VisualEditorProps {
 
 const nodeTypes: NodeTypes = {
   questionNode: QuestionNode,
+  parallelGroupNode: ParallelGroupContainerNode,
 };
 
 const edgeTypes: EdgeTypes = {
