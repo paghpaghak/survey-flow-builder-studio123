@@ -59,8 +59,14 @@ export class AuthController {
 
       setCsrfCookie(res);
 
-      // Не отправляем токен в теле ответа
-      res.json({ success: true, data: { user: authResult.user } });
+      // Отправляем токен в теле ответа для использования в Authorization header
+      res.json({ 
+        success: true, 
+        data: { 
+          user: authResult.user,
+          token: authResult.token // Добавляем токен в response
+        } 
+      });
         
     } catch (error) {
       console.error('Error in AuthController.login:', error);
