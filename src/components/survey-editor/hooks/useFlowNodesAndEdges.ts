@@ -38,11 +38,20 @@ export function useFlowNodesAndEdges({
       const page = pages.find((p) => p.id === group.pageId);
       const children = groupIdToChildren.get(group.id) || [];
       const { width, height } = calcContainerSize(children.length);
+      const parentGroupId = childIdToParentId.get(group.id);
+      // Position: top-level groups placed on grid; nested groups placed inside parent grid
+      let position = group.position || { x: (index % 4) * 320, y: Math.floor(index / 4) * 260 };
+      if (parentGroupId) {
+        const siblings = groupIdToChildren.get(parentGroupId) || [];
+        const idx = siblings.findIndex((q) => q.id === group.id);
+        const { x, y } = calcChildGridPosition(idx);
+        position = { x, y };
+      }
 
-      newNodes.push({
+      const containerNode: Node = {
         id: group.id,
         type: 'parallelGroupNode',
-        position: group.position || { x: (index % 4) * 320, y: Math.floor(index / 4) * 260 },
+        position,
         data: {
           group,
           children,
@@ -59,7 +68,15 @@ export function useFlowNodesAndEdges({
           border: isSelected ? '2px solid #3b82f6' : undefined,
           boxShadow: isSelected ? '0 0 10px rgba(59, 130, 246, 0.5)' : undefined,
         },
-      });
+      };
+
+      if (parentGroupId) {
+        containerNode.parentNode = parentGroupId;
+        containerNode.extent = 'parent';
+        containerNode.style = { ...(containerNode.style || {}), zIndex: 1 } as any;
+      }
+
+      newNodes.push(containerNode);
     });
 
     // 2) Добавляем обычные вопросы и вложенные внутри контейнеров
