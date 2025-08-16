@@ -12,6 +12,9 @@ const router = Router();
 // Health check (публичный)
 router.get('/health', UtilsController.healthCheck);
 
+// CORS test (публичный)
+router.get('/cors-test', UtilsController.corsTest);
+
 // Оставшиеся утилитарные маршруты только для admin
 router.use(requireAuth, requireRole('admin'));
 

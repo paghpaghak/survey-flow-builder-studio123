@@ -111,4 +111,34 @@ export class UtilsController {
       throw new (await import('../middleware/error-handler.js')).ApiError('DB_ERROR');
     }
   }
+
+  /**
+   * @swagger
+   * /api/cors-test:
+   *   get:
+   *     summary: Тест CORS
+   *     tags: [Utils]
+   *     responses:
+   *       200:
+   *         description: CORS работает
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 message:
+   *                   type: string
+   */
+  static async corsTest(req: Request, res: Response): Promise<void> {
+    res.json({ 
+      success: true, 
+      data: { 
+        message: 'CORS is working!',
+        origin: req.headers.origin,
+        userAgent: req.headers['user-agent']
+      } 
+    });
+  }
 } 
