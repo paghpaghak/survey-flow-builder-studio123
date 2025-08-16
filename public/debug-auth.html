@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Auth</title>
+</head>
+<body>
+    <h1>Debug Auth</h1>
+    <button onclick="checkAuth()">Check Auth</button>
+    <button onclick="checkToken()">Check Token</button>
+    <button onclick="testMe()">Test /api/auth/me</button>
+    <button onclick="clearAll()">Clear All</button>
+    <div id="result"></div>
+
+    <script>
+        function checkAuth() {
+            const cookies = document.cookie;
+            const token = localStorage.getItem('auth-token');
+            document.getElementById('result').innerHTML = `
+                <pre>
+Cookies: ${cookies}
+localStorage auth-token: ${token || 'null'}
+                </pre>
+            `;
+        }
+
+        function checkToken() {
+            const token = localStorage.getItem('auth-token');
+            if (!token) {
+                document.getElementById('result').innerHTML = '<pre>No token in localStorage</pre>';
+                return;
+            }
+            
+            // Decode JWT token (without verification)
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                document.getElementById('result').innerHTML = `
+                    <pre>
+Token payload:
+${JSON.stringify(payload, null, 2)}
+Expires: ${new Date(payload.exp * 1000).toLocaleString()}
+Now: ${new Date().toLocaleString()}
+Expired: ${Date.now() > payload.exp * 1000}
+                    </pre>
+                `;
+            } catch (e) {
+                document.getElementById('result').innerHTML = `<pre>Error decoding token: ${e.message}</pre>`;
+            }
+        }
+
+        async function testMe() {
+            try {
+                const token = localStorage.getItem('auth-token');
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                const response = await fetch('https://survey-flow-builder-studio123.onrender.com/api/auth/me', {
+                    headers,
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                document.getElementById('result').innerHTML = `
+                    <pre>
+Status: ${response.status}
+Response: ${JSON.stringify(data, null, 2)}
+                    </pre>
+                `;
+            } catch (error) {
+                document.getElementById('result').innerHTML = `<pre>Error: ${error.message}</pre>`;
+            }
+        }
+
+        function clearAll() {
+            localStorage.removeItem('auth-token');
+            document.cookie = 'auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            document.cookie = 'csrf-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            document.getElementById('result').innerHTML = '<pre>All tokens cleared</pre>';
+        }
+    </script>
+</body>
+</html>
