@@ -24,10 +24,16 @@ export function LogoutButton() {
     try {
       await apiJson('/api/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
 
+      // Очищаем localStorage
+      localStorage.removeItem('auth-token');
+      
       // Перенаправляем на страницу входа
       navigate('/login');
     } catch (error) {
       console.error('Ошибка при выходе:', error);
+      
+      // Даже если запрос не прошел, очищаем localStorage
+      localStorage.removeItem('auth-token');
       navigate('/login');
     }
   };
