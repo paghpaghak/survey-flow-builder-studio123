@@ -37,16 +37,8 @@
                 const data = await response.json();
                 
                 // Сохраняем токен в localStorage для использования в Authorization header
-                if (data.success) {
-                    // Получаем токен из cookie (если доступен) или из response
-                    const authToken = document.cookie
-                        .split('; ')
-                        .find(row => row.startsWith('auth-token='))
-                        ?.split('=')[1];
-                    
-                    if (authToken) {
-                        localStorage.setItem('auth-token', authToken);
-                    }
+                if (data.success && data.data.token) {
+                    localStorage.setItem('auth-token', data.data.token);
                 }
                 
                 document.getElementById('result').innerHTML = `<pre>Login Status: ${response.status}\n${JSON.stringify(data, null, 2)}</pre>`;
