@@ -32,7 +32,7 @@ export function setCsrfCookie(res: Response): void {
   const token = randomBytes(24).toString('hex');
   res.cookie(CSRF_COOKIE, token, {
     httpOnly: false,
-    sameSite: 'strict',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
     secure: process.env.NODE_ENV === 'production',
     maxAge: 24 * 60 * 60 * 1000,
   });
