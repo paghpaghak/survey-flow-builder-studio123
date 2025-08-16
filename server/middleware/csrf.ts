@@ -19,6 +19,7 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction):
     originalUrl: req.originalUrl,
     header: req.header(CSRF_HEADER),
     cookie: req.cookies?.[CSRF_COOKIE],
+    hasAuthHeader: !!req.header('Authorization'),
     allHeaders: req.headers,
     allCookies: req.cookies
   });
@@ -29,11 +30,22 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction):
     return;
   }
 
+  // For cross-origin requests with authentication, be more lenient
+  const hasAuthHeader = !!req.header('Authorization');
   const header = req.header(CSRF_HEADER);
   const cookie = req.cookies?.[CSRF_COOKIE];
 
+  // If user is authenticated (has Authorization header), allow the request
+  // even if CSRF token is missing or invalid
+  if (hasAuthHeader) {
+    console.log('CSRF: User is authenticated, allowing request');
+    next();
+    return;
+  }
+
+  // For unauthenticated requests, require CSRF token
   if (!header || !cookie || header !== cookie) {
-    console.log('CSRF: Token validation failed', {
+    console.log('CSRF: Token validation failed for unauthenticated request', {
       hasHeader: !!header,
       hasCookie: !!cookie,
       headerMatch: header === cookie,
