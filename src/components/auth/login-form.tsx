@@ -12,19 +12,16 @@ import type { LoginCredentials } from '@survey-platform/shared-types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { apiJson } from '@/lib/api';
 
-// Добавляем тип для login response
+// Обновляем тип для login response - apiJson возвращает только data часть
 interface LoginResponse {
-  success: boolean;
-  data: {
-    user: {
-      id: string;
-      email: string;
-      role: string;
-      createdAt: string;
-      updatedAt: string;
-    };
-    token: string;
+  user: {
+    id: string;
+    email: string;
+    role: string;
+    createdAt: string;
+    updatedAt: string;
   };
+  token: string;
 }
 
 export function LoginForm() {
@@ -50,9 +47,12 @@ export function LoginForm() {
         body: JSON.stringify(credentials),
       });
       
-      // Save auth token to localStorage from response
-      if (response.success && response.data.token) {
-        localStorage.setItem('auth-token', response.data.token);
+      // apiJson возвращает только data часть, поэтому response уже содержит user и token
+      if (response.token) {
+        localStorage.setItem('auth-token', response.token);
+        console.log('Token saved to localStorage:', response.token);
+      } else {
+        console.error('No token in response:', response);
       }
       
       navigate('/');
