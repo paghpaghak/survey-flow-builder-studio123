@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { DatabaseConfig } from '../config/database.js';
+import { setCsrfCookie } from '../middleware/csrf.js';
 
 /**
  * Контроллер для утилитарных HTTP эндпоинтов
@@ -26,6 +27,33 @@ export class UtilsController {
    */
   static async healthCheck(req: Request, res: Response): Promise<void> {
     res.status(200).json({ success: true, data: { status: 'ok' } });
+  }
+
+  /**
+   * @swagger
+   * /api/csrf-token:
+   *   get:
+   *     summary: Получить CSRF токен
+   *     tags: [Utils]
+   *     responses:
+   *       200:
+   *         description: CSRF токен получен
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 message:
+   *                   type: string
+   */
+  static async getCsrfToken(req: Request, res: Response): Promise<void> {
+    setCsrfCookie(res);
+    res.json({ 
+      success: true, 
+      data: { message: 'CSRF token set' } 
+    });
   }
 
   /**

@@ -12,6 +12,9 @@ const router = Router();
 // Health check (публичный)
 router.get('/health', UtilsController.healthCheck);
 
+// CSRF token (публичный)
+router.get('/csrf-token', UtilsController.getCsrfToken);
+
 // Оставшиеся утилитарные маршруты только для admin
 router.use(requireAuth, requireRole('admin'));
 
