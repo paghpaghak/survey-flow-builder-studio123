@@ -1,6 +1,56 @@
 import type { Survey } from '@survey-platform/shared-types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
+/**
+ * Retry logic for slow Render responses
+ */
+async function fetchWithRetry(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+  maxRetries: number = 3,
+  delay: number = 1000
+): Promise<Response> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(input, {
+        ...init,
+        signal: AbortSignal.timeout(30000), // 30 second timeout
+      });
+      
+      // If it's a 502 (Render waking up), retry
+      if (response.status === 502 && attempt < maxRetries) {
+        console.log(`Attempt ${attempt}: Got 502, retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay *= 2; // Exponential backoff
+        continue;
+      }
+      
+      return response;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('Unknown error');
+      
+      // If it's a timeout or network error, retry
+      if (attempt < maxRetries && (
+        lastError.name === 'AbortError' || 
+        lastError.message.includes('Failed to fetch') ||
+        lastError.message.includes('NetworkError')
+      )) {
+        console.log(`Attempt ${attempt}: Network error, retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay *= 2; // Exponential backoff
+        continue;
+      }
+      
+      throw lastError;
+    }
+  }
+  
+  throw lastError || new Error('Max retries exceeded');
+}
+
 /**
  * Обертка над `fetch`, добавляющая общую обработку ошибок и передачу cookie.
  */
@@ -22,7 +72,7 @@ export async function apiFetch(
       if (csrf) headers.set('X-CSRF-Token', csrf);
     }
 
-    const response = await fetch(input, {
+    const response = await fetchWithRetry(input, {
       credentials: 'include',
       ...init,
       headers,
