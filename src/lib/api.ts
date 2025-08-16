@@ -112,7 +112,7 @@ export async function apiFetch(
 
     if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
       const csrf = await getCsrfToken();
-      if (csrf) headers.set('X-CSRF-Token', csrf);
+      if (csrf) headers.set('x-csrf-token', csrf);
     }
 
     const response = await fetchWithRetry(input, {
